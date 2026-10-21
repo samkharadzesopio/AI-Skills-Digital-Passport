@@ -10,10 +10,14 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 # STUDENT DATA
-student = get_student("BTU-T-0003")
+student_id = input("Enter Student ID: ").strip()
+
+student = get_student(student_id)
 
 if student is None:
-    raise ValueError("Student not found in Excel!")
+    raise ValueError(f"Student {student_id} not found in Excel!")
+
+
 
 # STAMP FILES
 stamp_files = {
@@ -220,9 +224,18 @@ for index, skill in enumerate(student["skills"][:5]):
 
 
 # SAVE PDF
-output_path = OUTPUT_DIR / "giorgi_passport.pdf"
+
+student_id = student["student_id"]
+
+output_filename = f"{student_id}_passport.pdf"
+
+output_path = OUTPUT_DIR / output_filename
 
 doc.save(output_path)
 doc.close()
 
 print("PDF created:", output_path)
+print("Student:", student["first_name"], student["last_name"])
+print("Passport ID:", student["passport_id"])
+print("Number of skills:", len(student["skills"]))
+
