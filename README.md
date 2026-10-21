@@ -1,2 +1,2 @@
-# AI-Skills-Digital-Password
+# AI-Skills-Digital-Passport
 Hackathon project for BTU students
