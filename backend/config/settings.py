@@ -10,10 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -33,6 +40,8 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
+    'apps.students.apps.StudentsConfig',
+    'apps.skills.apps.SkillsConfig',
 ]
 
 MIDDLEWARE = [
@@ -63,8 +72,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-# Database configuration will be added when persistence is implemented.
-DATABASES = {}
+if not os.environ.get('DATABASE_URL'):
+    raise ImproperlyConfigured('DATABASE_URL must be set in the environment or backend/.env.')
+
+DATABASES = {
+    'default': dj_database_url.config(ssl_require=True),
+}
 
 
 # Password validation

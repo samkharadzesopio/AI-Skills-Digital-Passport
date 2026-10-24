@@ -2,6 +2,8 @@
 -- BTU AI SKILLS DIGITAL PASSPORT
 -- PostgreSQL 18
 -- Database Schema v1.0
+-- Reference documentation only; Django migrations are authoritative.
+-- Do not execute this script alongside Django migrations.
 -- ============================================================
 
 BEGIN;
@@ -33,6 +35,9 @@ CREATE TABLE students (
 
     CONSTRAINT chk_student_external_id
         CHECK (length(btrim(external_student_id)) > 0),
+
+    CONSTRAINT chk_student_external_id_trimmed
+        CHECK (external_student_id !~ '^[\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]|[\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]$'),
 
     CONSTRAINT chk_student_first_name
         CHECK (length(btrim(first_name)) > 0),
