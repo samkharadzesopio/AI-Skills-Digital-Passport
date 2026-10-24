@@ -1,0 +1,7 @@
+"""Isolated model tests: python manage.py test apps.students --settings=apps.students.test_settings."""
+
+SECRET_KEY = "student-model-tests-only"
+INSTALLED_APPS = ["apps.students.apps.StudentsConfig"]
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
+USE_TZ = True
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

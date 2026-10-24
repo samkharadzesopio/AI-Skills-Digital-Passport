@@ -12,6 +12,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ============================================================
 -- 1. STUDENTS
 -- Source: Google Sheets / Students
+-- Reference only: apps.students Django migrations own this table's schema.
 -- ============================================================
 
 CREATE TABLE students (
@@ -23,8 +24,12 @@ CREATE TABLE students (
     last_name VARCHAR(150) NOT NULL,
     email VARCHAR(255) NOT NULL,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    program VARCHAR(255) NOT NULL,
+    education_level VARCHAR(100) NOT NULL,
+    student_status VARCHAR(50) NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
 
     CONSTRAINT chk_student_external_id
         CHECK (length(btrim(external_student_id)) > 0),
@@ -38,8 +43,17 @@ CREATE TABLE students (
     CONSTRAINT chk_student_email
         CHECK (
             email = btrim(email)
-            AND email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
-        )
+            AND email ~* '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        ),
+
+    CONSTRAINT chk_student_program
+        CHECK (length(btrim(program)) > 0),
+
+    CONSTRAINT chk_student_education_level
+        CHECK (length(btrim(education_level)) > 0),
+
+    CONSTRAINT chk_student_status
+        CHECK (length(btrim(student_status)) > 0)
 );
 
 CREATE UNIQUE INDEX ux_students_email
@@ -1431,10 +1445,22 @@ END;
 $$;
 
 
+-- Student timestamps match Django's Now() statement-time semantics.
+-- Keep the shared function above unchanged for the skills catalog.
+CREATE FUNCTION students_set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at := statement_timestamp();
+    RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER trg_students_updated_at
 BEFORE UPDATE ON students
 FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION students_set_updated_at();
 
 
 CREATE TRIGGER trg_skills_updated_at
