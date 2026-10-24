@@ -63,6 +63,7 @@ CREATE UNIQUE INDEX ux_students_email
 -- ============================================================
 -- 2. SKILLS CATALOG
 -- Source: Google Sheets / Skills Catalog
+-- Reference only: apps.skills Django migrations own this table's schema.
 -- ============================================================
 
 CREATE TABLE skills_catalog (
@@ -76,8 +77,8 @@ CREATE TABLE skills_catalog (
     stamp_type VARCHAR(30) NOT NULL,
     badge_asset_id VARCHAR(150) NOT NULL,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT statement_timestamp(),
 
     CONSTRAINT chk_skill_code
         CHECK (length(btrim(skill_code)) > 0),
@@ -1446,7 +1447,7 @@ $$;
 
 
 -- Student timestamps match Django's Now() statement-time semantics.
--- Keep the shared function above unchanged for the skills catalog.
+-- Keep the shared function above unchanged.
 CREATE FUNCTION students_set_updated_at()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -1463,10 +1464,21 @@ FOR EACH ROW
 EXECUTE FUNCTION students_set_updated_at();
 
 
+-- Catalog timestamps use the same statement-time semantics as Django's Now().
+CREATE FUNCTION skills_catalog_set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    NEW.updated_at := statement_timestamp();
+    RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER trg_skills_updated_at
 BEFORE UPDATE ON skills_catalog
 FOR EACH ROW
-EXECUTE FUNCTION set_updated_at();
+EXECUTE FUNCTION skills_catalog_set_updated_at();
 
 
 
