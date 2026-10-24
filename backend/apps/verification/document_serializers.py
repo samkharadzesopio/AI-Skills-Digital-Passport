@@ -1,0 +1,33 @@
+
+from rest_framework import serializers
+
+
+class DocumentUploadSerializer(serializers.Serializer):
+    file = serializers.FileField(
+        allow_empty_file=False
+    )
+
+
+class DocumentVerificationResultSerializer(
+    serializers.Serializer
+):
+    status = serializers.ChoiceField(
+        choices=[
+            "VALID",
+            "OUTDATED",
+            "INVALID",
+            "UNVERIFIABLE",
+        ]
+    )
+    authentic = serializers.BooleanField()
+    is_latest = serializers.BooleanField(
+        allow_null=True
+    )
+    passport_version = serializers.IntegerField(
+        allow_null=True
+    )
+    latest_version = serializers.IntegerField(
+        allow_null=True
+    )
+    message = serializers.CharField()
+    source = serializers.CharField()
