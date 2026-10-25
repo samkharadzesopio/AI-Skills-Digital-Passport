@@ -1,0 +1,574 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BTU Passport presentation v2 (proposal; template inspected, backend contract pending)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "provenance",
+    "identity",
+    "holder",
+    "issuer",
+    "verification",
+    "categories",
+    "credentials",
+    "evidence"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "2.0"
+    },
+    "provenance": {
+      "enum": [
+        "demo",
+        "backend"
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passportId",
+        "passportVersionId",
+        "versionNumber",
+        "templateVersion",
+        "templateSha256",
+        "status",
+        "issuedAt",
+        "revokedAt"
+      ],
+      "properties": {
+        "passportId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "passportVersionId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "versionNumber": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "templateVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "templateSha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "issued",
+            "revoked",
+            "unavailable"
+          ]
+        },
+        "issuedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revokedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "holder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "internalStudentUuid",
+        "externalStudentId",
+        "firstName",
+        "lastName",
+        "displayName",
+        "program",
+        "educationLevel"
+      ],
+      "properties": {
+        "internalStudentUuid": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+        },
+        "externalStudentId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "firstName": {
+          "type": "string"
+        },
+        "lastName": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "program": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "educationLevel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "issuer": {
+      "$ref": "#/$defs/issuer"
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reference",
+        "checkedAt"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unverified",
+            "verified",
+            "revoked",
+            "expired",
+            "unavailable"
+          ]
+        },
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checkedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/category"
+      }
+    },
+    "credentials": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/credential"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    }
+  },
+  "$defs": {
+    "issuer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "organizationUrl",
+        "reference"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "organizationUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "description",
+        "reference",
+        "issuedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issuedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "credential": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "issuer",
+        "issuedAt",
+        "evidenceIds",
+        "publicReference",
+        "expiresAt",
+        "status",
+        "revokedAt",
+        "revocationReason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "issuer": {
+          "$ref": "#/$defs/issuer"
+        },
+        "issuedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "publicReference": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "issued",
+            "revoked",
+            "unavailable"
+          ]
+        },
+        "revokedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "revocationReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "proficiency",
+        "credentialIds",
+        "evidenceIds",
+        "description",
+        "stampType",
+        "learningExperiences"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "proficiency": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "label",
+            "framework"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "framework": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "credentialIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stampType": {
+          "enum": [
+            "FOCUSED",
+            "APPLIED",
+            "ADVANCED",
+            null
+          ]
+        },
+        "learningExperiences": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "credentialId",
+              "title",
+              "earnedOn"
+            ],
+            "properties": {
+              "credentialId": {
+                "type": "string"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "earnedOn": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "subcategories",
+        "skills"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "subcategories": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/category"
+          }
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/skill"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "provenance": {
+            "const": "demo"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "verification": {
+            "properties": {
+              "status": {
+                "const": "unverified"
+              },
+              "reference": {
+                "type": "null"
+              },
+              "checkedAt": {
+                "type": "null"
+              }
+            }
+          },
+          "identity": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "draft",
+                  "unavailable"
+                ]
+              },
+              "issuedAt": {
+                "type": "null"
+              },
+              "revokedAt": {
+                "type": "null"
+              }
+            }
+          },
+          "credentials": {
+            "items": {
+              "properties": {
+                "status": {
+                  "const": "draft"
+                },
+                "publicReference": {
+                  "type": "null"
+                },
+                "issuedAt": {
+                  "type": "null"
+                },
+                "revokedAt": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "identity": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "issued",
+                  "revoked"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "identity": {
+            "properties": {
+              "passportId": {
+                "type": "string"
+              },
+              "passportVersionId": {
+                "type": "string"
+              },
+              "versionNumber": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "issuedAt": {
+                "type": "string"
+              }
+            }
+          },
+          "verification": {
+            "properties": {
+              "reference": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
