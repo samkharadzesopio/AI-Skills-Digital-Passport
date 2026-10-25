@@ -91,7 +91,9 @@ class IntegratedCredentialPassportWorkflowTests(TransactionTestCase):
         )
 
         refresh = process_pending_passport_refreshes(batch_size=10)
-        self.assertEqual(refresh["completed"], 1)
+        # Immediate post-commit processing has already consumed the outbox entry.
+        self.assertEqual(refresh["completed"], 0)
+        self.assertEqual(CredentialPassportRefresh.objects.filter(status="COMPLETED").count(), 1)
         passport = DigitalPassport.objects.get(student=self.student)
         version = passport.latest_version
         self.assertEqual(version.status, PassportVersion.Status.ISSUED)

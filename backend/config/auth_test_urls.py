@@ -16,6 +16,7 @@ class PrivateIdentityProbe(APIView):
 
 
 urlpatterns = [
+    path("api/", include("apps.api.urls")),
     path("accounts/", include("apps.accounts.urls")),
     path("private/", PrivateIdentityProbe.as_view()),
     path("api/students/", include("apps.students.urls")),

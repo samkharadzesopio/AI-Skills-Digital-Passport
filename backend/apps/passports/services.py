@@ -98,6 +98,7 @@ def _snapshot_payload(student_snapshot, credentials):
                     "skill_code": skill.skill_code,
                     "skill_name": skill.skill_name,
                     "category": skill.category,
+                    "subcategory": skill.subcategory,
                     "description": skill.description,
                     "stamp_type": skill.stamp_type,
                     "badge_asset_id": skill.badge_asset_id,
@@ -245,6 +246,7 @@ def publish_passport_version(
                     skill_code=skill.skill_code,
                     skill_name=skill.skill_name,
                     category=skill.category,
+                    subcategory=skill.subcategory,
                     description=skill.description,
                     stamp_type=skill.stamp_type,
                     badge_asset_id=skill.badge_asset_id,
@@ -339,7 +341,7 @@ def schedule_passport_update_for_credential_event(*, lifecycle_event_id):
     def process_after_commit():
         from apps.credentials.passport_refresh import process_passport_refresh_event
 
-        process_passport_refresh_event(refresh.pk)
+        process_passport_refresh_event(refresh_id=refresh.pk)
 
     transaction.on_commit(
         process_after_commit,
