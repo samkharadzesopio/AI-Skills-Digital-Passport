@@ -56,12 +56,12 @@ class AccountPermissionTests(SimpleTestCase):
             IsAdmin().has_permission(request, None)
         )
 
-    def test_student_allowed(self):
+    def test_unlinked_user_denied(self):
         request = self.request_as(
             authenticated=True,
         )
 
-        self.assertTrue(
+        self.assertFalse(
             IsStudent().has_permission(request, None)
         )
 

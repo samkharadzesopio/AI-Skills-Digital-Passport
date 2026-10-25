@@ -1,55 +1,42 @@
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 
-from rest_framework.permissions import (
-    BasePermission,
-    IsAuthenticated,
-)
+def authorized_student_id(user):
+    if not user or not getattr(user, 'is_authenticated', False) or not getattr(user, 'pk', None):
+        raise PermissionDenied('Student access required.')
+    from .identity import authorized_student_id as resolve
+    return resolve(user)
 
 
 class IsAdmin(BasePermission):
-    """Allow authenticated university administrators only."""
-
-    message = "Administrator access required."
+    """Staff privilege is explicit; student accounts cannot act as administrators."""
 
     def has_permission(self, request, view):
         user = request.user
-
-        return bool(
-            user
-            and user.is_authenticated
-            and user.is_active
-            and user.is_staff
-        )
+        return bool(user and user.is_authenticated and user.is_active
+                    and user.is_staff and not getattr(user, 'student_id', None))
 
 
-class IsStudent(IsAuthenticated):
-    """
-    Temporary student-role foundation.
-
-    Student-specific ownership must be checked
-    separately once accounts are linked to
-    Student records.
-    """
-
+class IsStudent(BasePermission):
     def has_permission(self, request, view):
-        if not super().has_permission(request, view):
+        try:
+            authorized_student_id(request.user)
+            return True
+        except PermissionDenied:
             return False
 
-        user = request.user
 
-        return bool(
-            user.is_active
-            and not user.is_staff
-        )
+class OwnStudentProfile(IsStudent):
+    """Only for Student objects. Lists must ALSO filter using the helper."""
+
+    def has_object_permission(self, request, view, obj):
+        from apps.students.models import Student
+        try:
+            return isinstance(obj, Student) and obj.pk == authorized_student_id(request.user)
+        except PermissionDenied:
+            return False
 
 
 class IsPublicVerification(BasePermission):
-    """
-    Public verification endpoints.
-
-    Views using this permission must expose only
-    limited authenticity results, never private
-    student records.
-    """
-
     def has_permission(self, request, view):
-        return request.method in ("GET", "POST", "HEAD", "OPTIONS")
+        return request.method in ('GET', 'POST', 'HEAD', 'OPTIONS')
