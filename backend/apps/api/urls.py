@@ -1,7 +1,8 @@
-from django.urls import path
+from django.urls import include, path
 from .views import StudentView, AdminStudents, AdminCredentials, AdminIssue, AdminRevoke, AdminPassports, AdminStatistics
 
 urlpatterns = [
+    path('', include('apps.api.pdf_urls')),
     path('student/dashboard/', StudentView.as_view(resource='dashboard')),
     path('student/skills/', StudentView.as_view(resource='skills')),
     path('student/achievements/', StudentView.as_view(resource='achievements')),

@@ -37,8 +37,10 @@ class PassportPublicTests(DocumentDataMixin, TransactionTestCase):
             self.assertEqual(response.json()['status'], 'NOT_FOUND')
 
     def test_reference_verification_uses_two_queries(self):
+        # Resolve the fixture relation outside the verifier's query measurement.
+        reference = self.version.passport.public_reference
         with self.assertNumQueries(2):
-            result = PassportVerificationService().verify(self.version.passport.public_reference)
+            result = PassportVerificationService().verify(reference)
         self.assertEqual(result['status'], 'VALID')
 
     def test_historical_version_is_outdated_but_credentials_current(self):

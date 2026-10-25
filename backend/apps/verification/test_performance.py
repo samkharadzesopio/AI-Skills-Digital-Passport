@@ -64,10 +64,12 @@ class PopulationPerformanceTests(DocumentDataMixin, TransactionTestCase):
             self.assertEqual(result['status'], 'VALID')
             samples.append((time.perf_counter() - start) * 1000)
         passport_samples = []
+        # Fixture traversal is setup, not part of the two-query verifier contract.
+        passport_reference = self.version.passport.public_reference
         for _ in range(100):
             start = time.perf_counter()
             with self.assertNumQueries(2):
-                result = PassportVerificationService().verify(self.version.passport.public_reference)
+                result = PassportVerificationService().verify(passport_reference)
             self.assertEqual(result['status'], 'VALID')
             passport_samples.append((time.perf_counter() - start) * 1000)
         for code in ['AI_LITERACY', 'AI_FUNDAMENTALS']:
