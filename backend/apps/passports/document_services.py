@@ -314,7 +314,7 @@ def _finalize(document_id, token, storage_key, pdf_sha256, byte_size):
         return document
 
 
-def generate_passport_document(*, passport_version_id, storage=None, renderer=None):
+def generate_passport_document(*, passport_version_id, storage=None, renderer=None, wait_seconds=None):
     """Generate, store, and issue one idempotent PDF document."""
 
     if connection.in_atomic_block or not connection.get_autocommit():
@@ -326,9 +326,9 @@ def generate_passport_document(*, passport_version_id, storage=None, renderer=No
     renderer = renderer or render_passport_pdf
     version = PassportVersion.objects.only("id", "content_sha256").get(pk=version_id)
     request_sha256 = _request_sha256(version)
-    wait_seconds = float(
-        getattr(settings, "PASSPORT_PDF_WAIT_SECONDS", DEFAULT_WAIT_SECONDS)
-    )
+    if wait_seconds is None:
+        wait_seconds = getattr(settings, "PASSPORT_PDF_WAIT_SECONDS", DEFAULT_WAIT_SECONDS)
+    wait_seconds = float(wait_seconds)
     deadline = time.monotonic() + max(0, wait_seconds)
 
     while True:

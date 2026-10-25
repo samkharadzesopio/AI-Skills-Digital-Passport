@@ -7,7 +7,7 @@ import pymupdf as fitz
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE = BASE_DIR / "templates" / "Passport_Blank.pdf"
-RENDERER_VERSION = "pymupdf-template-v2-subcategory"
+RENDERER_VERSION = "pymupdf-template-v3-checked-layout"
 
 STAMP_FILES = {
     "FOCUSED": BASE_DIR / "stamps" / "ai_skill.png",
@@ -28,15 +28,36 @@ CARD_POSITIONS = [
 ]
 
 
+class PDFRenderLimitError(ValueError):
+    """Snapshot text cannot be represented faithfully by the existing template."""
+
+
 def _text(value, limit=500):
     value = "" if value is None else str(value)
-    return " ".join(value.split())[:limit]
+    value = " ".join(value.split())
+    if len(value) > limit:
+        raise PDFRenderLimitError('Text exceeds the supported template limit.')
+    try:
+        value.encode('latin-1')
+    except UnicodeEncodeError:
+        raise PDFRenderLimitError('Text requires a font unavailable in this template.') from None
+    return value
 
 
 def _insert_box(page, rect, value, *, fontsize=8, align=fitz.TEXT_ALIGN_LEFT, color=(0, 0, 0)):
-    page.insert_textbox(
+    remaining = page.insert_textbox(
         rect, _text(value), fontsize=fontsize, fontname="helv", align=align, color=color
     )
+    if remaining < 0:
+        raise PDFRenderLimitError('Text does not fit the existing template box.')
+
+
+def _insert_line(page, position, value, *, fontsize=8, fontname='helv', max_x=None, **kwargs):
+    value = _text(value)
+    boundary = max_x if max_x is not None else page.rect.width - 20
+    if position[0] + fitz.get_text_length(value, fontname=fontname, fontsize=fontsize) > boundary:
+        raise PDFRenderLimitError('Text does not fit the existing template line.')
+    page.insert_text(position, value, fontsize=fontsize, fontname=fontname, **kwargs)
 
 
 def _stamp_path(stamp_type):
@@ -46,12 +67,12 @@ def _stamp_path(stamp_type):
 def _render_cover(document, data):
     page = document[0]
     student, version, passport = data["student"], data["version"], data["passport"]
-    page.insert_text((255, 270), _text(student["first_name"], 100), fontsize=14)
-    page.insert_text((255, 310), _text(student["last_name"], 100), fontsize=14)
+    _insert_line(page, (255, 270), _text(student["first_name"], 100), fontsize=14, max_x=580)
+    _insert_line(page, (255, 310), _text(student["last_name"], 100), fontsize=14, max_x=620)
     page.insert_text((150, 335), "STUDENT ID:", fontsize=8, fontname="hebo")
-    page.insert_text((255, 335), _text(student.get("external_student_id"), 60), fontsize=8)
+    _insert_line(page, (255, 335), _text(student.get("external_student_id"), 60), fontsize=8, max_x=620)
     page.insert_text((150, 352), "PROGRAM:", fontsize=8, fontname="hebo")
-    page.insert_text((255, 352), _text(student.get("program"), 80), fontsize=8)
+    _insert_line(page, (255, 352), _text(student.get("program"), 80), fontsize=8, max_x=620)
     page.insert_text((655, 263), _text(version["issued_date"], 20), fontsize=10)
     page.insert_text((655, 282), f"VERSION {version['number']}", fontsize=8)
     page.insert_text((650, 515), _text(passport["public_reference"], 40), fontsize=7)
@@ -71,7 +92,7 @@ def _render_skill_cards(document, skills):
             align=fitz.TEXT_ALIGN_CENTER,
         )
         classification = " / ".join(filter(None, [skill["category"], skill.get("subcategory", "")]))
-        label = f"{_text(classification, 60)} / {_text(skill['level'], 20)}"
+        label = f"{_text(classification, 303)} / {_text(skill['level'], 20)}"
         _insert_box(
             page,
             fitz.Rect(x, y + 22, x + 125, y + 44),
@@ -88,27 +109,29 @@ def _render_skill_cards(document, skills):
 
 
 def _render_supplement_page(page, skills):
-    row_positions = [200, 260, 320, 380, 440]
+    # Fill the existing template's five 53.89-point rows, within its column lines.
+    row_positions = [194, 248, 302, 356, 410]
     columns = {
-        "skill": (195, 95), "description": (295, 145),
-        "earned_through": (455, 175), "date_earned": (650, 115),
+        "skill": (207, 89), "description": (304, 138),
+        "earned_through": (449, 168), "date_earned": (624, 136),
     }
     for index, skill in enumerate(skills):
         y = row_positions[index]
         page.insert_image(
-            fitz.Rect(105, y - 5, 175, y + 25),
+            fitz.Rect(105, y + 5, 175, y + 35),
             filename=str(_stamp_path(skill["stamp_type"])),
             keep_proportion=True,
         )
         fields = {
-            "skill": skill["name"], "description": skill["description"],
+            "skill": ' / '.join(filter(None, [skill['name'], skill['category'], skill.get('subcategory', ''), skill['level']])),
+            "description": skill["description"],
             "earned_through": skill["earned_through"], "date_earned": skill["date_earned"],
         }
         for field_name, value in fields.items():
             x, width = columns[field_name]
             _insert_box(
                 page,
-                fitz.Rect(x, y - 5, x + width, y + 45),
+                fitz.Rect(x, y, x + width, y + 44),
                 value,
                 fontsize=6.5 if field_name == "skill" else 6,
                 align=fitz.TEXT_ALIGN_CENTER,
@@ -129,7 +152,7 @@ def _render_credential_page(document, credentials, page_number, page_count, data
     y = 145
     for credential in credentials:
         page.draw_rect(fitz.Rect(70, y - 18, 772, y + 39), color=(0.75, 0.75, 0.75))
-        page.insert_text((82, y), _text(credential["issuer_name"], 90), fontsize=9, fontname="hebo")
+        _insert_line(page, (82, y), _text(credential["issuer_name"], 90), fontsize=9, fontname="hebo", max_x=760)
         page.insert_text((82, y + 15), f"Credential: {_text(credential['public_reference'], 40)}", fontsize=7)
         expiry = credential["expires_date"] or "No expiry"
         page.insert_text((520, y + 15), f"Issued {credential['issued_date']} | {expiry}", fontsize=7)
