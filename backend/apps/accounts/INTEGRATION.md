@@ -1,5 +1,11 @@
 # Phase 1 accounts handoff (pending shared integration)
 
+> Historical checkpoint note: the Phase 1 statements below describe commit
+> `e302aec`. Phase 2 has since added shared Django settings/URL integration,
+> invitation and password recovery flows, explicit admin permissions, and
+> PostgreSQL migrations `0002` through `0005`. The current security and endpoint contract is
+> documented in [`backend/database/ACCOUNTS_SECURITY.md`](../../database/ACCOUNTS_SECURITY.md).
+
 Implemented on `feature/integration-verification`. Shared `config/settings.py`,
 `config/urls.py`, Student permissions, and Developer 1's models/migrations are unchanged.
 No shared Neon connection, migration, push, merge, or deployment was performed.
@@ -160,7 +166,16 @@ The initial broad SQLite run exposed two pre-existing raw-UUID SQL incompatibili
 in Student/Skill tests; these pass on PostgreSQL. No business logic was changed to
 work around those SQLite failures. The committed test settings need no shared credentials.
 
-Final results: 206 tests passed on PostgreSQL with no skips, including simultaneous
+Phase 1 final results: 206 tests passed on PostgreSQL with no skips, including simultaneous
 successful-code consumers, eight simultaneous wrong-code consumers, and concurrent
 first requests. The accounts-only SQLite run passed 48 tests with three concurrency
 tests skipped (51 discovered). Migration drift check and `git diff --check` passed.
+
+## Phase 2 integration update
+
+The account API is mounted at `/api/accounts/`. Student login remains the Phase 1
+email OTP flow at `otp/request/` and `otp/verify/`; `login/` is limited to
+administrators using passwords. `config.settings` now installs the custom user and
+session/auth middleware, and the DRF default requires a verified account.
+`ACCOUNTS_ACTIVE_STUDENT_STATUSES` and a separate `ACCOUNTS_OTP_HMAC_KEY` are
+required deployment configuration. The shared Neon database has not been migrated.

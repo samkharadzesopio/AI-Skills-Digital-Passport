@@ -1,5 +1,6 @@
 
 import hmac
+import ipaddress
 import re
 import secrets
 
@@ -33,20 +34,37 @@ def generate_otp():
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
-def hash_otp(email, code):
+def _otp_secret():
+    return getattr(settings, "OTP_PEPPER", None) or settings.SECRET_KEY
+
+
+def security_digest(salt, value):
+    return salted_hmac(salt, value, secret=_otp_secret(), algorithm="sha256").hexdigest()
+
+
+def normalize_client_ip(value):
+    if not isinstance(value, str):
+        return "unknown"
+    try:
+        return str(ipaddress.ip_address(value.strip()))
+    except ValueError:
+        return "unknown"
+
+
+def hash_otp(email, code, purpose="EMAIL_VERIFY"):
     """Hash an OTP with the server secret."""
 
     email = normalize_btu_email(email)
 
     return salted_hmac(
         "accounts.otp",
-        f"{email}:{code}",
-        secret=settings.SECRET_KEY,
+        f"{email}:{purpose}:{code}",
+        secret=_otp_secret(),
         algorithm="sha256",
     ).hexdigest()
 
 
-def verify_otp_hash(email, code, stored_hash):
+def verify_otp_hash(email, code, stored_hash, purpose="EMAIL_VERIFY"):
     """Compare the supplied OTP with its stored hash."""
 
     if (
@@ -58,7 +76,7 @@ def verify_otp_hash(email, code, stored_hash):
     if not isinstance(stored_hash, str):
         return False
 
-    candidate_hash = hash_otp(email, code)
+    candidate_hash = hash_otp(email, code, purpose)
 
     return hmac.compare_digest(
         candidate_hash,

@@ -46,11 +46,11 @@ class IdentityTests(TestCase):
 
     def test_database_rejects_duplicate_link(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
-            User.objects.create(username='duplicate', email='other@btu.edu.ge', student=self.student)
+            User.objects.create(email='other@btu.edu.ge', student=self.student)
 
     def test_database_rejects_case_variant_email(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
-            User.objects.create(username='duplicate', email='STUDENT@BTU.EDU.GE')
+            User.objects.create(email='STUDENT@BTU.EDU.GE')
 
     def test_database_rejects_student_admin(self):
         with self.assertRaises(IntegrityError), transaction.atomic():
@@ -58,7 +58,10 @@ class IdentityTests(TestCase):
 
     def test_anonymous_unlinked_inactive_and_staff_denied(self):
         unlinked = User.objects.create_user(username='unlinked', email='unlinked@btu.edu.ge')
-        admin = User.objects.create_user(username='admin', email='admin@btu.edu.ge', is_staff=True)
+        admin = User.objects.create_admin_user(
+            email='admin@btu.edu.ge', password='Secure-Admin-Pass-2026!',
+            permission_codenames={'access_admin_api'},
+        )
         for user in [AnonymousUser(), unlinked, admin]:
             with self.assertRaises(PermissionDenied):
                 authorized_student_id(user)
@@ -112,7 +115,10 @@ class PersistentOTPTests(TestCase):
 
     def test_unknown_inactive_non_btu_and_admin_do_not_receive_codes(self):
         student('inactive@btu.edu.ge', student_status='INACTIVE')
-        User.objects.create_user(username='admin', email='admin@btu.edu.ge', is_staff=True)
+        User.objects.create_admin_user(
+            email='admin@btu.edu.ge', password='Secure-Admin-Pass-2026!',
+            permission_codenames={'access_admin_api'},
+        )
         messages = []
         for address in ['unknown@btu.edu.ge', 'inactive@btu.edu.ge', 'outside@example.com', 'admin@btu.edu.ge']:
             messages.append(request_login_code(address, client_ip='127.0.0.1'))
@@ -282,9 +288,12 @@ class EndpointResponseTests(TestCase):
         u = provision_student_account(s.email)
         u.set_password('test-password-only')
         u.save()
-        self.assertIsNone(authenticate(username=u.username, password='test-password-only'))
-        admin = User.objects.create_user(username='staff', email='staff@btu.edu.ge', is_staff=True, password='test-password-only')
-        self.assertEqual(authenticate(username='staff', password='test-password-only'), admin)
+        self.assertIsNone(authenticate(email=u.email, password='test-password-only'))
+        admin = User.objects.create_admin_user(
+            email='staff@btu.edu.ge', password='test-password-only',
+            permission_codenames={'access_admin_api'},
+        )
+        self.assertEqual(authenticate(email=admin.email, password='test-password-only'), admin)
 
     @override_settings(SECRET_KEY='django-insecure-do-not-use')
     def test_scaffold_secret_rejected(self):

@@ -1,5 +1,5 @@
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIRequestFactory
 
 from .views import (
@@ -43,14 +43,22 @@ class AdminImportSecurityTests(SimpleTestCase):
         )
 
 
-class GoogleSheetsConfigurationTests(SimpleTestCase):
+class GoogleSheetsConfigurationTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from apps.accounts.models import User
+
+        cls.admin = User.objects.create_admin_user(
+            email="sheets.admin@btu.edu.ge",
+            password="Test-Admin-Password-2026!",
+            permission_codenames={"import_completions"},
+        )
+
     def admin_request(self):
-        from types import SimpleNamespace
         from rest_framework.test import force_authenticate
+
         request = APIRequestFactory().post('/', {}, format='json')
-        force_authenticate(request, user=SimpleNamespace(
-            is_authenticated=True, is_active=True, is_staff=True,
-        ))
+        force_authenticate(request, user=self.admin)
         return request
 
     def test_missing_sheet_configuration_returns_503(self):

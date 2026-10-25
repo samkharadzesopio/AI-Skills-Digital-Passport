@@ -15,7 +15,7 @@ from rest_framework.exceptions import PermissionDenied
 from apps.students.models import Student
 from .identity import active_student_statuses, provision_student_account
 from .models import LoginChallenge, LoginRateBucket, User
-from .otp_utils import generate_otp, normalize_btu_email
+from .otp_utils import generate_otp, normalize_btu_email, normalize_client_ip
 
 GENERIC_REQUEST_MESSAGE = 'If eligible, a login code will be sent to your registered email.'
 
@@ -80,48 +80,65 @@ def eligible(email):
     return not User.objects.filter(student=student).exists()
 
 
-@transaction.atomic
 def request_login_code(email, *, client_ip):
     key = check_configuration()
     now = timezone.now()
-    if not take_rate(key, 'request-ip', client_ip, now, 30):
-        return GENERIC_REQUEST_MESSAGE
+    client_ip = normalize_client_ip(client_ip)
+    with transaction.atomic():
+        if not take_rate(key, 'request-ip', client_ip, now, 30):
+            return GENERIC_REQUEST_MESSAGE
     try:
         email = normalize_btu_email(email)
     except ValueError:
         return GENERIC_REQUEST_MESSAGE
     subject = digest(key, 'email', email)
-    LoginChallenge.objects.get_or_create(subject=subject)
-    challenge = LoginChallenge.objects.select_for_update().get(pk=subject)
-    now = timezone.now()  # Cooldown and expiry must use the time after locking.
-    if challenge.last_requested_at and now - challenge.last_requested_at < timedelta(seconds=60):
-        return GENERIC_REQUEST_MESSAGE
-    if not challenge.window_started_at or now - challenge.window_started_at >= timedelta(hours=1):
-        challenge.window_started_at, challenge.request_count = now, 0
-    if challenge.request_count >= 5:
-        return GENERIC_REQUEST_MESSAGE
-    challenge.request_count += 1
-    challenge.last_requested_at = now
-    challenge.nonce = uuid.uuid4()
     code = generate_otp()
-    challenge.code_hash = digest(key, 'code', subject, challenge.nonce, code)
-    challenge.attempts = 0
-    challenge.expires_at = now + timedelta(minutes=5)
-    challenge.consumed_at = now
-    if eligible(email):
+    should_send = eligible(email)
+    with transaction.atomic():
+        LoginChallenge.objects.get_or_create(subject=subject)
+        challenge = LoginChallenge.objects.select_for_update().get(pk=subject)
+        now = timezone.now()  # Cooldown and expiry use time after any lock wait.
+        if challenge.last_requested_at and now - challenge.last_requested_at < timedelta(seconds=60):
+            return GENERIC_REQUEST_MESSAGE
+        if not challenge.window_started_at or now - challenge.window_started_at >= timedelta(hours=1):
+            challenge.window_started_at, challenge.request_count = now, 0
+        if challenge.request_count >= 5:
+            return GENERIC_REQUEST_MESSAGE
+        challenge.request_count += 1
+        challenge.last_requested_at = now
+        challenge.nonce = uuid.uuid4()
+        nonce = challenge.nonce
+        challenge.code_hash = digest(key, 'code', subject, nonce, code)
+        challenge.attempts = 0
+        challenge.expires_at = now + timedelta(minutes=5)
+        # A challenge remains inactive until mail delivery succeeds. The short
+        # activation write is separate so SMTP never holds database row locks.
+        challenge.consumed_at = now
+        challenge.save()
+
+    if should_send:
+        delivered = 0
         try:
             delivered = send_mail(
                 'BTU Digital Passport - Login Code',
                 f'Your verification code is: {code}\nIt expires in 5 minutes.',
                 settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
             )
-            if delivered == 1:
-                challenge.consumed_at = None
         except Exception:
             # Do not log exception text: delivery providers may echo the message/code.
-            # Leave the challenge consumed and retain cooldown on delivery failure.
             pass
-    challenge.save()
+        if delivered == 1:
+            with transaction.atomic():
+                challenge = LoginChallenge.objects.select_for_update().filter(pk=subject).first()
+                if (
+                    challenge
+                    and challenge.nonce == nonce
+                    and challenge.consumed_at is not None
+                    and challenge.expires_at
+                    and challenge.expires_at > timezone.now()
+                ):
+                    challenge.consumed_at = None
+                    challenge.save(update_fields=['consumed_at'])
     return GENERIC_REQUEST_MESSAGE
 
 
@@ -129,7 +146,7 @@ def request_login_code(email, *, client_ip):
 def consume_login_code(email, code, *, client_ip):
     key = check_configuration()
     now = timezone.now()
-    if not take_rate(key, 'verify-ip', client_ip, now, 60):
+    if not take_rate(key, 'verify-ip', normalize_client_ip(client_ip), now, 60):
         return None
     try:
         email = normalize_btu_email(email)

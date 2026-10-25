@@ -5,8 +5,8 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
-from django.conf import settings
+
+from apps.accounts.permissions import IsAdminWithPermission
 
 from .serializers import ClassroomCompletionSerializer
 from .services import ClassroomService
@@ -17,7 +17,8 @@ from .importers.validators import ImportValidationError
 
 
 class ClassroomCompletionsView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminWithPermission]
+    required_permission = "accounts.sync_classroom"
 
     def get(self, request):
         service = ClassroomService()
@@ -36,7 +37,8 @@ class ClassroomCompletionsView(APIView):
 
 
 class ClassroomSyncView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminWithPermission]
+    required_permission = "accounts.sync_classroom"
 
     def post(self, request):
         service = ClassroomService()
@@ -66,7 +68,8 @@ class ClassroomSyncView(APIView):
 
 
 class AdminExcelImportView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminWithPermission]
+    required_permission = "accounts.import_completions"
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request):
@@ -108,7 +111,8 @@ class AdminExcelImportView(APIView):
 
 
 class AdminGoogleSheetsImportView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminWithPermission]
+    required_permission = "accounts.import_completions"
 
     def post(self, request):
         # Only server-configured spreadsheets are trusted.

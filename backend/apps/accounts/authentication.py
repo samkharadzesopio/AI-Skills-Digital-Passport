@@ -3,6 +3,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import PermissionDenied
 
 from .identity import authorized_student_id
+from .models import User
 
 
 class StudentOTPBackend(ModelBackend):
@@ -12,7 +13,12 @@ class StudentOTPBackend(ModelBackend):
         return None
 
     def get_user(self, user_id):
-        user = super().get_user(user_id)
+        user = User.objects.select_related('student').filter(pk=user_id).first()
+        if user is None:
+            return None
+        # The linked Student and status were loaded in this same DB query, so
+        # the central helper can validate without issuing another query.
+        user._accounts_identity_authoritative = True
         try:
             authorized_student_id(user)
             return user
@@ -22,8 +28,13 @@ class StudentOTPBackend(ModelBackend):
 
 class AdminPasswordBackend(ModelBackend):
     def user_can_authenticate(self, user):
-        return bool(super().user_can_authenticate(user) and user.is_staff
-                    and not user.student_id)
+        return bool(
+            super().user_can_authenticate(user)
+            and user.role == User.Role.ADMIN
+            and user.is_staff
+            and not user.is_superuser
+            and not user.student_id
+        )
 
 
 class AccountSessionAuthentication(SessionAuthentication):
@@ -35,6 +46,10 @@ class AccountSessionAuthentication(SessionAuthentication):
             user, _ = result
             if not user.is_staff:
                 authorized_student_id(user)
-            elif user.student_id:
+            elif (
+                user.role != User.Role.ADMIN
+                or user.student_id
+                or user.is_superuser
+            ):
                 raise PermissionDenied('Invalid administrator identity.')
         return result
