@@ -344,11 +344,48 @@ class PassportPDFAPITests(TransactionTestCase):
         self.assertEqual(result.status_code, 422)
         self.assertEqual(result.data['error'], 'PDF_NOT_REPRESENTABLE')
         self.assertEqual(self.generate().status_code, 200)
-        self.student.first_name = 'სახელი'; self.student.save()
+        self.student.first_name = 'Ana \U0001f431'; self.student.save()
         publish_passport_version(student_id=self.student.pk, event_key='FONT-LIMIT')
         result = self.generate()
         self.assertEqual(result.status_code, 422)
         self.assertFalse(result.data['available_for_download'])
+
+    def test_georgian_pdf_is_registered_and_historical_bytes_remain_verifiable(self):
+        first = self.generate()
+        self.assertEqual(first.status_code, 200)
+        old_document = PassportDocument.objects.get()
+        _, old_bytes = self.download()
+        self.student.first_name = 'გიორგი'
+        self.student.last_name = 'მაისურაძე'
+        self.student.program = 'კომპიუტერული მეცნიერება'
+        self.student.save()
+        Skill.objects.filter(pk=self.skill.pk).update(
+            skill_name='AI ანალიზი', category='AI უნარები', subcategory='ანალიზი',
+            description='მონაცემთა ანალიზი და შეფასება.',
+        )
+        version, _ = publish_passport_version(student_id=self.student.pk, event_key='GEORGIAN-PDF')
+        result = self.generate()
+        self.assertEqual(result.status_code, 200, result.data)
+        self.assertEqual(result.data['passport_version_reference'], str(version.public_reference))
+        _, content = self.download()
+        document = PassportDocument.objects.get(public_reference=result.data['document_reference'])
+        self.assertEqual(hashlib.sha256(content).hexdigest(), document.pdf_sha256)
+        with pymupdf.open(stream=content, filetype='pdf') as pdf:
+            text = ' '.join(' '.join(page.get_text() for page in pdf).split())
+        for expected in ['გიორგი', 'მაისურაძე', 'კომპიუტერული მეცნიერება', 'ანალიზი', 'მონაცემთა ანალიზი და შეფასება.']:
+            self.assertIn(expected, text)
+        old_url = f'/api/student/passport/versions/{self.version.pk}/pdf/'
+        _, historical = self.download(old_url)
+        self.assertEqual(historical, old_bytes)
+        old_document.refresh_from_db()
+        self.assertEqual(hashlib.sha256(old_bytes).hexdigest(), old_document.pdf_sha256)
+        for pdf_bytes, expected_status in [(old_bytes, 'OUTDATED'), (content, 'VALID')]:
+            verification = APIClient().post('/api/verification/document/', {
+                'file': SimpleUploadedFile('passport.pdf', pdf_bytes, content_type='application/pdf'),
+            }, format='multipart')
+            self.assertEqual(verification.status_code, 200)
+            self.assertEqual(verification.data['status'], expected_status)
+            self.assertTrue(verification.data['authentic'])
 
     def test_revoked_historical_pdf_remains_authentic_with_current_invalidity(self):
         self.generate()
@@ -408,7 +445,7 @@ class PassportPDFAPITests(TransactionTestCase):
         original = data['skills'][0]
         data['skills'] = [dict(original, name=f'Skill {index}', category=f'Category {index}', subcategory=f'Sub {index}') for index in range(11)]
         with pymupdf.open(stream=render_passport_pdf(data), filetype='pdf') as pdf:
-            text = '\n'.join(page.get_text() for page in pdf)
+            text = ' '.join(' '.join(page.get_text() for page in pdf).split())
             for page in list(pdf)[3:6]:
                 for x0, y0, x1, y1, word, *_ in page.get_text('words'):
                     if word == 'Category':

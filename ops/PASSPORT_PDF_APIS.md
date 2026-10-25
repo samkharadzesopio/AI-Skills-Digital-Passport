@@ -132,13 +132,17 @@ registered PDF. All skill supplement rows include frozen category/subcategory/le
 including skills beyond the cover's first ten cards. Existing skill/credential/byte
 bounds remain in force.
 
-The template's built-in Latin font cannot faithfully represent all languages (for
-example Georgian names). Such content returns 422 until a separately reviewed font
-support change is made. No font substitution or template redesign is hidden in these
-APIs. Overlong names, descriptions and classifications likewise require an explicit
-future layout decision; they are not silently shortened.
+Dynamic fields embed the bundled Noto Sans Georgian Regular/Bold fonts, covering
+Georgian (including uppercase), English and numbers without system-font or runtime
+network dependencies. Text is measured with those fonts inside the same template
+boundaries. Glyphs absent from the bundled font and text that genuinely cannot fit
+return 422; required content is never silently replaced or shortened. The template
+artwork, font sizes and field positions are unchanged. Font provenance and licensing
+are documented in `GEORGIAN_PDF_REPORT.md`; the SIL Open Font License accompanies
+the font files in `backend/templates/`.
 
-The renderer version advances to `pymupdf-template-v3-checked-layout`; new requests
+The renderer version is `pymupdf-template-v4-georgian-fonts`; both font binaries are
+included in its fingerprint. Explicit new generation requests
 use the existing renderer fingerprint/idempotency mechanism. Older issued documents,
 public references, hashes and snapshots are not rewritten. Historical generation
 reads frozen version facts, never mutable profile/skill values. The printed
@@ -149,10 +153,11 @@ report REVOKED/EXPIRED through existing public verification.
 
 ## Validation and next steps
 
-Actual commands/results, changed files, and limitations are in `PASSPORT_PDF_REPORT.md`.
+Current font validation and provenance are in `GEORGIAN_PDF_REPORT.md`; the original
+API implementation checkpoint is recorded in `PASSPORT_PDF_REPORT.md`.
 Only isolated loopback PostgreSQL was used. No shared Neon migration, deployment,
 frontend change, integration merge, or main modification was performed.
 
-Next: review template font support and field-length policy with the university,
+Next: review the existing field-length policy with the university,
 then jointly review the branch and run staging HTTP/storage/load checks before
 frontend integration. Synchronous bounded rendering has not been throughput-tested.

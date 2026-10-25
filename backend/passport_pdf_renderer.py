@@ -1,4 +1,5 @@
 import hashlib
+from functools import lru_cache
 from math import ceil
 from pathlib import Path
 
@@ -7,7 +8,12 @@ import pymupdf as fitz
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE = BASE_DIR / "templates" / "Passport_Blank.pdf"
-RENDERER_VERSION = "pymupdf-template-v3-checked-layout"
+RENDERER_VERSION = "pymupdf-template-v4-georgian-fonts"
+
+FONT_FILES = {
+    "regular": BASE_DIR / "templates" / "NotoSansGeorgian-Regular.ttf",
+    "bold": BASE_DIR / "templates" / "NotoSansGeorgian-Bold.ttf",
+}
 
 STAMP_FILES = {
     "FOCUSED": BASE_DIR / "stamps" / "ai_skill.png",
@@ -18,7 +24,11 @@ STAMP_FILES = {
 
 def renderer_fingerprint():
     digest = hashlib.sha256(RENDERER_VERSION.encode("ascii"))
-    for path in (TEMPLATE, *[STAMP_FILES[key] for key in sorted(STAMP_FILES)]):
+    for path in (
+        TEMPLATE,
+        *[STAMP_FILES[key] for key in sorted(STAMP_FILES)],
+        *[FONT_FILES[key] for key in sorted(FONT_FILES)],
+    ):
         digest.update(path.read_bytes())
     return digest.hexdigest()
 
@@ -32,32 +42,42 @@ class PDFRenderLimitError(ValueError):
     """Snapshot text cannot be represented faithfully by the existing template."""
 
 
+@lru_cache(maxsize=2)
+def _font(style="regular"):
+    return fitz.Font(fontfile=str(FONT_FILES[style]))
+
+
+def _page_font(page, style):
+    name = f"BTUNotoGeorgian{style.title()}"
+    page.insert_font(fontname=name, fontfile=str(FONT_FILES[style]))
+    return name
+
+
 def _text(value, limit=500):
     value = "" if value is None else str(value)
     value = " ".join(value.split())
     if len(value) > limit:
         raise PDFRenderLimitError('Text exceeds the supported template limit.')
-    try:
-        value.encode('latin-1')
-    except UnicodeEncodeError:
-        raise PDFRenderLimitError('Text requires a font unavailable in this template.') from None
+    if any(not _font().has_glyph(ord(character), fallback=False) for character in value):
+        raise PDFRenderLimitError('Text contains a glyph unavailable in the bundled font.')
     return value
 
 
 def _insert_box(page, rect, value, *, fontsize=8, align=fitz.TEXT_ALIGN_LEFT, color=(0, 0, 0)):
     remaining = page.insert_textbox(
-        rect, _text(value), fontsize=fontsize, fontname="helv", align=align, color=color
+        rect, _text(value), fontsize=fontsize,
+        fontname=_page_font(page, "regular"), align=align, color=color
     )
     if remaining < 0:
         raise PDFRenderLimitError('Text does not fit the existing template box.')
 
 
-def _insert_line(page, position, value, *, fontsize=8, fontname='helv', max_x=None, **kwargs):
+def _insert_line(page, position, value, *, fontsize=8, fontname='regular', max_x=None, **kwargs):
     value = _text(value)
     boundary = max_x if max_x is not None else page.rect.width - 20
-    if position[0] + fitz.get_text_length(value, fontname=fontname, fontsize=fontsize) > boundary:
+    if position[0] + _font(fontname).text_length(value, fontsize=fontsize) > boundary:
         raise PDFRenderLimitError('Text does not fit the existing template line.')
-    page.insert_text(position, value, fontsize=fontsize, fontname=fontname, **kwargs)
+    page.insert_text(position, value, fontsize=fontsize, fontname=_page_font(page, fontname), **kwargs)
 
 
 def _stamp_path(stamp_type):
@@ -152,7 +172,7 @@ def _render_credential_page(document, credentials, page_number, page_count, data
     y = 145
     for credential in credentials:
         page.draw_rect(fitz.Rect(70, y - 18, 772, y + 39), color=(0.75, 0.75, 0.75))
-        _insert_line(page, (82, y), _text(credential["issuer_name"], 90), fontsize=9, fontname="hebo", max_x=760)
+        _insert_line(page, (82, y), _text(credential["issuer_name"], 90), fontsize=9, fontname="bold", max_x=760)
         page.insert_text((82, y + 15), f"Credential: {_text(credential['public_reference'], 40)}", fontsize=7)
         expiry = credential["expires_date"] or "No expiry"
         page.insert_text((520, y + 15), f"Issued {credential['issued_date']} | {expiry}", fontsize=7)
