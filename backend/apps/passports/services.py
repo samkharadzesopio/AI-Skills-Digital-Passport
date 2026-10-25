@@ -5,7 +5,8 @@ import time
 from datetime import datetime, timezone
 from uuid import UUID
 
-from django.core.exceptions import ValidationError
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import DatabaseError, connection, transaction
 from django.db.models import Prefetch, Q
 
@@ -13,6 +14,7 @@ from apps.credentials.models import (
     Credential,
     CredentialAchievement,
     CredentialLifecycleEvent,
+    CredentialPassportRefresh,
 )
 from apps.students.models import Student
 
@@ -140,7 +142,9 @@ def get_or_create_passport(*, student_id):
     return _retry(operation)
 
 
-def publish_passport_version(*, student_id, event_key, effective_at=None):
+def publish_passport_version(
+    *, student_id, event_key, effective_at=None, source_occurred_at=None
+):
     """Publish or reuse an immutable snapshot for one logical update event."""
 
     student_uuid = UUID(str(student_id))
@@ -148,6 +152,8 @@ def publish_passport_version(*, student_id, event_key, effective_at=None):
     effective_at = effective_at or datetime.now(timezone.utc)
     if effective_at.tzinfo is None:
         raise ValidationError({"effective_at": "Must be timezone-aware."})
+    if source_occurred_at is not None and source_occurred_at.tzinfo is None:
+        raise ValidationError({"source_occurred_at": "Must be timezone-aware."})
 
     def operation():
         with transaction.atomic():
@@ -194,6 +200,7 @@ def publish_passport_version(*, student_id, event_key, effective_at=None):
                     version=version,
                     event_key=event_key,
                     content_sha256=content_sha256,
+                    source_occurred_at=source_occurred_at,
                 )
                 return version, False
 
@@ -272,6 +279,7 @@ def publish_passport_version(*, student_id, event_key, effective_at=None):
                 version=version,
                 event_key=event_key,
                 content_sha256=content_sha256,
+                source_occurred_at=source_occurred_at,
             )
             return version, True
 
@@ -279,7 +287,7 @@ def publish_passport_version(*, student_id, event_key, effective_at=None):
 
 
 def publish_passport_for_credential_event(*, lifecycle_event_id):
-    """Integration hook called after a credential lifecycle transaction commits."""
+    """Refresh from current credential state while retaining the source event time."""
 
     event = CredentialLifecycleEvent.objects.select_related("credential").get(
         pk=UUID(str(lifecycle_event_id))
@@ -287,14 +295,54 @@ def publish_passport_for_credential_event(*, lifecycle_event_id):
     return publish_passport_version(
         student_id=event.credential.student_id,
         event_key=f"credential-lifecycle:{event.pk}",
-        effective_at=event.occurred_at,
+        effective_at=datetime.now(timezone.utc),
+        source_occurred_at=event.occurred_at,
     )
 
 
 def schedule_passport_update_for_credential_event(*, lifecycle_event_id):
-    """Schedule the integration hook without doing work inside the caller's transaction."""
+    """Persist an outbox event and request immediate post-commit processing."""
+
+    try:
+        max_attempts = int(getattr(settings, "PASSPORT_REFRESH_MAX_ATTEMPTS", 8))
+    except (TypeError, ValueError):
+        raise ImproperlyConfigured(
+            "PASSPORT_REFRESH_MAX_ATTEMPTS must be an integer from 1 through 50."
+        ) from None
+    if not 1 <= max_attempts <= 50:
+        raise ImproperlyConfigured(
+            "PASSPORT_REFRESH_MAX_ATTEMPTS must be an integer from 1 through 50."
+        )
 
     event_id = UUID(str(lifecycle_event_id))
-    transaction.on_commit(
-        lambda: publish_passport_for_credential_event(lifecycle_event_id=event_id)
+    event = CredentialLifecycleEvent.objects.select_related("credential").get(pk=event_id)
+    event_key = f"credential-lifecycle:{event.pk}"
+    refresh, _ = CredentialPassportRefresh.objects.get_or_create(
+        event_key=event_key,
+        defaults={
+            "source_type": CredentialPassportRefresh.SourceType.CREDENTIAL_LIFECYCLE,
+            "student_id": event.credential.student_id,
+            "lifecycle_event": event,
+            "source_occurred_at": event.occurred_at,
+            "available_at": datetime.now(timezone.utc),
+            "max_attempts": max_attempts,
+        },
     )
+    if (
+        refresh.source_type != CredentialPassportRefresh.SourceType.CREDENTIAL_LIFECYCLE
+        or refresh.lifecycle_event_id != event.pk
+        or refresh.student_id != event.credential.student_id
+        or refresh.source_occurred_at != event.occurred_at
+    ):
+        raise ValidationError("Credential lifecycle refresh identity does not match its source event.")
+
+    def process_after_commit():
+        from apps.credentials.passport_refresh import process_passport_refresh_event
+
+        process_passport_refresh_event(refresh.pk)
+
+    transaction.on_commit(
+        process_after_commit,
+        robust=True,
+    )
+    return refresh

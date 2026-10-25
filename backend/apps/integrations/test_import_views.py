@@ -8,7 +8,7 @@ from .views import (
 )
 
 
-class AdminImportSecurityTests(SimpleTestCase):
+class AdminImportSecurityTests(TestCase):
 
     def setUp(self):
         self.factory = APIRequestFactory()
@@ -71,7 +71,7 @@ class GoogleSheetsConfigurationTests(TestCase):
     def test_configured_sheet_uses_server_selected_id(self):
         from django.test import override_settings
         from unittest.mock import patch
-        with override_settings(BTU_GOOGLE_SHEET_ID='trusted-sheet-id'), patch(
+        with override_settings(BTU_GOOGLE_SHEET_ID='trusted-sheet-id', BTU_AUTHORIZED_COMPLETION_SOURCES=['BTU_GOOGLE_SHEETS']), patch(
             'apps.integrations.views.read_google_sheet', return_value=([], []),
         ) as read, patch(
             'apps.integrations.views.process_completion_import', return_value={'processed': 0},
@@ -79,4 +79,6 @@ class GoogleSheetsConfigurationTests(TestCase):
             response = AdminGoogleSheetsImportView.as_view()(self.admin_request())
         self.assertEqual(response.status_code, 200)
         read.assert_called_once_with(spreadsheet_id='trusted-sheet-id')
-        process.assert_called_once_with([], source='BTU_GOOGLE_SHEETS')
+        process.assert_called_once()
+        self.assertEqual(process.call_args.kwargs['source'], 'BTU_GOOGLE_SHEETS')
+        self.assertEqual(process.call_args.kwargs['actor'], self.admin)

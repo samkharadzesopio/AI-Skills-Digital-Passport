@@ -156,6 +156,7 @@ class PassportUpdateEvent(models.Model):
     )
     event_key = models.CharField(max_length=255)
     content_sha256 = models.CharField(max_length=64)
+    source_occurred_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
 
     class Meta:

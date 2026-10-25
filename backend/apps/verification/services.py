@@ -1,14 +1,14 @@
 
 from datetime import datetime, timezone
 
-from .repositories import MockCredentialRepository
+from .repositories import PostgreSQLCredentialRepository
 
 
 class CredentialVerificationService:
     def __init__(self, repository=None, clock=None):
         self.repository = (
             repository if repository is not None
-            else MockCredentialRepository()
+            else PostgreSQLCredentialRepository()
         )
         self.clock = clock or (
             lambda: datetime.now(timezone.utc)
@@ -20,13 +20,13 @@ class CredentialVerificationService:
         if record is None:
             return self._result(credential_id, "NOT_FOUND")
 
+        if record.get("issuer_trusted") is not True:
+            return self._result(credential_id, "INVALID")
+
         if record.get("status") == "REVOKED":
             return self._result(credential_id, "REVOKED")
 
         if record.get("status") != "ISSUED":
-            return self._result(credential_id, "INVALID")
-
-        if record.get("issuer_trusted") is not True:
             return self._result(credential_id, "INVALID")
 
         try:
@@ -70,11 +70,10 @@ class CredentialVerificationService:
 
         return parsed
 
-    @staticmethod
-    def _result(credential_id, status):
+    def _result(self, credential_id, status):
         return {
             "credential_id": credential_id,
             "status": status,
             "verified": status == "VALID",
-            "source": "SIMULATED_CREDENTIAL_REGISTRY",
+            "source": getattr(self.repository, "source", "SIMULATED_CREDENTIAL_REGISTRY"),
         }

@@ -241,3 +241,47 @@ PASSPORT_PDF_LEASE_SECONDS = int(
 PASSPORT_PDF_WAIT_SECONDS = float(
     os.environ.get('PASSPORT_PDF_WAIT_SECONDS', '10')
 )
+PASSPORT_REFRESH_LEASE_SECONDS = int(
+    os.environ.get('PASSPORT_REFRESH_LEASE_SECONDS', '120')
+)
+PASSPORT_REFRESH_MAX_ATTEMPTS = int(
+    os.environ.get('PASSPORT_REFRESH_MAX_ATTEMPTS', '8')
+)
+PASSPORT_REFRESH_RETRY_BASE_SECONDS = float(
+    os.environ.get('PASSPORT_REFRESH_RETRY_BASE_SECONDS', '5')
+)
+
+# Credential issuance is restricted by the credential service to this permanent
+# institutional identity. Do not let deployment configuration or request data
+# substitute another issuer.
+BTU_ISSUER_REFERENCE = 'BTU-UNIVERSITY'
+BTU_CLASSROOM_ISSUER_REFERENCE = os.environ.get(
+    'BTU_CLASSROOM_ISSUER_REFERENCE', BTU_ISSUER_REFERENCE
+).strip()
+if BTU_CLASSROOM_ISSUER_REFERENCE != BTU_ISSUER_REFERENCE:
+    raise ImproperlyConfigured(
+        'BTU_CLASSROOM_ISSUER_REFERENCE must be the fixed BTU-UNIVERSITY issuer.'
+    )
+
+# Public verification fails closed unless an issuer is explicitly trusted. The
+# fixed BTU issuer is the default; any additional allowlist entries still have to
+# match an issuer record marked trusted in the database.
+VERIFICATION_TRUSTED_ISSUER_REFERENCES = [
+    ref.strip() for ref in os.environ.get(
+        'VERIFICATION_TRUSTED_ISSUER_REFERENCES', BTU_ISSUER_REFERENCE
+    ).split(',')
+    if ref.strip()
+]
+BTU_AUTHORIZED_COMPLETION_SOURCES = [
+    source.strip() for source in os.environ.get('BTU_AUTHORIZED_COMPLETION_SOURCES', '').split(',')
+    if source.strip()
+]
+if set(BTU_AUTHORIZED_COMPLETION_SOURCES) - {'BTU_EXCEL', 'BTU_GOOGLE_SHEETS'}:
+    raise ImproperlyConfigured('Only approved spreadsheet source identifiers are supported.')
+BTU_GOOGLE_SHEET_ID = os.environ.get('BTU_GOOGLE_SHEET_ID', '').strip()
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE', '').strip()
+EMAIL_TIMEOUT = 10
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 30
+DATA_UPLOAD_MAX_NUMBER_FILES = 1
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024

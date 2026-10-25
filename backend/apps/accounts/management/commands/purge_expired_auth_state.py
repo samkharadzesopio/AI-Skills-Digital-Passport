@@ -5,6 +5,8 @@ from django.utils import timezone
 
 from apps.accounts.models import (
     AuthRateLimitBucket,
+    DeferredMail,
+    SecurityAudit,
     LoginChallenge,
     LoginRateBucket,
     OTPChallenge,
@@ -28,6 +30,12 @@ class Command(BaseCommand):
         deleted_login_buckets, _ = LoginRateBucket.objects.filter(
             window_started_at__lt=cutoff
         ).delete()
+        # Bounded retention batches; invoke periodically until the backlog clears.
+        mail_ids = list(DeferredMail.objects.filter(requested_at__lt=cutoff).values_list('pk', flat=True)[:1000])
+        DeferredMail.objects.filter(pk__in=mail_ids).delete()
+        audit_cutoff = timezone.now() - timedelta(days=30)
+        audit_ids = list(SecurityAudit.objects.filter(created_at__lt=audit_cutoff).values_list('pk', flat=True)[:1000])
+        SecurityAudit.objects.filter(pk__in=audit_ids).delete()
         self.stdout.write(
             self.style.SUCCESS(
                 f"Removed {deleted_challenges + deleted_login_challenges} expired challenges and "

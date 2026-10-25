@@ -1,9 +1,11 @@
 
 from io import BytesIO
+from zipfile import ZipFile, BadZipFile
 
 from openpyxl import load_workbook
 
 from .validators import (
+    REQUIRED_FIELDS,
     validate_completion_record,
     ImportValidationError,
 )
@@ -30,6 +32,14 @@ def read_excel_completions(file):
         )
 
     try:
+        with ZipFile(BytesIO(content)) as archive:
+            entries = archive.infolist()
+            if len(entries) > 1000 or sum(e.file_size for e in entries) > 32 * 1024 * 1024:
+                raise ImportValidationError('Workbook expansion exceeds processing limits')
+    except BadZipFile:
+        raise ImportValidationError('Invalid Excel workbook') from None
+
+    try:
         workbook = load_workbook(
             BytesIO(content),
             read_only=True,
@@ -45,7 +55,9 @@ def read_excel_completions(file):
 
     try:
         sheet = workbook.active
-        rows = sheet.iter_rows(values_only=True)
+        if (sheet.max_column or 0) > 26:
+            raise ImportValidationError('Workbook exceeds 26-column limit')
+        rows = sheet.iter_rows(values_only=True, max_col=min(sheet.max_column or 26, 26))
 
         headers = next(rows, None)
 
@@ -60,6 +72,10 @@ def read_excel_completions(file):
             for value in headers
         ]
 
+        while headers and not headers[-1]:
+            headers.pop()
+        if not set(REQUIRED_FIELDS).issubset(headers):
+            raise ImportValidationError('Missing required completion columns')
         if len(set(headers)) != len(headers):
             raise ImportValidationError(
                 "Duplicate column names"
@@ -78,6 +94,8 @@ def read_excel_completions(file):
             ):
                 continue
 
+            if sum(len(str(value)) for value in values if value is not None) > 16384:
+                raise ImportValidationError('Workbook row exceeds processing limit')
             record = dict(zip(headers, values))
 
             try:

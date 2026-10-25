@@ -1,3 +1,4 @@
+from apps.accounts.audit import AuditedAPIView
 from collections.abc import Mapping
 
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
@@ -60,7 +61,7 @@ csrf_token = ensure_csrf_cookie(csrf_token)
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class OTPLoginRequestView(APIView):
+class OTPLoginRequestView(AuditedAPIView):
     """Request a persistent OTP for an eligible student mailbox."""
 
     authentication_classes = []
@@ -75,7 +76,7 @@ class OTPLoginRequestView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class OTPLoginVerifyView(APIView):
+class OTPLoginVerifyView(AuditedAPIView):
     """Consume a student OTP and persist a rotated session atomically."""
 
     authentication_classes = []
@@ -113,7 +114,7 @@ def _user_summary(user):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class LoginView(APIView):
+class LoginView(AuditedAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -145,7 +146,7 @@ class LoginView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class LogoutView(APIView):
+class LogoutView(AuditedAPIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -153,7 +154,7 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CurrentUserView(APIView):
+class CurrentUserView(AuditedAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -163,7 +164,7 @@ class CurrentUserView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class RegisterView(APIView):
+class RegisterView(AuditedAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -186,7 +187,7 @@ class RegisterView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class PasswordChangeView(APIView):
+class PasswordChangeView(AuditedAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -207,7 +208,7 @@ class PasswordChangeView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class PasswordResetRequestView(APIView):
+class PasswordResetRequestView(AuditedAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -230,7 +231,7 @@ class PasswordResetRequestView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class PasswordResetConfirmView(APIView):
+class PasswordResetConfirmView(AuditedAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -250,7 +251,7 @@ class PasswordResetConfirmView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class EmailVerificationRequestView(APIView):
+class EmailVerificationRequestView(AuditedAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -273,7 +274,7 @@ class EmailVerificationRequestView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class EmailVerificationConfirmView(APIView):
+class EmailVerificationConfirmView(AuditedAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -287,7 +288,7 @@ class EmailVerificationConfirmView(APIView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class StudentInvitationCreateView(APIView):
+class StudentInvitationCreateView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = "accounts.manage_student_accounts"
 
@@ -324,7 +325,7 @@ class StudentInvitationCreateView(APIView):
         return Response({"status": "invitation_sent"}, status=status.HTTP_202_ACCEPTED)
 
 
-class StudentAccountStatusView(APIView):
+class StudentAccountStatusView(AuditedAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

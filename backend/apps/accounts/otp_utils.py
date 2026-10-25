@@ -18,6 +18,8 @@ def normalize_btu_email(email):
         raise ValueError("Invalid email")
 
     email = email.strip().lower()
+    if len(email) > 254:
+        raise ValueError('Invalid email')
 
     if not re.fullmatch(
         r"[a-z0-9._%+\-]+@btu\.edu\.ge",
