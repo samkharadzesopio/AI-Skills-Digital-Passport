@@ -6,6 +6,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 from apps.skills.test_settings import *  # noqa: F403
 
+INSTALLED_APPS += ["apps.credentials.apps.CredentialsConfig"]
+INSTALLED_APPS += ["apps.passports.apps.PassportsConfig"]
+
 if os.environ.get("FOUNDATION_TEST_PG_HOST") != "127.0.0.1":
     raise ImproperlyConfigured("Foundation tests require an explicit 127.0.0.1 host.")
 

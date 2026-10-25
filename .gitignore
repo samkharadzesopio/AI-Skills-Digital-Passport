@@ -29,3 +29,6 @@ coverage/
 Thumbs.db
 
 output/*.pdf
+backend/output/*.pdf
+backend/media/
+backend/tmp/
