@@ -1,3 +1,5 @@
+from django.conf import settings
+
 
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser

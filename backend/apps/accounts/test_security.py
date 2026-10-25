@@ -327,3 +327,35 @@ class ConcurrentAttemptTests(TransactionTestCase):
             self.assertEqual(results[0], results[1])
             self.assertEqual(send.call_count, 1)
         self.assertEqual(LoginChallenge.objects.get().request_count, 1)
+
+class LoginPayloadTests(TestCase):
+    def test_non_object_json_is_rejected_without_issuing_or_consuming_codes(self):
+        client = Client(enforce_csrf_checks=True)
+        token = client.get('/accounts/csrf/').json()['csrfToken']
+        for endpoint in ['request', 'verify']:
+            for payload in [[], ['email'], 'student@btu.edu.ge', 123, None]:
+                with self.subTest(endpoint=endpoint, payload=payload):
+                    import json
+                    response = client.post(
+                        f'/accounts/otp/{endpoint}/', json.dumps(payload),
+                        content_type='application/json', HTTP_X_CSRFTOKEN=token,
+                    )
+                    self.assertEqual(response.status_code, 400)
+        self.assertFalse(LoginChallenge.objects.exists())
+        self.assertFalse(LoginRateBucket.objects.exists())
+
+    def test_rate_window_uses_time_after_lock_wait(self):
+        from .persistent_otp import digest, take_rate
+        from django.conf import settings
+        key = settings.ACCOUNTS_OTP_HMAC_KEY.encode()
+        before = timezone.now()
+        bucket_key = digest(key, 'test-window', '127.0.0.1')
+        LoginRateBucket.objects.create(
+            key=bucket_key, window_started_at=before, count=30,
+        )
+        after = before + timedelta(hours=1, seconds=1)
+        with patch('apps.accounts.persistent_otp.timezone.now', return_value=after):
+            self.assertTrue(take_rate(key, 'test-window', '127.0.0.1', before, 30))
+        bucket = LoginRateBucket.objects.get(pk=bucket_key)
+        self.assertEqual(bucket.count, 1)
+        self.assertEqual(bucket.window_started_at, after)

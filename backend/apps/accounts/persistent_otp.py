@@ -57,6 +57,7 @@ def take_rate(key, scope, identity, now, limit):
     bucket_key = digest(key, scope, identity)
     LoginRateBucket.objects.get_or_create(key=bucket_key, defaults={'window_started_at': now})
     bucket = LoginRateBucket.objects.select_for_update().get(pk=bucket_key)
+    now = timezone.now()  # Evaluate the window after any lock wait.
     if now - bucket.window_started_at >= timedelta(hours=1):
         bucket.window_started_at, bucket.count = now, 0
     if bucket.count >= limit:
@@ -92,6 +93,7 @@ def request_login_code(email, *, client_ip):
     subject = digest(key, 'email', email)
     LoginChallenge.objects.get_or_create(subject=subject)
     challenge = LoginChallenge.objects.select_for_update().get(pk=subject)
+    now = timezone.now()  # Cooldown and expiry must use the time after locking.
     if challenge.last_requested_at and now - challenge.last_requested_at < timedelta(seconds=60):
         return GENERIC_REQUEST_MESSAGE
     if not challenge.window_started_at or now - challenge.window_started_at >= timedelta(hours=1):

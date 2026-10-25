@@ -41,3 +41,34 @@ class AdminImportSecurityTests(SimpleTestCase):
             response.status_code,
             [401, 403],
         )
+
+
+class GoogleSheetsConfigurationTests(SimpleTestCase):
+    def admin_request(self):
+        from types import SimpleNamespace
+        from rest_framework.test import force_authenticate
+        request = APIRequestFactory().post('/', {}, format='json')
+        force_authenticate(request, user=SimpleNamespace(
+            is_authenticated=True, is_active=True, is_staff=True,
+        ))
+        return request
+
+    def test_missing_sheet_configuration_returns_503(self):
+        from django.test import override_settings
+        with override_settings(BTU_GOOGLE_SHEET_ID=None):
+            response = AdminGoogleSheetsImportView.as_view()(self.admin_request())
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.data['error'], 'Google Sheets is not configured')
+
+    def test_configured_sheet_uses_server_selected_id(self):
+        from django.test import override_settings
+        from unittest.mock import patch
+        with override_settings(BTU_GOOGLE_SHEET_ID='trusted-sheet-id'), patch(
+            'apps.integrations.views.read_google_sheet', return_value=([], []),
+        ) as read, patch(
+            'apps.integrations.views.process_completion_import', return_value={'processed': 0},
+        ) as process:
+            response = AdminGoogleSheetsImportView.as_view()(self.admin_request())
+        self.assertEqual(response.status_code, 200)
+        read.assert_called_once_with(spreadsheet_id='trusted-sheet-id')
+        process.assert_called_once_with([], source='BTU_GOOGLE_SHEETS')

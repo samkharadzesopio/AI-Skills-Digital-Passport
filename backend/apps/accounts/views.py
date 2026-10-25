@@ -1,3 +1,5 @@
+from collections.abc import Mapping
+
 from django.contrib.auth import login, logout
 from django.db import transaction
 from django.http import JsonResponse
@@ -5,10 +7,18 @@ from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_GET
+from rest_framework.exceptions import ParseError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .persistent_otp import consume_login_code, request_login_code
+
+
+def login_payload(request):
+    data = request.data
+    if not isinstance(data, Mapping):
+        raise ParseError('Expected a JSON object or form fields.')
+    return data
 
 
 @require_GET
@@ -22,8 +32,9 @@ class RequestLoginCode(APIView):
     permission_classes = []
 
     def post(self, request):
+        data = login_payload(request)
         message = request_login_code(
-            request.data.get('email'), client_ip=request.META.get('REMOTE_ADDR', ''),
+            data.get('email'), client_ip=request.META.get('REMOTE_ADDR', ''),
         )
         return Response({'detail': message}, status=202)
 
@@ -34,9 +45,10 @@ class VerifyLoginCode(APIView):
     permission_classes = []
 
     def post(self, request):
+        data = login_payload(request)
         with transaction.atomic():
             user = consume_login_code(
-                request.data.get('email'), request.data.get('code'),
+                data.get('email'), data.get('code'),
                 client_ip=request.META.get('REMOTE_ADDR', ''),
             )
             if user is None:
