@@ -10,22 +10,23 @@ from django.test import TestCase, TransactionTestCase, override_settings
 
 from apps.skills.models import AchievementSourceEvent, Skill, VerifiedAchievement
 from apps.students.models import Student
-from .models import Credential, CredentialAchievement, CredentialIssuer, CredentialLifecycleEvent
+from .models import Credential, CredentialAchievement, CredentialLifecycleEvent
 from .services import IdempotencyConflict, issue_credential, revoke_credential
+from .test_support import create_test_issuer
 
 
 class CredentialDataMixin:
     def setUp(self):
         super().setUp()
         self.student = Student.objects.create(external_student_id="CRED-TEST-001", first_name="Test", last_name="Student", email="credential-test@example.org", program="Test", education_level="Test", student_status="Active")
-        self.issuer = CredentialIssuer.objects.create(reference="TEST-ISSUER", display_name="Synthetic Issuer")
+        self.issuer = create_test_issuer("Synthetic Issuer")
         event = AchievementSourceEvent.objects.create(source="TEST", source_event_id="CRED-EVENT-001", payload_sha256="a" * 64)
         self.achievements = [VerifiedAchievement.objects.create(student=self.student, skill=Skill.objects.create(skill_code=f"CRED-{n}", skill_name=f"Synthetic {n}", category="Test", description="Synthetic test skill.", stamp_type="FOCUSED", badge_asset_id="TEST"), source_event=event, earned_on="2026-10-01", verification_status="VERIFIED") for n in range(1, 3)]
 
 
 class CredentialServiceTests(CredentialDataMixin, TestCase):
     def issue(self, **kwargs):
-        return issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="ISSUE-001", achievement_ids=[a.pk for a in self.achievements], **kwargs)
+        return issue_credential(issuer_reference=self.issuer.reference, idempotency_key="ISSUE-001", achievement_ids=[a.pk for a in self.achievements], **kwargs)
 
     def test_issue_links_multiple_verified_achievements_and_keeps_ids_separate(self):
         credential = self.issue()
@@ -40,13 +41,13 @@ class CredentialServiceTests(CredentialDataMixin, TestCase):
         replay = self.issue()
         self.assertEqual(first.pk, replay.pk)
         with self.assertRaises(IdempotencyConflict):
-            issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="ISSUE-001", achievement_ids=[self.achievements[0].pk])
+            issue_credential(issuer_reference=self.issuer.reference, idempotency_key="ISSUE-001", achievement_ids=[self.achievements[0].pk])
 
     def test_input_count_limit_and_duplicates_fail_before_writes(self):
         with self.assertRaises(ValidationError):
-            issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="x", achievement_ids=[uuid.uuid4()] * 257)
+            issue_credential(issuer_reference=self.issuer.reference, idempotency_key="x", achievement_ids=[uuid.uuid4()] * 257)
         with self.assertRaises(ValidationError):
-            issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="x", achievement_ids=[self.achievements[0].pk] * 2)
+            issue_credential(issuer_reference=self.issuer.reference, idempotency_key="x", achievement_ids=[self.achievements[0].pk] * 2)
         self.assertEqual(Credential.objects.count(), 0)
 
     def test_unverified_achievement_rejected(self):
@@ -72,7 +73,7 @@ class CredentialServiceTests(CredentialDataMixin, TestCase):
 
     def test_separate_idempotency_keys_allow_independent_credentials(self):
         first = self.issue()
-        second = issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="ISSUE-002", achievement_ids=[a.pk for a in self.achievements])
+        second = issue_credential(issuer_reference=self.issuer.reference, idempotency_key="ISSUE-002", achievement_ids=[a.pk for a in self.achievements])
         self.assertNotEqual(first.pk, second.pk)
         self.assertEqual(Credential.objects.count(), 2)
 
@@ -127,7 +128,7 @@ class CredentialConcurrencyTests(CredentialDataMixin, TransactionTestCase):
             close_old_connections()
             try:
                 barrier.wait(timeout=10)
-                return issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="CONFLICTING-RACE", achievement_ids=items).pk
+                return issue_credential(issuer_reference=self.issuer.reference, idempotency_key="CONFLICTING-RACE", achievement_ids=items).pk
             except IdempotencyConflict:
                 return "conflict"
             finally:
@@ -144,7 +145,7 @@ class CredentialConcurrencyTests(CredentialDataMixin, TransactionTestCase):
             close_old_connections()
             try:
                 barrier.wait(timeout=10)
-                return str(issue_credential(issuer_reference="TEST-ISSUER", idempotency_key="CONCURRENT-1", achievement_ids=ids).pk)
+                return str(issue_credential(issuer_reference=self.issuer.reference, idempotency_key="CONCURRENT-1", achievement_ids=ids).pk)
             finally:
                 close_old_connections()
         with ThreadPoolExecutor(max_workers=2) as pool:

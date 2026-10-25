@@ -22,7 +22,7 @@ from django.db import (
 from django.test import TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
-from apps.credentials.models import CredentialIssuer
+from apps.credentials.test_support import create_test_issuer
 from apps.credentials.services import issue_credential, revoke_credential
 from apps.skills.models import AchievementSourceEvent, Skill, VerifiedAchievement
 from apps.students.models import Student
@@ -70,9 +70,7 @@ class DocumentDataMixin:
             education_level="Bachelor",
             student_status="Active",
         )
-        self.issuer = CredentialIssuer.objects.create(
-            reference="PDF-ISSUER", display_name="BTU Synthetic University"
-        )
+        self.issuer = create_test_issuer("BTU Synthetic University")
         self.skill = Skill.objects.create(
             skill_code="PDF-SKILL-001",
             skill_name="Machine Learning Foundations",
