@@ -241,3 +241,32 @@ class LoginRateBucket(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["window_started_at"], name="login_rate_bucket_window_idx")]
+
+
+class DeferredMail(models.Model):
+    """Delivery control only: never contains OTPs, invitation tokens or messages."""
+    recipient = models.EmailField()
+    purpose = models.CharField(max_length=16, choices=[('LOGIN', 'Login'), ('RESET', 'Reset')])
+    client_ip = models.CharField(max_length=45)
+    token = models.UUIDField(default=uuid.uuid4)
+    state = models.CharField(max_length=16, default='PENDING')
+    attempts = models.PositiveSmallIntegerField(default=0)
+    requested_at = models.DateTimeField(default=timezone.now)
+    window_started_at = models.DateTimeField(default=timezone.now)
+    request_count = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    lease_expires_at = models.DateTimeField(null=True)
+    error_code = models.CharField(max_length=32, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['recipient', 'purpose'], name='uq_deferred_mail_identity'),
+                       models.CheckConstraint(condition=models.Q(attempts__lte=3), name='chk_deferred_mail_attempts')]
+        indexes = [models.Index(fields=['state', 'next_attempt_at'], name='deferred_mail_pending_idx')]
+
+
+class SecurityAudit(models.Model):
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT, related_name='security_actions')
+    action = models.CharField(max_length=100)
+    ip_digest = models.CharField(max_length=64)
+    status_code = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)

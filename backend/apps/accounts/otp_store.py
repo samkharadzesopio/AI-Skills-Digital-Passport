@@ -40,6 +40,7 @@ def _consume_budgets(*, scope, email_digest, ip_digest, email_limit, ip_limit, n
     if len(rows) != len(keyed_limits):
         raise RuntimeError("Authentication rate-limit state is unavailable.")
 
+    now = timezone.now()  # Window checks follow row-lock acquisition.
     exceeded = False
     for row in rows:
         limit = keyed_limits[row.bucket_digest]

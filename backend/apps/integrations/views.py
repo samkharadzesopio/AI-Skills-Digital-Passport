@@ -1,3 +1,4 @@
+from apps.accounts.audit import AuditedAPIView
 from django.conf import settings
 
 
@@ -16,7 +17,7 @@ from .importers.service import process_completion_import
 from .importers.validators import ImportValidationError
 
 
-class ClassroomCompletionsView(APIView):
+class ClassroomCompletionsView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = "accounts.sync_classroom"
 
@@ -36,7 +37,7 @@ class ClassroomCompletionsView(APIView):
         })
 
 
-class ClassroomSyncView(APIView):
+class ClassroomSyncView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = "accounts.sync_classroom"
 
@@ -55,7 +56,7 @@ class ClassroomSyncView(APIView):
         })
 
 
-class AdminExcelImportView(APIView):
+class AdminExcelImportView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = "accounts.import_completions"
     parser_classes = [MultiPartParser, FormParser]
@@ -98,7 +99,7 @@ class AdminExcelImportView(APIView):
         })
 
 
-class AdminGoogleSheetsImportView(APIView):
+class AdminGoogleSheetsImportView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = "accounts.import_completions"
 
@@ -142,7 +143,7 @@ class AdminGoogleSheetsImportView(APIView):
         })
 
 
-class ClassroomSyncHistoryView(APIView):
+class ClassroomSyncHistoryView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = 'accounts.sync_classroom'
 
@@ -161,7 +162,7 @@ class ClassroomSyncHistoryView(APIView):
         } for row in rows])
 
 
-class ClassroomSyncRetryView(APIView):
+class ClassroomSyncRetryView(AuditedAPIView):
     permission_classes = [IsAdminWithPermission]
     required_permission = 'accounts.sync_classroom'
 

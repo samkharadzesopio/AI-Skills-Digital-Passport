@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.db import connection, transaction
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
@@ -81,6 +81,14 @@ def eligible(email):
 
 
 def request_login_code(email, *, client_ip):
+    if not getattr(settings, 'ACCOUNTS_ALLOW_TEST_EMAIL', False):
+        from .mail_queue import enqueue
+        enqueue(email, 'LOGIN', client_ip)
+        return GENERIC_REQUEST_MESSAGE
+    return _send_login_code_now(email, client_ip=client_ip)
+
+
+def _send_login_code_now(email, *, client_ip):
     key = check_configuration()
     now = timezone.now()
     client_ip = normalize_client_ip(client_ip)
@@ -123,6 +131,7 @@ def request_login_code(email, *, client_ip):
                 'BTU Digital Passport - Login Code',
                 f'Your verification code is: {code}\nIt expires in 5 minutes.',
                 settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+                connection=get_connection(timeout=10),
             )
         except Exception:
             # Do not log exception text: delivery providers may echo the message/code.

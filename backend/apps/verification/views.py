@@ -14,6 +14,11 @@ class CredentialVerificationView(APIView):
     throttle_classes = [VerificationThrottle]
     verification_scope = 'credential'
 
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response['Cache-Control'] = 'no-store'
+        return response
+
     def get(self, request, credential_id):
         service = CredentialVerificationService()
         result = service.verify(credential_id)
@@ -41,6 +46,11 @@ class DocumentVerificationView(APIView):
         super().initial(request, *args, **kwargs)
         install_upload_limits(request)
     parser_classes = [MultiPartParser]
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response['Cache-Control'] = 'no-store'
+        return response
 
     def post(self, request):
         upload_serializer = DocumentUploadSerializer(

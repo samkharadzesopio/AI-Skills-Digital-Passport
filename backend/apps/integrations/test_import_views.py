@@ -8,7 +8,7 @@ from .views import (
 )
 
 
-class AdminImportSecurityTests(SimpleTestCase):
+class AdminImportSecurityTests(TestCase):
 
     def setUp(self):
         self.factory = APIRequestFactory()
