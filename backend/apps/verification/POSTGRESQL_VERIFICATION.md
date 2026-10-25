@@ -120,3 +120,14 @@ This is a bounded query-count observation, not a 5,000-student throughput claim.
 Phase D authentication/security auditing and Phase E import reliability remain
 separate work. Review Phase B's unapplied migration before shared integration;
 this phase adds no migrations. No shared Neon migration, merge or deployment occurred.
+
+## Updated integrated contract after f8057c5
+
+The earlier integrity-only PDF limitation is superseded by the public Passport
+verification work. Reference verification and registered PDF uploads now evaluate
+current credential status; revoked/expired history cannot remain overall VALID.
+The response adds credential_status and credential_counts and supports REVOKED /
+EXPIRED, while preserving separate authentic/is_latest facts. Review the exact
+precedence and empty-snapshot behavior in docs/INTEGRATION_REVIEW.md. Measured
+population/query observations are in docs/PERFORMANCE.md. Database model/migration
+history was not changed by this update.

@@ -37,21 +37,17 @@ class PostgreSQLCredentialRepository:
             reference = UUID(str(credential_id))
         except (TypeError, ValueError, AttributeError):
             return None
-        # One indexed public-reference lookup; no private Student/evidence fields.
+        from .records import trusted_issuer
         row = Credential.objects.filter(public_reference=reference).values(
             'status', 'issued_at', 'expires_at', 'issuer_reference',
             'issuer__reference', 'issuer__is_trusted',
         ).first()
         if row is None:
             return None
-        approved = getattr(settings, 'VERIFICATION_TRUSTED_ISSUER_REFERENCES', ())
-        trusted = isinstance(approved, (list, tuple)) and bool(approved) and (
-            row['issuer_reference'] == row['issuer__reference']
-            and row['issuer__reference'] in approved
-            and row['issuer__is_trusted'] is True
-        )
-        return {
-            'status': row['status'], 'issuer_trusted': bool(trusted),
-            'issued_at': row['issued_at'].isoformat(),
-            'expires_at': row['expires_at'].isoformat() if row['expires_at'] else None,
-        }
+        # Reuse the domain method on a detached projection; never save it.
+        native = Credential(status=row['status'], issued_at=row['issued_at'], expires_at=row['expires_at'])
+        return {'_credential': native, 'status': row['status'],
+                'issued_at': row['issued_at'].isoformat(),
+                'expires_at': row['expires_at'].isoformat() if row['expires_at'] else None,
+                'issuer_trusted': trusted_issuer(
+            row['issuer_reference'], row['issuer__reference'], row['issuer__is_trusted'])}

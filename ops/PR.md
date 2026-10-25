@@ -1,52 +1,29 @@
-# Joint backend integration candidate
+## Public Passport references and authoritative current credential validity
 
-Candidate branch: `integration-candidate/dev1-dev2`, based on `origin/integration`
-at `c64d4a2`. It integrates Developer 1's Credential-to-Passport lifecycle work
-(`43782c1`) and Developer 2's Classroom/import, verification, and security work
-(`385896b`). It retains the existing app and service ownership boundaries.
+Baseline: integration f8057c5. Branch: feature/public-verification-integration.
+No merge or schema migration is included.
 
-## Included
+Adds anonymous, PostgreSQL-backed verification of permanent Passport and exact
+version public references, including the renderer's existing passport-version:<UUID>
+format. Registered PDFs now check current credential revocation/expiry/trust instead
+of reporting only document integrity/latest status. Authenticity and version currency
+remain separate facts. Responses omit private profiles, evidence and internal IDs.
 
-- Durable Credential issuance/revocation to Passport refresh records, bounded workers,
-  retry/reconciliation and expiration refresh scanning.
-- Durable Classroom completion and spreadsheet import inboxes, idempotency,
-  concurrency handling and retry recovery.
-- PostgreSQL credential/PDF verification, explicit issuer trust checks, bounded
-  public uploads and persistent rate limiting.
-- Queued authentication mail and protected-action audit records.
-- Fixed `BTU-UNIVERSITY` issuer binding. HTTP clients cannot provide an issuer;
-  public verification requires an allowlisted reference and a trusted database row.
-- A combined end-to-end regression covering a synthetic completion through verified
-  achievements, credential, Passport snapshot, stored PDF hash and public verification.
+Reuses Credential.verification_status_at, existing issuer trust, immutable snapshots,
+PassportDocumentRepository, public throttling and the already integrated lifecycle
+outbox. No competing credential or Passport service is introduced. Public rejection
+logs contain scope/status only; document queries select only required public fields.
 
-## Migrations and validation
+The public PDF contract adds REVOKED/EXPIRED plus credential_status/credential_counts;
+these override OUTDATED when a historical snapshot has invalid current credentials.
+Consumers must handle the new statuses before integration. No historical data is
+rewritten. Empty/unissued/oversized snapshots fail closed to UNVERIFIABLE.
 
-Additive migrations in the candidate are accounts/0006,
-credentials/0005, integrations/0001 and 0002, and passports/0005. The combined
-graph applied from zero on disposable loopback PostgreSQL 18.6. Safe reverse/reapply
-cycles passed for Credential/Passport, Integrations and Accounts migrations. A
-synthetic pre-outbox Credential fixture upgraded and backfilled one pending Passport
-refresh. No migration was applied to shared Neon.
+Validation and local 5,000-student observations are in verification/docs/PERFORMANCE.md;
+full implementation/status semantics are in verification/docs/INTEGRATION_REVIEW.md.
+The existing test runner explicitly excludes two legacy schema-SQL comparisons;
+concurrency tests run. No production throughput or live provider results are claimed.
 
-Final regression run: 364 passed, 0 failed, 0 errored; 2 legacy reference-schema
-comparisons were excluded by the pre-existing test runner. Django system checks and
-`makemigrations --check --dry-run` passed. The 5,000-student synthetic test completed
-in 1.121 seconds (test body), verified one query for a Passport lookup, and asserted
-an index scan. This is a local fixture result, not a throughput or capacity claim.
-
-## Remaining rollout gates
-
-- The Classroom service still reads server-owned simulated records; no real BTU
-  Classroom API connector or upstream event contract is available.
-- Live SMTP and Google Sheets credentials were not supplied or tested. The
-  institution must approve statuses, mappings and evidence-source policies.
-- `run_backend_workers` is not deployed or supervised in this candidate. Configure
-  it on the target platform and monitor retries before live synchronization.
-- PDF verification proves registered bytes and latest version, not current validity
-  of every credential represented in that historical PDF. Use credential
-  verification for revocation and expiry status.
-- No HTTP load test or production connection-pool measurement was performed.
-
-Use an approved staging/Neon branch for migration review and operational smoke tests.
-No production migration, deployment, commit to `main`, or live source synchronization
-occurred during local validation.
+Review client status handling, issuer policy, staging limits and institution-provided
+source event identities jointly. Do not merge automatically. No shared Neon migration,
+production data mutation or live deployment was performed.

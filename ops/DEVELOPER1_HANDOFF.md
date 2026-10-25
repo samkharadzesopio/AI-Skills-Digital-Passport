@@ -1,29 +1,34 @@
-# Joint backend integration follow-up
+# Joint integration review — public verification
 
-Developer 1's Credential-to-Passport lifecycle automation is present in the
-integration candidate. Credential issuance and revocation persist durable refresh
-requests, and the shared worker now polls those requests and periodically scans for
-credential expirations. The combined PostgreSQL regression suite and a Classroom to
-PDF verification workflow exercise this path with synthetic data.
+Current baseline integration f8057c5 already includes Developer 1's trusted fixed
+BTU issuer provisioning, lifecycle outbox, bounded retry delivery, expiry refresh,
+current-state Passport publication, snapshot/document immutability and worker hooks.
+The older c64d4a2 lifecycle gap list is superseded; those features were inspected
+and reused, not reimplemented on this branch.
 
-## Remaining owner and institutional dependencies
+Review feature/public-verification-integration against f8057c5. No schema migration
+is added. The code reads existing Passport/Version public references, including the
+renderer's `passport-version:<UUID>` format, and evaluates each snapshot's current
+Credential status through the domain verification method and trusted issuer policy.
 
-- Provision the fixed `BTU-UNIVERSITY` issuer using the authorized management
-  command before any credential issuance. Do not allow a request to choose an issuer.
-- Confirm eligible Student status values, approved course-to-skill mappings, and
-  whether Excel or Google Sheets are authorized evidence channels.
-- Developer 2 must provide the real BTU Classroom API contract, service credentials,
-  stable upstream completion event IDs, and course mapping source before live
-  Classroom synchronization can replace the simulated server-owned adapter.
-- Deploy `run_backend_workers` under a supervisor and monitor its retry/error states;
-  no production worker or scheduler is configured by this repository change.
-- Keep public PDF authenticity separate from the current validity of credentials in
-  the document. The PDF verifier proves registered bytes and latest version; the
-  credential verifier evaluates expiry, revocation, and issuer trust separately.
-- Review and approve the additive migration plan against an isolated/staging copy
-  of existing history before any shared Neon migration. No production migration was
-  run during integration.
+The important API change: a registered old PDF containing a revoked/expired
+credential reports REVOKED/EXPIRED, not merely OUTDATED. Registered-byte authenticity
+and latest-version currency remain separate fields. New public reference routes
+return aggregate credential status/counts without private Student data. Review UI
+handling for these statuses; never show overall validity solely from authentic=true.
 
-Keep domain ownership intact: imports and Classroom adapters should call the
-existing Achievement, Credential, and Passport services instead of adding parallel
-issuance or publication paths.
+The only Passport application changes are minimal document-repository field
+projection and the regression expectation for a revoked historical PDF. No domain
+model, issuer provisioning, lifecycle function or migration was changed.
+
+Joint acceptance: revoked/expired references and PDFs fail current validity even
+while refresh is pending; once refreshed, historical artifacts remain immutable;
+unknown/private IDs never resolve as public references; no login is required for
+verification; existing Student/Admin ownership remains protected. The combined
+suite and local measurements are documented in:
+backend/apps/verification/docs/INTEGRATION_REVIEW.md and docs/PERFORMANCE.md.
+
+No shared Neon migration, production data mutation or merge was performed. Live
+BTU/Google/SMTP connectivity, actual staging load and source event alias policy
+still require institution/deployment coordination. This handoff is prepared in the
+repository; no message was sent to another developer.

@@ -9,6 +9,8 @@ class PassportDocumentRepository:
     def find_by_hash(self, pdf_hash):
         document = (
             PassportDocument.objects.select_related("passport_version__passport")
+            .only("public_reference", "status", "passport_version__version_number",
+                  "passport_version__passport__public_reference")
             .filter(pdf_sha256=pdf_hash, status=PassportDocument.Status.ISSUED)
             .first()
         )
@@ -26,7 +28,9 @@ class PassportDocumentRepository:
             reference = UUID(str(passport_id))
         except (TypeError, ValueError, AttributeError):
             return None
-        passport = DigitalPassport.objects.select_related("latest_version").filter(
+        passport = DigitalPassport.objects.select_related("latest_version").only(
+            "public_reference", "latest_version__version_number"
+        ).filter(
             public_reference=reference
         ).first()
         if passport is None or passport.latest_version_id is None:

@@ -63,3 +63,6 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
 ]
+
+# Explicit public-verification policy for the synthetic fixed BTU issuer.
+VERIFICATION_TRUSTED_ISSUER_REFERENCES = ['BTU-UNIVERSITY']
