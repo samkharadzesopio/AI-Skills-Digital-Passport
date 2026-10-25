@@ -1,0 +1,783 @@
+{
+  "source": "SIMULATED_BTU_CATALOG",
+  "disclaimer": "All offerings/outcomes are invented for demonstration, not official BTU course approval or enrollment information.",
+  "courses": [
+    {
+      "course_id": "DEMO-DIGITAL-101",
+      "title": "Digital Literacy",
+      "description": "Simulated technical course. Apply and assess digital literacy in practical computing exercises.",
+      "category": "IT",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "DIGITAL_LITERACY",
+          "description": "Apply and assess digital literacy in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [],
+      "interests": [
+        "CLOUD_INFRASTRUCTURE"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Information Technology"
+    },
+    {
+      "course_id": "DEMO-CS-101",
+      "title": "Computer Science Foundations",
+      "description": "Simulated technical course. Apply and assess computational thinking in practical computing exercises.",
+      "category": "PROGRAMMING",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "COMPUTATIONAL_THINKING",
+          "description": "Apply and assess computational thinking in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [],
+      "interests": [
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Computer Science"
+    },
+    {
+      "course_id": "AI-101",
+      "title": "Introduction to Artificial Intelligence",
+      "description": "Simulated technical course. Apply and assess ai literacy in practical computing exercises. Apply and assess ai fundamentals in practical computing exercises.",
+      "category": "ARTIFICIAL_INTELLIGENCE",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "AI_LITERACY",
+          "description": "Apply and assess ai literacy in practical computing exercises."
+        },
+        {
+          "competency": "AI_FUNDAMENTALS",
+          "description": "Apply and assess ai fundamentals in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [],
+      "interests": [
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Artificial Intelligence"
+    },
+    {
+      "course_id": "DEMO-PYTHON-101",
+      "title": "Python Programming",
+      "description": "Simulated technical course. Write and test Python programs using functions, collections and modules. Diagnose program failures using tracebacks and controlled experiments.",
+      "category": "PROGRAMMING",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "PYTHON",
+          "description": "Write and test Python programs using functions, collections and modules."
+        },
+        {
+          "competency": "DEBUGGING",
+          "description": "Diagnose program failures using tracebacks and controlled experiments."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-CS-101"
+      ],
+      "prerequisite_skills": [],
+      "background_skills": [
+        "COMPUTATIONAL_THINKING"
+      ],
+      "interests": [
+        "AI_ENGINEERING",
+        "DATA_SCIENCE",
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Computer Science"
+    },
+    {
+      "course_id": "DEMO-MATH-101",
+      "title": "Mathematics for Computing",
+      "description": "Simulated technical course. Apply and assess linear algebra in practical computing exercises. Apply and assess probability in practical computing exercises.",
+      "category": "MATHEMATICS",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "LINEAR_ALGEBRA",
+          "description": "Apply and assess linear algebra in practical computing exercises."
+        },
+        {
+          "competency": "PROBABILITY",
+          "description": "Apply and assess probability in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [
+        "COMPUTATIONAL_THINKING"
+      ],
+      "interests": [
+        "AI_ENGINEERING",
+        "DATA_SCIENCE"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Mathematics"
+    },
+    {
+      "course_id": "DEMO-DB-101",
+      "title": "Introduction to Databases",
+      "description": "Simulated technical course. Query and update relational data with SQL and integrity constraints. Design normalized relational schemas, keys and referential integrity constraints.",
+      "category": "DATABASES",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "SQL",
+          "description": "Query and update relational data with SQL and integrity constraints."
+        },
+        {
+          "competency": "RELATIONAL_MODELING",
+          "description": "Design normalized relational schemas, keys and referential integrity constraints."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [
+        "COMPUTATIONAL_THINKING"
+      ],
+      "interests": [
+        "SOFTWARE_ENGINEERING",
+        "DATA_SCIENCE"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Information Systems"
+    },
+    {
+      "course_id": "DEMO-NET-101",
+      "title": "Networking Fundamentals",
+      "description": "Simulated technical course. Explain addressing, routing, DNS and transport protocols.",
+      "category": "IT",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "NETWORKING",
+          "description": "Explain addressing, routing, DNS and transport protocols."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [
+        "DIGITAL_LITERACY"
+      ],
+      "interests": [
+        "CYBERSECURITY",
+        "CLOUD_INFRASTRUCTURE"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Information Technology"
+    },
+    {
+      "course_id": "DEMO-OS-101",
+      "title": "Operating Systems Foundations",
+      "description": "Simulated technical course. Explain processes, memory, filesystems and access control. Apply and assess linux in practical computing exercises.",
+      "category": "IT",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "OPERATING_SYSTEMS",
+          "description": "Explain processes, memory, filesystems and access control."
+        },
+        {
+          "competency": "LINUX",
+          "description": "Apply and assess linux in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [
+        "DIGITAL_LITERACY"
+      ],
+      "interests": [
+        "CYBERSECURITY",
+        "CLOUD_INFRASTRUCTURE"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Information Technology"
+    },
+    {
+      "course_id": "DEMO-DS-201",
+      "title": "Data Structures and Algorithms",
+      "description": "Simulated technical course. Choose and implement collections according to their access and update costs. Analyze algorithm correctness and time/space complexity.",
+      "category": "SOFTWARE_ENGINEERING",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "DATA_STRUCTURES",
+          "description": "Choose and implement collections according to their access and update costs."
+        },
+        {
+          "competency": "ALGORITHMS",
+          "description": "Analyze algorithm correctness and time/space complexity."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-PYTHON-101"
+      ],
+      "prerequisite_skills": [
+        "PYTHON"
+      ],
+      "background_skills": [
+        "DEBUGGING"
+      ],
+      "interests": [
+        "SOFTWARE_ENGINEERING",
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Software Engineering"
+    },
+    {
+      "course_id": "DEMO-DATA-201",
+      "title": "Data Analysis with Python",
+      "description": "Simulated technical course. Apply and assess data analysis in practical computing exercises. Apply and assess data visualization in practical computing exercises.",
+      "category": "DATA_SCIENCE",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "DATA_ANALYSIS",
+          "description": "Apply and assess data analysis in practical computing exercises."
+        },
+        {
+          "competency": "DATA_VISUALIZATION",
+          "description": "Apply and assess data visualization in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-PYTHON-101"
+      ],
+      "prerequisite_skills": [
+        "PYTHON"
+      ],
+      "background_skills": [
+        "SQL",
+        "PROBABILITY"
+      ],
+      "interests": [
+        "DATA_SCIENCE",
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Data and Analytics"
+    },
+    {
+      "course_id": "AI-201",
+      "title": "Machine Learning Fundamentals",
+      "description": "Simulated technical course. Train supervised learning models and compare generalization performance. Evaluate models with held-out data, appropriate metrics and leakage checks.",
+      "category": "ARTIFICIAL_INTELLIGENCE",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "MACHINE_LEARNING",
+          "description": "Train supervised learning models and compare generalization performance."
+        },
+        {
+          "competency": "MODEL_EVALUATION",
+          "description": "Evaluate models with held-out data, appropriate metrics and leakage checks."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-PYTHON-101",
+        "DEMO-MATH-101",
+        "AI-101"
+      ],
+      "prerequisite_skills": [
+        "PYTHON",
+        "PROBABILITY",
+        "AI_LITERACY"
+      ],
+      "background_skills": [
+        "DATA_ANALYSIS"
+      ],
+      "interests": [
+        "AI_ENGINEERING",
+        "DATA_SCIENCE"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Artificial Intelligence"
+    },
+    {
+      "course_id": "DEMO-BACKEND-201",
+      "title": "Backend Application Engineering",
+      "description": "Simulated technical course. Implement validated application APIs with persistence and access control. Apply and assess web security in practical computing exercises.",
+      "category": "SOFTWARE_ENGINEERING",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "BACKEND_APIS",
+          "description": "Implement validated application APIs with persistence and access control."
+        },
+        {
+          "competency": "WEB_SECURITY",
+          "description": "Apply and assess web security in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-PYTHON-101",
+        "DEMO-DB-101"
+      ],
+      "prerequisite_skills": [
+        "PYTHON",
+        "SQL"
+      ],
+      "background_skills": [
+        "DEBUGGING"
+      ],
+      "interests": [
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Software Engineering"
+    },
+    {
+      "course_id": "DEMO-CLOUD-201",
+      "title": "Cloud Computing Foundations",
+      "description": "Simulated technical course. Deploy compute, storage and network resources using cloud service models. Manage least-privilege identities and access boundaries for cloud resources.",
+      "category": "CLOUD",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "CLOUD_COMPUTING",
+          "description": "Deploy compute, storage and network resources using cloud service models."
+        },
+        {
+          "competency": "CLOUD_IDENTITY",
+          "description": "Manage least-privilege identities and access boundaries for cloud resources."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-NET-101",
+        "DEMO-OS-101"
+      ],
+      "prerequisite_skills": [
+        "NETWORKING",
+        "LINUX"
+      ],
+      "background_skills": [
+        "PYTHON"
+      ],
+      "interests": [
+        "CLOUD_INFRASTRUCTURE",
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Computing Infrastructure"
+    },
+    {
+      "course_id": "DEMO-SEC-201",
+      "title": "Cybersecurity Fundamentals",
+      "description": "Simulated technical course. Identify threats, trust boundaries and mitigations for a computing system. Apply authentication, authorization and defense-in-depth controls to practical scenarios.",
+      "category": "CYBERSECURITY",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "THREAT_MODELING",
+          "description": "Identify threats, trust boundaries and mitigations for a computing system."
+        },
+        {
+          "competency": "SECURITY_CONTROLS",
+          "description": "Apply authentication, authorization and defense-in-depth controls to practical scenarios."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-NET-101",
+        "DEMO-OS-101"
+      ],
+      "prerequisite_skills": [
+        "NETWORKING",
+        "OPERATING_SYSTEMS"
+      ],
+      "background_skills": [
+        "DEBUGGING"
+      ],
+      "interests": [
+        "CYBERSECURITY"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Information Security"
+    },
+    {
+      "course_id": "DEMO-TEST-201",
+      "title": "Software Testing and Quality",
+      "description": "Simulated technical course. Apply and assess automated testing in practical computing exercises. Apply and assess test design in practical computing exercises.",
+      "category": "SOFTWARE_ENGINEERING",
+      "difficulty": "INTERMEDIATE",
+      "learning_outcomes": [
+        {
+          "competency": "AUTOMATED_TESTING",
+          "description": "Apply and assess automated testing in practical computing exercises."
+        },
+        {
+          "competency": "TEST_DESIGN",
+          "description": "Apply and assess test design in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-PYTHON-101"
+      ],
+      "prerequisite_skills": [
+        "PYTHON"
+      ],
+      "background_skills": [
+        "DEBUGGING"
+      ],
+      "interests": [
+        "SOFTWARE_ENGINEERING",
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 3,
+      "available": true,
+      "department": "Software Engineering"
+    },
+    {
+      "course_id": "DEMO-GIT-101",
+      "title": "Version Control and Team Development",
+      "description": "Simulated technical course. Track changes, review branches and resolve integration conflicts with Git. Apply and assess code review in practical computing exercises.",
+      "category": "SOFTWARE_ENGINEERING",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "VERSION_CONTROL",
+          "description": "Track changes, review branches and resolve integration conflicts with Git."
+        },
+        {
+          "competency": "CODE_REVIEW",
+          "description": "Apply and assess code review in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-CS-101"
+      ],
+      "prerequisite_skills": [],
+      "background_skills": [
+        "COMPUTATIONAL_THINKING"
+      ],
+      "interests": [
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": true,
+      "department": "Software Engineering"
+    },
+    {
+      "course_id": "DEMO-DATAENG-301",
+      "title": "Data Engineering",
+      "description": "Simulated technical course. Build repeatable ingestion and transformation pipelines with retries and data lineage. Detect missing, inconsistent and duplicate data with explicit validation rules.",
+      "category": "DATA_SCIENCE",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "DATA_PIPELINES",
+          "description": "Build repeatable ingestion and transformation pipelines with retries and data lineage."
+        },
+        {
+          "competency": "DATA_QUALITY",
+          "description": "Detect missing, inconsistent and duplicate data with explicit validation rules."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-DATA-201",
+        "DEMO-DB-101"
+      ],
+      "prerequisite_skills": [
+        "PYTHON",
+        "SQL",
+        "DATA_ANALYSIS"
+      ],
+      "background_skills": [
+        "CLOUD_COMPUTING"
+      ],
+      "interests": [
+        "DATA_SCIENCE",
+        "CLOUD_INFRASTRUCTURE"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Data and Analytics"
+    },
+    {
+      "course_id": "DEMO-DEEP-301",
+      "title": "Deep Learning",
+      "description": "Simulated technical course. Construct neural network layers, objectives and optimization procedures. Train and assess deep models with regularization and appropriate validation.",
+      "category": "ARTIFICIAL_INTELLIGENCE",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "NEURAL_NETWORKS",
+          "description": "Construct neural network layers, objectives and optimization procedures."
+        },
+        {
+          "competency": "DEEP_LEARNING",
+          "description": "Train and assess deep models with regularization and appropriate validation."
+        }
+      ],
+      "prerequisite_courses": [
+        "AI-201",
+        "DEMO-DS-201"
+      ],
+      "prerequisite_skills": [
+        "MACHINE_LEARNING",
+        "LINEAR_ALGEBRA",
+        "PYTHON"
+      ],
+      "background_skills": [
+        "MODEL_EVALUATION"
+      ],
+      "interests": [
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Artificial Intelligence"
+    },
+    {
+      "course_id": "AI-301",
+      "title": "Applied Generative AI",
+      "description": "Simulated technical course. Apply and assess generative ai in practical computing exercises. Apply and assess prompt engineering in practical computing exercises.",
+      "category": "ARTIFICIAL_INTELLIGENCE",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "GENERATIVE_AI",
+          "description": "Apply and assess generative ai in practical computing exercises."
+        },
+        {
+          "competency": "PROMPT_ENGINEERING",
+          "description": "Apply and assess prompt engineering in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "AI-201"
+      ],
+      "prerequisite_skills": [
+        "MACHINE_LEARNING",
+        "MODEL_EVALUATION"
+      ],
+      "background_skills": [
+        "BACKEND_APIS"
+      ],
+      "interests": [
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Artificial Intelligence"
+    },
+    {
+      "course_id": "DEMO-DEVOPS-301",
+      "title": "Cloud Deployment and Reliability",
+      "description": "Simulated technical course. Automate repeatable builds, tests and controlled deployment workflows. Use metrics, logs and traces to diagnose service reliability issues. Apply and assess containers in practical computing exercises.",
+      "category": "CLOUD",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "CI_CD",
+          "description": "Automate repeatable builds, tests and controlled deployment workflows."
+        },
+        {
+          "competency": "OBSERVABILITY",
+          "description": "Use metrics, logs and traces to diagnose service reliability issues."
+        },
+        {
+          "competency": "CONTAINERS",
+          "description": "Apply and assess containers in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-CLOUD-201",
+        "DEMO-BACKEND-201"
+      ],
+      "prerequisite_skills": [
+        "CLOUD_COMPUTING",
+        "BACKEND_APIS"
+      ],
+      "background_skills": [
+        "AUTOMATED_TESTING"
+      ],
+      "interests": [
+        "CLOUD_INFRASTRUCTURE",
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Computing Infrastructure"
+    },
+    {
+      "course_id": "DEMO-SEC-301",
+      "title": "Secure Software Engineering",
+      "description": "Simulated technical course. Apply and assess secure design in practical computing exercises. Apply and assess security testing in practical computing exercises.",
+      "category": "CYBERSECURITY",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "SECURE_DESIGN",
+          "description": "Apply and assess secure design in practical computing exercises."
+        },
+        {
+          "competency": "SECURITY_TESTING",
+          "description": "Apply and assess security testing in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-SEC-201",
+        "DEMO-BACKEND-201"
+      ],
+      "prerequisite_skills": [
+        "THREAT_MODELING",
+        "BACKEND_APIS"
+      ],
+      "background_skills": [
+        "AUTOMATED_TESTING"
+      ],
+      "interests": [
+        "CYBERSECURITY",
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Information Security"
+    },
+    {
+      "course_id": "DEMO-DB-301",
+      "title": "Database Performance and Transactions",
+      "description": "Simulated technical course. Interpret database query plans and choose indexes for measured workloads. Design atomic transactions and reason about concurrency and isolation.",
+      "category": "DATABASES",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "QUERY_OPTIMIZATION",
+          "description": "Interpret database query plans and choose indexes for measured workloads."
+        },
+        {
+          "competency": "TRANSACTION_DESIGN",
+          "description": "Design atomic transactions and reason about concurrency and isolation."
+        }
+      ],
+      "prerequisite_courses": [
+        "DEMO-DB-101",
+        "DEMO-DS-201"
+      ],
+      "prerequisite_skills": [
+        "SQL",
+        "DATA_STRUCTURES"
+      ],
+      "background_skills": [
+        "BACKEND_APIS"
+      ],
+      "interests": [
+        "SOFTWARE_ENGINEERING",
+        "DATA_SCIENCE"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Information Systems"
+    },
+    {
+      "course_id": "DEMO-MLDEPLOY-301",
+      "title": "Applied AI Systems",
+      "description": "Simulated technical course. Apply and assess model serving in practical computing exercises. Apply and assess ai monitoring in practical computing exercises.",
+      "category": "ARTIFICIAL_INTELLIGENCE",
+      "difficulty": "ADVANCED",
+      "learning_outcomes": [
+        {
+          "competency": "MODEL_SERVING",
+          "description": "Apply and assess model serving in practical computing exercises."
+        },
+        {
+          "competency": "AI_MONITORING",
+          "description": "Apply and assess ai monitoring in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [
+        "AI-201",
+        "DEMO-BACKEND-201"
+      ],
+      "prerequisite_skills": [
+        "MACHINE_LEARNING",
+        "BACKEND_APIS"
+      ],
+      "background_skills": [
+        "CLOUD_COMPUTING"
+      ],
+      "interests": [
+        "AI_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 5,
+      "available": true,
+      "department": "Artificial Intelligence"
+    },
+    {
+      "course_id": "DEMO-RETIRED-101",
+      "title": "Historical Computing Seminar",
+      "description": "Simulated technical course. Apply and assess computing history in practical computing exercises.",
+      "category": "IT",
+      "difficulty": "FOUNDATION",
+      "learning_outcomes": [
+        {
+          "competency": "COMPUTING_HISTORY",
+          "description": "Apply and assess computing history in practical computing exercises."
+        }
+      ],
+      "prerequisite_courses": [],
+      "prerequisite_skills": [],
+      "background_skills": [],
+      "interests": [
+        "SOFTWARE_ENGINEERING"
+      ],
+      "credits": 6,
+      "suggested_semester": 1,
+      "available": false,
+      "department": "Information Technology"
+    }
+  ]
+}
