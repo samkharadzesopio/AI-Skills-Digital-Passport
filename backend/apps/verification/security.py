@@ -15,7 +15,7 @@ from .document_service import MAX_PDF_SIZE
 
 class UploadTooLarge(APIException):
     status_code = 413
-    default_detail = 'Verification upload exceeds the size limit.'
+    default_detail = 'Upload exceeds the size limit.'
 
 
 class VerificationThrottle(BaseThrottle):

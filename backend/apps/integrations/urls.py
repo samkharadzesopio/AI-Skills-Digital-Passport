@@ -44,3 +44,9 @@ urlpatterns += [
     path('classroom/events/', ClassroomSyncHistoryView.as_view(), name='classroom-sync-history'),
     path('classroom/events/<uuid:event_id>/retry/', ClassroomSyncRetryView.as_view(), name='classroom-sync-retry'),
 ]
+
+from .views import ImportHistoryView, ImportRetryView
+urlpatterns += [
+    path('imports/', ImportHistoryView.as_view(), name='completion-import-history'),
+    path('imports/events/<uuid:event_id>/retry/', ImportRetryView.as_view(), name='completion-import-retry'),
+]

@@ -46,9 +46,8 @@ def read_google_sheet(
                 "Google Sheets credentials not configured"
             )
 
-        client = gspread.service_account(
-            filename=credentials_path
-        )
+        client = gspread.service_account(filename=credentials_path)
+        client.set_timeout(10)
 
     spreadsheet = client.open_by_key(spreadsheet_id)
     worksheet = spreadsheet.worksheet(worksheet_name)
@@ -61,6 +60,8 @@ def read_google_sheet(
             "Google Sheet is empty"
         )
 
+    if any(sum(len(str(cell)) for cell in row) > 16384 for row in rows):
+        raise ImportValidationError('Sheet row exceeds processing limit')
     headers = [
         str(value).strip()
         for value in rows[0]

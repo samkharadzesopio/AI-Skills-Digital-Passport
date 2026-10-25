@@ -26,6 +26,8 @@ def process_completion_import(
     source,
     award_func=None,
     course_repository=None,
+    actor=None,
+    run=None,
 ):
     """
     Process completion records from an already
@@ -38,6 +40,10 @@ def process_completion_import(
         raise ImportValidationError(
             "Unsupported import source"
         )
+
+    if award_func is None:
+        from .durable import process_import
+        return process_import(records, source=source, actor=actor, run=run)
 
     award_func = (
         award_func
@@ -130,7 +136,7 @@ def process_completion_import(
             result["errors"].append({
                 "row": row_number,
                 "type": type(exc).__name__,
-                "message": str(exc),
+                "message": "Completion processing failed.",
             })
 
     return result

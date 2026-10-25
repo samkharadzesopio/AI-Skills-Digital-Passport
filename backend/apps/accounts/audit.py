@@ -13,15 +13,18 @@ class AuditedAPIView(APIView):
             ip_digest=security_digest('security.audit.ip', normalize_client_ip(request.META.get('REMOTE_ADDR'))),
         )
 
+    def should_audit(self, request):
+        return request.method not in ('GET', 'HEAD', 'OPTIONS')
+
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
-        if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        if self.should_audit(request):
             self.audit_record = self._audit(request)
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super().finalize_response(request, response, *args, **kwargs)
         response['Cache-Control'] = 'no-store'
-        if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        if self.should_audit(request):
             row = getattr(self, 'audit_record', None) or self._audit(request)
             SecurityAudit.objects.filter(pk=row.pk).update(status_code=response.status_code)
         return response

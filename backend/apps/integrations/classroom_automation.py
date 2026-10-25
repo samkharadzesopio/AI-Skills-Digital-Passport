@@ -45,9 +45,9 @@ def fingerprint(payload):
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
-def idempotency_key(event_id):
-    return 'classroom:v1:' + hashlib.sha256(
-        json.dumps([SOURCE, event_id], separators=(',', ':')).encode()
+def idempotency_key(event_id, source=SOURCE):
+    return ('classroom:v1:' if source == SOURCE else 'completion:v1:') + hashlib.sha256(
+        json.dumps([source, event_id], separators=(',', ':')).encode()
     ).hexdigest()
 
 
@@ -65,11 +65,18 @@ def configured_issuer():
     return ref
 
 
+def require_source(source):
+    if source == SOURCE:
+        return
+    approved = getattr(settings, 'BTU_AUTHORIZED_COMPLETION_SOURCES', ())
+    if source not in ('BTU_EXCEL', 'BTU_GOOGLE_SHEETS') or not isinstance(approved, (list, tuple)) or source not in approved:
+        raise RecognitionError('UNAUTHORIZED_INSTITUTIONAL_SOURCE')
+
+
 def recognize(record):
     if not isinstance(record, dict):
         raise RecognitionError('INVALID_PAYLOAD')
-    if record.get('source', SOURCE) != SOURCE:
-        raise RecognitionError('UNTRUSTED_SOURCE')
+    require_source(record.get('source', SOURCE))
     normalized = validate_completion_record({
         **record,
         'external_student_id': record.get('student_id'),
@@ -101,18 +108,19 @@ def recognize(record):
 
 
 @transaction.atomic
-def receive(record, *, actor=None):
+def receive(record, *, actor=None, source=SOURCE):
     require_postgres()
     if not isinstance(record, dict):
         raise RecognitionError('INVALID_PAYLOAD')
-    if record.get('source', SOURCE) != SOURCE:
+    require_source(source)
+    if record.get('source', source) != source:
         raise RecognitionError('UNTRUSTED_SOURCE')
     event_id = record.get('event_id')
     if not isinstance(event_id, str) or not event_id or event_id != event_id.strip() or len(event_id) > 120:
         raise RecognitionError('INVALID_EVENT_ID')
     hashed = fingerprint(record)
     event, _ = Event.objects.get_or_create(
-        source=SOURCE, source_event_id=event_id,
+        source=source, source_event_id=event_id,
         defaults={'payload': record, 'payload_sha256': hashed, 'requested_by': actor},
     )
     if event.payload_sha256 != hashed:
@@ -145,8 +153,8 @@ def _record_achievements(event_id, force):
         try:
             with transaction.atomic():
                 mapping, issuer = _validate_frozen(event)
-                award_classroom_skills(event.payload, mapping['skill_codes'])
-                source_event = AchievementSourceEvent.objects.get(source=SOURCE, source_event_id=event.source_event_id)
+                award_classroom_skills(event.payload, mapping['skill_codes'], source=event.source)
+                source_event = AchievementSourceEvent.objects.get(source=event.source, source_event_id=event.source_event_id)
         except Exception as exc:
             _set_failure(event, exc)
             event.save()
@@ -189,8 +197,8 @@ def process_event(event_id, *, force=False):
             _validate_frozen(event)
             # Always replay the achievement service: it validates receipt contents,
             # and returns the same UUIDs after a prior partial completion.
-            outcome = award_classroom_skills(event.payload, event.mapping_snapshot['skill_codes'])
-            key = idempotency_key(event.source_event_id)
+            outcome = award_classroom_skills(event.payload, event.mapping_snapshot['skill_codes'], source=event.source)
+            key = idempotency_key(event.source_event_id, event.source)
             existed = Credential.objects.filter(issuer_reference=event.issuer_reference, idempotency_key=key).exists()
             event.credential = issue_credential(
                 issuer_reference=event.issuer_reference, idempotency_key=key,
@@ -233,6 +241,8 @@ class ClassroomCredentialAutomation:
             result['processed'] += 1
             event_id = None
             try:
+                if isinstance(record, dict) and record.get('source', SOURCE) != SOURCE:
+                    raise RecognitionError('UNTRUSTED_CLASSROOM_PROVENANCE')
                 if dry_run:
                     recognize(record)
                     configured_issuer()
