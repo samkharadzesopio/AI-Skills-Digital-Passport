@@ -1,4 +1,5 @@
 
+import math
 from datetime import date, datetime
 
 
@@ -18,7 +19,7 @@ REQUIRED_FIELDS = (
 
 
 def validate_completion_record(record):
-    """Validate a spreadsheet completion record."""
+    """Validate and normalize a completion record."""
 
     if not isinstance(record, dict):
         raise ImportValidationError(
@@ -35,19 +36,27 @@ def validate_completion_record(record):
             f"Missing fields: {', '.join(missing)}"
         )
 
-    student_id = str(
-        record["external_student_id"]
-    ).strip()
+    identifiers = {}
 
-    course_id = str(record["course_id"]).strip()
-    event_id = str(
-        record["source_event_id"]
-    ).strip()
+    for field in (
+        "external_student_id",
+        "course_id",
+        "source_event_id",
+    ):
+        value = record[field]
 
-    if not student_id or not course_id or not event_id:
-        raise ImportValidationError(
-            "Student, course and event IDs are required"
-        )
+        if (
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            or len(value) > 120
+            or any(ord(char) < 32 for char in value)
+        ):
+            raise ImportValidationError(
+                f"Invalid {field}"
+            )
+
+        identifiers[field] = value
 
     if record["completion_status"] != "completed":
         raise ImportValidationError(
@@ -64,10 +73,11 @@ def validate_completion_record(record):
     if (
         isinstance(grade, bool)
         or not isinstance(grade, (int, float))
+        or not math.isfinite(grade)
         or not 0 <= grade <= 100
     ):
         raise ImportValidationError(
-            "Grade must be between 0 and 100"
+            "Grade must be a finite number between 0 and 100"
         )
 
     completion_date = record["completion_date"]
@@ -84,15 +94,16 @@ def validate_completion_record(record):
                 "Invalid completion date"
             ) from exc
 
-    if not isinstance(completion_date, date):
+    if (
+        not isinstance(completion_date, date)
+        or completion_date > date.today()
+    ):
         raise ImportValidationError(
-            "Completion date is required"
+            "Invalid or future completion date"
         )
 
     return {
-        "external_student_id": student_id,
-        "course_id": course_id,
-        "source_event_id": event_id,
+        **identifiers,
         "completion_status": "completed",
         "passed": True,
         "grade": grade,
