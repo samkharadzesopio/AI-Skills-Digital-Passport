@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.students.apps.StudentsConfig',
     'apps.skills.apps.SkillsConfig',
     'apps.credentials.apps.CredentialsConfig',
+    'apps.passports.apps.PassportsConfig',
 ]
 
 MIDDLEWARE = [
