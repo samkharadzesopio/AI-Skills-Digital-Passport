@@ -18,3 +18,21 @@ urlpatterns += [
         name="classroom-sync",
     ),
 ]
+
+from .views import (
+    AdminExcelImportView,
+    AdminGoogleSheetsImportView,
+)
+
+urlpatterns += [
+    path(
+        "import/excel/",
+        AdminExcelImportView.as_view(),
+        name="admin-excel-import",
+    ),
+    path(
+        "import/google-sheets/",
+        AdminGoogleSheetsImportView.as_view(),
+        name="admin-google-sheets-import",
+    ),
+]

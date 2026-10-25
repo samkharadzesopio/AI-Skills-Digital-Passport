@@ -1,19 +1,30 @@
 
 [
-    {
-      "course_id": "AI-101",
-      "course_name": "Introduction to Artificial Intelligence",
-      "minimum_grade": 51
-    },
-    {
-      "course_id": "AI-201",
-      "course_name": "Machine Learning Fundamentals",
-      "minimum_grade": 51
-    },
-    {
-      "course_id": "AI-301",
-      "course_name": "Applied Generative AI",
-      "minimum_grade": 51
-    }
-  ]
-  
+  {
+    "course_id": "AI-101",
+    "course_name": "Introduction to Artificial Intelligence",
+    "minimum_grade": 51,
+    "skill_codes": [
+      "AI_LITERACY",
+      "AI_FUNDAMENTALS"
+    ]
+  },
+  {
+    "course_id": "AI-201",
+    "course_name": "Machine Learning Fundamentals",
+    "minimum_grade": 51,
+    "skill_codes": [
+      "MACHINE_LEARNING",
+      "DATA_ANALYSIS"
+    ]
+  },
+  {
+    "course_id": "AI-301",
+    "course_name": "Applied Generative AI",
+    "minimum_grade": 51,
+    "skill_codes": [
+      "GENERATIVE_AI",
+      "PROMPT_ENGINEERING"
+    ]
+  }
+]
