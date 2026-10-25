@@ -7,7 +7,7 @@ import pymupdf as fitz
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE = BASE_DIR / "templates" / "Passport_Blank.pdf"
-RENDERER_VERSION = "pymupdf-template-v1"
+RENDERER_VERSION = "pymupdf-template-v2-subcategory"
 
 STAMP_FILES = {
     "FOCUSED": BASE_DIR / "stamps" / "ai_skill.png",
@@ -70,7 +70,8 @@ def _render_skill_cards(document, skills):
             fontsize=8,
             align=fitz.TEXT_ALIGN_CENTER,
         )
-        label = f"{_text(skill['category'], 40)} / {_text(skill['level'], 20)}"
+        classification = " / ".join(filter(None, [skill["category"], skill.get("subcategory", "")]))
+        label = f"{_text(classification, 60)} / {_text(skill['level'], 20)}"
         _insert_box(
             page,
             fitz.Rect(x, y + 22, x + 125, y + 44),

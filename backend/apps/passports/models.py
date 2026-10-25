@@ -110,6 +110,7 @@ class PassportVersionSkill(models.Model):
     skill_code = models.CharField(max_length=100)
     skill_name = models.CharField(max_length=250)
     category = models.CharField(max_length=150)
+    subcategory = models.CharField(max_length=150, blank=True, default="", db_default="")
     description = models.TextField()
     stamp_type = models.CharField(max_length=30)
     badge_asset_id = models.CharField(max_length=150)

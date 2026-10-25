@@ -53,7 +53,9 @@ class ClassroomAutomationTests(TransactionTestCase):
         self.assertEqual(event.credential.achievements.count(), 2)
         self.assertEqual(CredentialLifecycleEvent.objects.get().event_type, 'ISSUED')
         from apps.passports.models import DigitalPassport
-        self.assertFalse(DigitalPassport.objects.exists())  # No duplicate Passport orchestration.
+        # The credential lifecycle callback publishes exactly one unified Passport.
+        self.assertEqual(DigitalPassport.objects.count(), 1)
+        self.assertEqual(DigitalPassport.objects.get().versions.count(), 1)
 
     def test_unknown_student_is_durably_failed(self):
         self.assertEqual(self.sync(student_id='UNKNOWN')['failed'], 1)

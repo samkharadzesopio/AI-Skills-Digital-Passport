@@ -219,7 +219,7 @@ class PassportServiceTests(PassportDataMixin, TestCase):
             with self.captureOnCommitCallbacks(execute=True) as callbacks:
                 schedule_passport_update_for_credential_event(lifecycle_event_id=event.pk)
         self.assertEqual(len(callbacks), 1)
-        process.assert_called_once_with(refresh.pk)
+        process.assert_called_once_with(refresh_id=refresh.pk)
         self.assertEqual(
             refresh.status,
             "PENDING",
@@ -330,7 +330,9 @@ class PassportConcurrencyTests(PassportDataMixin, TransactionTestCase):
             results = list(pool.map(lambda _: publish_one(), range(2)))
         self.assertEqual(results[0], results[1])
         self.assertEqual(PassportVersion.objects.count(), 1)
-        self.assertEqual(PassportUpdateEvent.objects.count(), 1)
+        # One lifecycle receipt plus one receipt for the concurrent logical event.
+        self.assertEqual(PassportUpdateEvent.objects.filter(event_key="CONCURRENT-EVENT").count(), 1)
+        self.assertEqual(PassportUpdateEvent.objects.count(), 2)
 
 
 class PassportScaleTests(TestCase):

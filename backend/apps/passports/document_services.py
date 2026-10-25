@@ -159,6 +159,7 @@ def _render_context(version):
             {
                 "name": skill.skill_name,
                 "category": skill.category,
+                "subcategory": skill.subcategory,
                 "level": skill.get_stamp_type_display()
                 if hasattr(skill, "get_stamp_type_display")
                 else skill.stamp_type.title(),
