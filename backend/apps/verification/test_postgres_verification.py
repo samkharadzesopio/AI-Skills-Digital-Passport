@@ -69,6 +69,8 @@ class PostgreSQLVerificationTests(DocumentDataMixin, TransactionTestCase):
             lookup.return_value.values.return_value.first.return_value = row
             record = PostgreSQLCredentialRepository().get_by_id(self.credential.public_reference)
         self.assertFalse(record['issuer_trusted'])
+        self.assertEqual(record['status'], 'ISSUED')
+        self.assertEqual(record['issued_at'], self.credential.issued_at.isoformat())
 
     def test_expiry_and_future_issue_time(self):
         # Existing immutable facts stay unchanged; injected clock tests time semantics.
@@ -100,7 +102,7 @@ class PostgreSQLVerificationTests(DocumentDataMixin, TransactionTestCase):
         self.assertNotIn(self.student.email, result.content.decode())
         from apps.passports.models import PassportDocument
         self.assertEqual(PassportDocument.objects.count(), 1)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             self.assertEqual(DocumentVerificationService().verify(SimpleUploadedFile('x.pdf', content, content_type='application/pdf'))['status'], 'VALID')
 
     def test_historical_pdf_tamper_and_corruption(self):

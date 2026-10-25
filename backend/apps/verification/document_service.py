@@ -79,6 +79,19 @@ class DocumentVerificationService:
                 "Document issuance is not confirmed."
             )
 
+        if isinstance(self.repository, PassportDocumentRepository):
+            from .passport_service import PassportVerificationService
+            current = PassportVerificationService().verify(document['passport_id'], number=document["version_number"])
+            status = current['status']
+            if status == 'NOT_FOUND':
+                status = 'UNVERIFIABLE'
+            result = self._result(status, 'Registered document integrity and current credential status checked.',
+                                  authentic=True, version=current["passport_version"], latest_version=current["latest_version"])
+            result.update(credential_status=current['credential_status'], credential_counts=current['credential_counts'])
+            # Version currency and credential validity are independent facts.
+            result['is_latest'] = current['is_latest']
+            return result
+
         passport = self.repository.get_passport(
             document["passport_id"]
         )
@@ -105,23 +118,10 @@ class DocumentVerificationService:
             )
 
         if version < latest:
-            return self._result(
-                "OUTDATED",
-                "Authentic PDF, but a newer issued "
-                "passport version exists.",
-                authentic=True,
-                version=version,
-                latest_version=latest,
-            )
-
-        return self._result(
-            "VALID",
-            "Registered PDF matches the latest issued passport version. "
-            "Credential validity is checked separately.",
-            authentic=True,
-            version=version,
-            latest_version=latest,
-        )
+            return self._result('OUTDATED', 'Authentic PDF, but a newer issued passport version exists.',
+                                authentic=True, version=version, latest_version=latest)
+        return self._result('VALID', 'Registered PDF matches the latest issued passport version.',
+                            authentic=True, version=version, latest_version=latest)
 
     def _result(
         self, status,
@@ -132,6 +132,8 @@ class DocumentVerificationService:
     ):
         return {
             "status": status,
+            "credential_status": "UNVERIFIABLE",
+            "credential_counts": {},
             "authentic": authentic,
             "is_latest": (
                 status == "VALID"

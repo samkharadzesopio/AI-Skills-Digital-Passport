@@ -17,6 +17,9 @@ class CredentialVerificationView(APIView):
     def finalize_response(self, request, response, *args, **kwargs):
         response = super().finalize_response(request, response, *args, **kwargs)
         response['Cache-Control'] = 'no-store'
+        if response.status_code in (400, 413, 429):
+            import logging
+            logging.getLogger(__name__).warning('Public verification rejected: scope=%s status=%s', self.verification_scope, response.status_code)
         return response
 
     def get(self, request, credential_id):
@@ -50,6 +53,9 @@ class DocumentVerificationView(APIView):
     def finalize_response(self, request, response, *args, **kwargs):
         response = super().finalize_response(request, response, *args, **kwargs)
         response['Cache-Control'] = 'no-store'
+        if response.status_code in (400, 413, 429):
+            import logging
+            logging.getLogger(__name__).warning('Public verification rejected: scope=%s status=%s', self.verification_scope, response.status_code)
         return response
 
     def post(self, request):
@@ -78,3 +84,18 @@ class DocumentVerificationView(APIView):
             response_serializer.data,
             status=status.HTTP_200_OK,
         )
+
+
+class PassportVerificationView(CredentialVerificationView):
+    verification_scope = 'passport'
+    reference_kind = 'passport'
+
+    def get(self, request, verification_reference):
+        from .passport_service import PassportVerificationService
+        from .serializers import PassportVerificationSerializer
+        result = PassportVerificationService().verify(verification_reference, kind=self.reference_kind)
+        return Response(PassportVerificationSerializer(result).data)
+
+
+class PassportVersionVerificationView(PassportVerificationView):
+    reference_kind = 'version'

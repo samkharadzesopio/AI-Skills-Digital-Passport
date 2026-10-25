@@ -98,14 +98,14 @@ necessary; application audit data is not tamper-proof against a database owner.
 - The shared worker refreshes the Passport after issuance/revocation, retries after
   interruption, and schedules bounded expiration refreshes without stale latest.
 - Generated PDF verifies by bytes; a changed upload is unverifiable, a prior version
-  is outdated. PDF integrity/latest status is separate from current credential validity.
+  is outdated. PDF authenticity/latest fields remain separate from the aggregate current credential status; revoked/expired contents cannot report overall VALID.
 - Public verification works with no account or stale cookies; per-IP rate limits,
   upload limits, no-store headers and response privacy hold behind the actual gateway.
 
 Local synthetic tests do not establish any of these live-service results. Stop on
 an unexplained failure; do not deploy or merge merely because a preflight passed.
 
-## Final local validation
+## Earlier rollout validation (before f8057c5)
 
 The final combined PostgreSQL run passed 364 tests (366 discovered; two existing
 legacy schema comparisons excluded). Django system checks and
@@ -117,3 +117,5 @@ Passport PDF and public verification passed. The 5,000-student identity test ran
 not a concurrent-user or production-throughput measurement. No HTTP load test,
 production-settings deployment check, live SMTP/Google/Classroom access, or shared
 Neon migration was performed during this checkpoint.
+
+Current verification validation: 379 tests passed (381 discovered, two legacy comparisons explicitly excluded). See backend/apps/verification/docs/PERFORMANCE.md for current measurements and INTEGRATION_REVIEW.md for status/API compatibility.

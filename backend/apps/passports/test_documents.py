@@ -326,7 +326,9 @@ class PassportDocumentServiceTests(DocumentDataMixin, TransactionTestCase):
                 content_type="application/pdf",
             )
         )
-        self.assertEqual(old_result["status"], "OUTDATED")
+        self.assertEqual(old_result["status"], "REVOKED")
+        self.assertTrue(old_result["authentic"])
+        self.assertFalse(old_result["is_latest"])
 
 
 class PassportDocumentIntegrityTests(DocumentDataMixin, TransactionTestCase):

@@ -16,12 +16,19 @@ class CredentialVerificationService:
 
     def verify(self, credential_id):
         record = self.repository.get_by_id(credential_id)
+        return self.verify_record(record, credential_id)
 
+    def verify_record(self, record, credential_id=None):
+        """Evaluate an already-fetched record without additional database lookups."""
         if record is None:
             return self._result(credential_id, "NOT_FOUND")
 
         if record.get("issuer_trusted") is not True:
             return self._result(credential_id, "INVALID")
+
+        native = record.get('_credential')
+        if native is not None:
+            return self._result(credential_id, native.verification_status_at(self.clock()))
 
         if record.get("status") == "REVOKED":
             return self._result(credential_id, "REVOKED")

@@ -17,6 +17,8 @@ class DocumentVerificationResultSerializer(
             "OUTDATED",
             "INVALID",
             "UNVERIFIABLE",
+            "REVOKED",
+            "EXPIRED",
         ]
     )
     authentic = serializers.BooleanField()
@@ -31,3 +33,6 @@ class DocumentVerificationResultSerializer(
     )
     message = serializers.CharField()
     source = serializers.CharField()
+
+    credential_status = serializers.ChoiceField(choices=['VALID', 'REVOKED', 'EXPIRED', 'INVALID', 'UNVERIFIABLE'])
+    credential_counts = serializers.DictField(child=serializers.IntegerField(min_value=0))
