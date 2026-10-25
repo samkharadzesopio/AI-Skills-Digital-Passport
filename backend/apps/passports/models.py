@@ -172,3 +172,137 @@ class PassportUpdateEvent(models.Model):
                 name="chk_passport_update_hash",
             ),
         ]
+
+
+class PassportDocument(models.Model):
+    """Metadata and durable generation state for one stored PDF artifact."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        GENERATING = "GENERATING", "Generating"
+        ISSUED = "ISSUED", "Issued"
+        FAILED = "FAILED", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    passport_version = models.ForeignKey(
+        PassportVersion,
+        on_delete=models.PROTECT,
+        related_name="documents",
+    )
+    generation_number = models.PositiveIntegerField()
+    renderer_version = models.CharField(max_length=50)
+    request_sha256 = models.CharField(max_length=64)
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    storage_key = models.CharField(max_length=500, blank=True, default="")
+    attempt_storage_key = models.CharField(max_length=500, blank=True, default="")
+    pdf_sha256 = models.CharField(max_length=64, blank=True, default="")
+    byte_size = models.PositiveIntegerField(null=True, blank=True)
+    generated_at = models.DateTimeField(null=True, blank=True)
+    lease_token = models.UUIDField(null=True, blank=True)
+    lease_expires_at = models.DateTimeField(null=True, blank=True)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    error_code = models.CharField(max_length=100, blank=True, default="")
+    error_message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
+    updated_at = models.DateTimeField(auto_now=True, db_default=Now())
+
+    class Meta:
+        db_table = "passport_documents"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["passport_version", "generation_number"],
+                name="uq_passport_document_generation",
+            ),
+            models.UniqueConstraint(
+                fields=["passport_version", "request_sha256"],
+                name="uq_passport_document_request",
+            ),
+            models.UniqueConstraint(
+                fields=["storage_key"],
+                condition=~models.Q(storage_key=""),
+                name="uq_passport_document_storage_key",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(generation_number__gt=0),
+                name="chk_passport_document_generation",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(request_sha256__regex=r"^[0-9a-f]{64}$"),
+                name="chk_passport_document_request_hash",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    status__in=["PENDING", "GENERATING", "ISSUED", "FAILED"]
+                ),
+                name="chk_passport_document_status",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="PENDING",
+                        storage_key="",
+                        attempt_storage_key="",
+                        pdf_sha256="",
+                        byte_size__isnull=True,
+                        generated_at__isnull=True,
+                        lease_token__isnull=True,
+                        lease_expires_at__isnull=True,
+                        attempt_count=0,
+                        error_code="",
+                        error_message="",
+                    )
+                    | models.Q(
+                        status="GENERATING",
+                        storage_key="",
+                        pdf_sha256="",
+                        byte_size__isnull=True,
+                        generated_at__isnull=True,
+                        lease_token__isnull=False,
+                        lease_expires_at__isnull=False,
+                        attempt_count__gt=0,
+                        error_code="",
+                        error_message="",
+                    )
+                    | models.Q(
+                        status="ISSUED",
+                        storage_key=models.F("attempt_storage_key"),
+                        pdf_sha256__regex=r"^[0-9a-f]{64}$",
+                        byte_size__gt=0,
+                        generated_at__isnull=False,
+                        lease_token__isnull=True,
+                        lease_expires_at__isnull=True,
+                        error_code="",
+                        error_message="",
+                    )
+                    | models.Q(
+                        status="FAILED",
+                        storage_key="",
+                        pdf_sha256="",
+                        byte_size__isnull=True,
+                        generated_at__isnull=True,
+                        lease_token__isnull=True,
+                        lease_expires_at__isnull=True,
+                        attempt_count__gt=0,
+                        error_code__gt="",
+                        error_message__gt="",
+                    )
+                ),
+                name="chk_passport_document_state",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["passport_version", "status", "-generation_number"],
+                name="passdoc_version_status_idx",
+            ),
+            models.Index(
+                fields=["pdf_sha256"],
+                condition=models.Q(status="ISSUED"),
+                name="passdoc_issued_hash_idx",
+            ),
+        ]

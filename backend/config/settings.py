@@ -109,6 +109,24 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Passport PDF generation stays bounded and storage-agnostic. These values may
+# be overridden per deployment without changing document or passport schemas.
+PASSPORT_PDF_MAX_SKILLS = int(os.environ.get('PASSPORT_PDF_MAX_SKILLS', '100'))
+PASSPORT_PDF_MAX_CREDENTIALS = int(
+    os.environ.get('PASSPORT_PDF_MAX_CREDENTIALS', '100')
+)
+PASSPORT_PDF_MAX_BYTES = int(
+    os.environ.get('PASSPORT_PDF_MAX_BYTES', str(5 * 1024 * 1024))
+)
+PASSPORT_PDF_LEASE_SECONDS = int(
+    os.environ.get('PASSPORT_PDF_LEASE_SECONDS', '120')
+)
+PASSPORT_PDF_WAIT_SECONDS = float(
+    os.environ.get('PASSPORT_PDF_WAIT_SECONDS', '10')
+)
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
