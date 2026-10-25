@@ -5,7 +5,7 @@ from uuid import UUID
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -186,6 +186,7 @@ def send_email_verification_code(*, user, ip_address):
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
             fail_silently=False,
+            connection=get_connection(timeout=10),
         )
     except Exception:
         delivered = 0
@@ -235,6 +236,14 @@ def verify_email_code(*, user, code):
 
 
 def request_password_reset(*, email, ip_address):
+    if not getattr(settings, 'ACCOUNTS_ALLOW_TEST_EMAIL', False):
+        from .mail_queue import enqueue
+        enqueue(email, 'RESET', ip_address)
+        return
+    return _send_password_reset_now(email=email, ip_address=ip_address)
+
+
+def _send_password_reset_now(*, email, ip_address):
     email = _require_btu_email(email)
     code = issue_otp(
         email,
@@ -247,13 +256,17 @@ def request_password_reset(*, email, ip_address):
     if user is None:
         return
     try:
-        send_mail(
+        delivered = send_mail(
             subject="BTU Digital Passport - Password reset code",
             message=f"Your password reset code is {code}. It expires in 5 minutes.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
             fail_silently=False,
+            connection=get_connection(timeout=10),
         )
+        if delivered != 1:
+            raise EmailDeliveryUnavailable
+        return True
     except Exception:
         email_digest = security_digest("accounts.email", email)
         OTPChallenge.objects.filter(
@@ -265,6 +278,8 @@ def request_password_reset(*, email, ip_address):
             ),
             consumed_at__isnull=True,
         ).update(consumed_at=timezone.now())
+
+        return False
 
 
 def reset_password_with_otp(*, email, code, new_password):
@@ -301,6 +316,7 @@ def send_invitation_email(*, email, token):
         from_email=settings.DEFAULT_FROM_EMAIL,
         recipient_list=[email],
         fail_silently=False,
+            connection=get_connection(timeout=10),
     )
 
 

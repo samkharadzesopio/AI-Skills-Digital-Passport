@@ -56,3 +56,9 @@ class OTPUtilityTests(SimpleTestCase):
                 email, "654321", stored_hash
             )
         )
+
+
+class EmailLengthTests(SimpleTestCase):
+    def test_oversized_address_is_rejected_before_database_or_delivery(self):
+        with self.assertRaises(ValueError):
+            normalize_btu_email('a' * 255 + '@btu.edu.ge')

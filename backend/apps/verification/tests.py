@@ -3,12 +3,14 @@ from datetime import datetime, timezone
 from django.test import SimpleTestCase
 
 from .services import CredentialVerificationService
+from .repositories import MockCredentialRepository
 
 
 class CredentialVerificationTests(SimpleTestCase):
 
     def setUp(self):
         self.service = CredentialVerificationService(
+            repository=MockCredentialRepository(),
             clock=lambda: datetime(
                 2026, 10, 24,
                 tzinfo=timezone.utc

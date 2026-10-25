@@ -1,7 +1,7 @@
 
 import hashlib
 
-from .document_repository import MockDocumentRepository
+from apps.passports.document_repository import PassportDocumentRepository
 
 
 MAX_PDF_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -12,7 +12,7 @@ class DocumentVerificationService:
         self.repository = (
             repository
             if repository is not None
-            else MockDocumentRepository()
+            else PassportDocumentRepository()
         )
 
     def verify(self, uploaded_file):
@@ -34,28 +34,28 @@ class DocumentVerificationService:
                 "INVALID", "Expected a PDF upload."
             )
 
-        pdf_bytes = uploaded_file.read(
-            MAX_PDF_SIZE + 1
-        )
-
-        if len(pdf_bytes) > MAX_PDF_SIZE:
-            return self._result(
-                "INVALID", "PDF exceeds the 5 MB limit."
-            )
-
-        if not pdf_bytes.startswith(b"%PDF-"):
-            return self._result(
-                "INVALID", "Invalid PDF header."
-            )
-
-        if b"%%EOF" not in pdf_bytes[-1024:]:
-            return self._result(
-                "INVALID", "PDF end marker is missing."
-            )
-
-        pdf_hash = hashlib.sha256(
-            pdf_bytes
-        ).hexdigest()
+        # Bound actual bytes independently of the client-supplied size. Do not
+        # invoke a PDF renderer/parser on arbitrary public uploads.
+        hasher = hashlib.sha256()
+        total = 0
+        header = b''
+        tail = b''
+        while True:
+            chunk = uploaded_file.read(min(65536, MAX_PDF_SIZE + 1 - total))
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_PDF_SIZE:
+                return self._result('INVALID', 'PDF exceeds the 5 MB limit.')
+            hasher.update(chunk)
+            if len(header) < 8:
+                header = (header + chunk)[:8]
+            tail = (tail + chunk)[-1024:]
+        if not header.startswith(b'%PDF-'):
+            return self._result('INVALID', 'Invalid PDF header.')
+        if b'%%EOF' not in tail:
+            return self._result('INVALID', 'PDF end marker is missing.')
+        pdf_hash = hasher.hexdigest()
 
         document = self.repository.find_by_hash(
             pdf_hash
@@ -116,16 +116,15 @@ class DocumentVerificationService:
 
         return self._result(
             "VALID",
-            "Authentic and latest issued "
-            "Digital Passport.",
+            "Registered PDF matches the latest issued passport version. "
+            "Credential validity is checked separately.",
             authentic=True,
             version=version,
             latest_version=latest,
         )
 
-    @staticmethod
     def _result(
-        status,
+        self, status,
         message,
         authentic=False,
         version=None,
@@ -141,5 +140,5 @@ class DocumentVerificationService:
             "passport_version": version,
             "latest_version": latest_version,
             "message": message,
-            "source": "SIMULATED_DOCUMENT_REGISTRY",
+            "source": "POSTGRESQL_DOCUMENT_REGISTRY" if isinstance(self.repository, PassportDocumentRepository) else "SIMULATED_DOCUMENT_REGISTRY",
         }
