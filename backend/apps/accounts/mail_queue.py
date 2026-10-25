@@ -71,8 +71,8 @@ def deliver_one():
     except Exception:
         error = 'DELIVERY_FAILED'  # Never retain provider exceptions, bodies or codes.
     with transaction.atomic():
-        current = DeferredMail.objects.select_for_update().get(pk=pk)
-        if current.token == token:
+        current = DeferredMail.objects.select_for_update().filter(pk=pk).first()
+        if current and current.token == token:
             current.state = 'SENT' if succeeded else ('FAILED' if current.attempts >= 3 else 'PENDING')
             current.error_code = '' if succeeded else (error or 'DELIVERY_FAILED')
             current.next_attempt_at = timezone.now() + timedelta(seconds=60 * 2 ** current.attempts)

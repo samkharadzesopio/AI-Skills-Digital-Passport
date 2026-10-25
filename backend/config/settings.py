@@ -241,3 +241,24 @@ PASSPORT_PDF_LEASE_SECONDS = int(
 PASSPORT_PDF_WAIT_SECONDS = float(
     os.environ.get('PASSPORT_PDF_WAIT_SECONDS', '10')
 )
+
+# Explicit institutional policies; empty values disable official completion issuance
+# or fail public issuer verification closed. Provision records out of band.
+BTU_CLASSROOM_ISSUER_REFERENCE = os.environ.get('BTU_CLASSROOM_ISSUER_REFERENCE', '').strip()
+VERIFICATION_TRUSTED_ISSUER_REFERENCES = [
+    ref.strip() for ref in os.environ.get('VERIFICATION_TRUSTED_ISSUER_REFERENCES', '').split(',')
+    if ref.strip()
+]
+BTU_AUTHORIZED_COMPLETION_SOURCES = [
+    source.strip() for source in os.environ.get('BTU_AUTHORIZED_COMPLETION_SOURCES', '').split(',')
+    if source.strip()
+]
+if set(BTU_AUTHORIZED_COMPLETION_SOURCES) - {'BTU_EXCEL', 'BTU_GOOGLE_SHEETS'}:
+    raise ImproperlyConfigured('Only approved spreadsheet source identifiers are supported.')
+BTU_GOOGLE_SHEET_ID = os.environ.get('BTU_GOOGLE_SHEET_ID', '').strip()
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE', '').strip()
+EMAIL_TIMEOUT = 10
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 30
+DATA_UPLOAD_MAX_NUMBER_FILES = 1
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
