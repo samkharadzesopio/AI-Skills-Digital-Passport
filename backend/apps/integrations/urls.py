@@ -36,3 +36,11 @@ urlpatterns += [
         name="admin-google-sheets-import",
     ),
 ]
+
+
+from .views import ClassroomSyncHistoryView, ClassroomSyncRetryView
+
+urlpatterns += [
+    path('classroom/events/', ClassroomSyncHistoryView.as_view(), name='classroom-sync-history'),
+    path('classroom/events/<uuid:event_id>/retry/', ClassroomSyncRetryView.as_view(), name='classroom-sync-retry'),
+]

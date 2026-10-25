@@ -41,29 +41,17 @@ class ClassroomSyncView(APIView):
     required_permission = "accounts.sync_classroom"
 
     def post(self, request):
-        service = ClassroomService()
-        eligible = service.get_eligible_completions()
-
-        if request.data.get("dry_run") is not True:
-            return Response(
-                {
-                    "status": "not_configured",
-                    "detail": (
-                        "Live synchronization requires "
-                        "credential issuance and a durable ledger."
-                    ),
-                },
-                status=503,
-            )
-
+        from .classroom_automation import ClassroomCredentialAutomation
+        from .serializers import ClassroomSyncControlSerializer
+        controls = ClassroomSyncControlSerializer(data=request.data)
+        controls.is_valid(raise_exception=True)
+        dry_run = controls.validated_data['dry_run']
+        result = ClassroomCredentialAutomation().synchronize(dry_run=dry_run, actor=request.user)
         return Response({
-            "status": "preview",
-            "source": "SIMULATED_BTU_CLASSROOM",
-            "eligible_count": len(eligible),
-            "eligible_event_ids": [
-                record["event_id"] for record in eligible
-            ],
-            "credentials_issued": 0,
+            'status': 'preview' if dry_run else 'completed',
+            'source': 'SIMULATED_BTU_CLASSROOM',
+            'credentials_issued': result['issued'],
+            **result,
         })
 
 
@@ -152,3 +140,39 @@ class AdminGoogleSheetsImportView(APIView):
             "result": result,
             "validation_errors": validation_errors,
         })
+
+
+class ClassroomSyncHistoryView(APIView):
+    permission_classes = [IsAdminWithPermission]
+    required_permission = 'accounts.sync_classroom'
+
+    def get(self, request):
+        from .models import ClassroomSyncEvent
+        from rest_framework.pagination import CursorPagination
+        pagination = CursorPagination()
+        pagination.page_size = 50
+        pagination.ordering = '-created_at'
+        rows = pagination.paginate_queryset(ClassroomSyncEvent.objects.all(), request)
+        return pagination.get_paginated_response([{
+            'id': str(row.pk), 'source': row.source, 'source_event_id': row.source_event_id,
+            'state': row.state, 'attempts': row.attempts, 'retryable': row.retryable,
+            'next_retry_at': row.next_retry_at, 'error_code': row.error_code,
+            'credential_id': str(row.credential_id) if row.credential_id else None,
+        } for row in rows])
+
+
+class ClassroomSyncRetryView(APIView):
+    permission_classes = [IsAdminWithPermission]
+    required_permission = 'accounts.sync_classroom'
+
+    def post(self, request, event_id):
+        from django.shortcuts import get_object_or_404
+        from .classroom_automation import process_event
+        from .models import ClassroomSyncEvent
+        if request.data:
+            return Response({'detail': 'Retry accepts no replacement event data.'}, status=400)
+        event = get_object_or_404(ClassroomSyncEvent, pk=event_id)
+        result = process_event(event.pk, force=True)
+        event.refresh_from_db()
+        return Response({'result': result, 'state': event.state,
+                         'attempts': event.attempts, 'error_code': event.error_code})
