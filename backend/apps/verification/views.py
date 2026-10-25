@@ -5,10 +5,14 @@ from rest_framework.permissions import AllowAny
 
 from .services import CredentialVerificationService
 from .serializers import CredentialVerificationSerializer
+from .security import VerificationThrottle, install_upload_limits
 
 
 class CredentialVerificationView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [VerificationThrottle]
+    verification_scope = 'credential'
 
     def get(self, request, credential_id):
         service = CredentialVerificationService()
@@ -28,7 +32,14 @@ from .document_serializers import (
 
 
 class DocumentVerificationView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [VerificationThrottle]
+    verification_scope = 'pdf'
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        install_upload_limits(request)
     parser_classes = [MultiPartParser]
 
     def post(self, request):
