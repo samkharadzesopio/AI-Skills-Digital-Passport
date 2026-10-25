@@ -8,8 +8,9 @@ from django.db import IntegrityError, close_old_connections, connection, transac
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
-from apps.credentials.models import Credential, CredentialIssuer
+from apps.credentials.models import Credential
 from apps.credentials.services import issue_credential, revoke_credential
+from apps.credentials.test_support import create_test_issuer
 from apps.skills.models import AchievementSourceEvent, Skill, VerifiedAchievement
 from apps.students.models import Student
 
@@ -40,9 +41,7 @@ class PassportDataMixin:
             education_level="Bachelor",
             student_status="Active",
         )
-        self.issuer = CredentialIssuer.objects.create(
-            reference="PASSPORT-ISSUER", display_name="Synthetic University"
-        )
+        self.issuer = create_test_issuer("Synthetic University")
         self.skills = [
             Skill.objects.create(
                 skill_code=f"PASS-SKILL-{number}",
@@ -213,12 +212,18 @@ class PassportServiceTests(PassportDataMixin, TestCase):
     def test_lifecycle_scheduler_waits_for_commit_then_publishes(self):
         credential = self.issue(1)
         event = credential.lifecycle_events.get(event_type="ISSUED")
-        with self.captureOnCommitCallbacks(execute=True) as callbacks:
-            schedule_passport_update_for_credential_event(lifecycle_event_id=event.pk)
+        refresh = event.passport_refresh
+        with patch(
+            "apps.credentials.passport_refresh.process_passport_refresh_event"
+        ) as process:
+            with self.captureOnCommitCallbacks(execute=True) as callbacks:
+                schedule_passport_update_for_credential_event(lifecycle_event_id=event.pk)
         self.assertEqual(len(callbacks), 1)
-        passport = DigitalPassport.objects.get(student=self.student)
-        self.assertEqual(passport.latest_version.version_number, 1)
-        self.assertEqual(passport.latest_version.credential_snapshots.count(), 1)
+        process.assert_called_once_with(refresh.pk)
+        self.assertEqual(
+            refresh.status,
+            "PENDING",
+        )
 
     def test_publication_rolls_back_completely_on_partial_failure(self):
         self.issue(1)

@@ -37,21 +37,36 @@ service is not nested in a caller-owned transaction.
 ## Credential lifecycle integration
 
 After a credential transaction creates its immutable `CredentialLifecycleEvent`,
-the orchestration layer must call:
+the Credential service calls:
 
 ```python
 schedule_passport_update_for_credential_event(lifecycle_event_id=event.id)
 ```
 
-The helper uses `transaction.on_commit()` and then calls
-`publish_passport_for_credential_event()`, so passport publication never extends
-the credential transaction. It is deliberately not called inside the existing
-credential service until the owning modules agree on failure reporting and retry
-delivery. The lifecycle event UUID is the durable passport idempotency key.
+The helper inserts a `CredentialPassportRefresh` row in the same database
+transaction as credential issuance or revocation. A robust `transaction.on_commit()`
+callback requests immediate processing only after commit; the outbox row remains
+the durable source of truth if the web process stops. Workers claim bounded batches
+with PostgreSQL `SKIP LOCKED` leases, publish outside claim transactions, and use
+lease tokens to prevent an expired worker from acknowledging another worker's work.
+Transient failure information and bounded retry delays are persisted. The lifecycle
+event UUID is the stable idempotency key.
 
-Credential expiry does not create a lifecycle event. A scheduled application job
-must publish a validity refresh after an expiry boundary if the latest passport
-must change without another credential event. No task queue is introduced here.
+`publish_passport_for_credential_event()` records the original lifecycle timestamp
+as `PassportUpdateEvent.source_occurred_at`, but reads authoritative current
+Credential state at publication time. A delayed or out-of-order event therefore
+cannot roll the latest Passport back to stale credential state. Duplicate events
+reuse their receipt; distinct events with identical content reuse the immutable
+version.
+
+Credential expiry has no lifecycle event. Schedule
+`manage.py refresh_expired_credentials --batch-size 100` periodically. Its indexed,
+bounded scan queues refreshes only for expired issued credentials still present in
+the current Passport snapshot. The verifier continues checking expiry directly
+while this refresh is pending. Run `manage.py process_passport_refreshes` on a
+regular schedule as recovery for process shutdowns and transient publication
+failures. Terminal rows can be explicitly requeued with `--retry-failed` after
+operator review.
 
 ## PDF documents
 

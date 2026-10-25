@@ -10,7 +10,14 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.utils.module_loading import import_string
 
-from .models import Credential, CredentialAchievement, CredentialIssuer, CredentialLifecycleEvent
+from .models import (
+    BTU_ISSUER_REFERENCE,
+    Credential,
+    CredentialAchievement,
+    CredentialIssuer,
+    CredentialLifecycleEvent,
+    BTU_ISSUER_DISPLAY_NAME,
+)
 from apps.skills.models import VerifiedAchievement
 
 DEFAULT_MAX_ACHIEVEMENTS = 256
@@ -18,9 +25,52 @@ MAX_IDEMPOTENCY_KEY = 255
 MAX_ISSUER_REFERENCE = 255
 MAX_REVOCATION_REASON = 2000
 RETRY_ATTEMPTS = 3
+ISSUER_PROVISION_PERMISSION = "accounts.manage_credentials"
 
 class IdempotencyConflict(Exception):
     pass
+
+
+def provision_btu_issuer(*, actor, display_name=BTU_ISSUER_DISPLAY_NAME):
+    """Idempotently provision the sole trusted BTU issuer for an authorized admin."""
+
+    from apps.accounts.authorization import require_admin_permission
+
+    require_admin_permission(actor, ISSUER_PROVISION_PERMISSION)
+    display_name = _validate_text("display_name", display_name, 255)
+    try:
+        actor_user_id = str(UUID(str(actor.pk)))
+    except (TypeError, ValueError, AttributeError):
+        raise ValidationError({"actor": "A persisted administrator UUID is required."}) from None
+    actor_email = _validate_text("actor_email", getattr(actor, "email", ""), 254).lower()
+
+    def operation():
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT set_config('app.credential_issuer_actor_id', %s, true), "
+                    "set_config('app.credential_issuer_actor_email', %s, true)",
+                    [actor_user_id, actor_email],
+                )
+            issuer, created = CredentialIssuer.objects.get_or_create(
+                reference=BTU_ISSUER_REFERENCE,
+                defaults={"display_name": display_name, "is_trusted": True},
+            )
+            issuer = CredentialIssuer.objects.select_for_update().get(pk=issuer.pk)
+            changed = created
+            update_fields = []
+            if not issuer.is_trusted:
+                issuer.is_trusted = True
+                update_fields.append("is_trusted")
+            if issuer.display_name != display_name:
+                issuer.display_name = display_name
+                update_fields.append("display_name")
+            if update_fields:
+                issuer.save(update_fields=update_fields)
+                changed = True
+            return issuer, changed
+
+    return _retry(operation)
 
 
 def _fingerprint(achievement_ids, expires_at, supplied_issued_at):
@@ -56,6 +106,10 @@ def issue_credential(*, issuer_reference, idempotency_key, achievement_ids, expi
     if max_achievements < 1:
         raise ImproperlyConfigured("CREDENTIAL_MAX_ACHIEVEMENTS must be a positive integer.")
     issuer_reference = _validate_text("issuer_reference", issuer_reference, MAX_ISSUER_REFERENCE)
+    if issuer_reference != BTU_ISSUER_REFERENCE:
+        raise ValidationError(
+            {"issuer_reference": "Credential issuance is restricted to the trusted BTU issuer."}
+        )
     idempotency_key = _validate_text("idempotency_key", idempotency_key, MAX_IDEMPOTENCY_KEY)
     try:
         raw_ids = tuple(achievement_ids)
@@ -85,10 +139,21 @@ def issue_credential(*, issuer_reference, idempotency_key, achievement_ids, expi
                 raise ValidationError({"achievement_ids": "All achievements must belong to the same student."})
             if any(row.verification_status != VerifiedAchievement.VerificationStatus.VERIFIED for row in achievements):
                 raise ValidationError({"achievement_ids": "Only verified achievements can be credentialed."})
-            issuer = CredentialIssuer.objects.get(reference=issuer_reference)
+            try:
+                issuer = CredentialIssuer.objects.get(
+                    reference=BTU_ISSUER_REFERENCE,
+                    is_trusted=True,
+                )
+            except CredentialIssuer.DoesNotExist:
+                raise ImproperlyConfigured(
+                    "The trusted BTU credential issuer has not been provisioned."
+                ) from None
             credential = Credential.objects.create(student_id=student_id, issuer=issuer, issuer_reference=issuer.reference, issuer_name=issuer.display_name, idempotency_key=idempotency_key, request_sha256=fingerprint, issued_at=issued_at, expires_at=expires_at)
             CredentialAchievement.objects.bulk_create([CredentialAchievement(credential=credential, achievement=row) for row in achievements])
-            CredentialLifecycleEvent.objects.create(credential=credential, event_type="ISSUED", occurred_at=issued_at, actor_reference=issuer.reference)
+            event = CredentialLifecycleEvent.objects.create(credential=credential, event_type="ISSUED", occurred_at=issued_at, actor_reference=issuer.reference)
+            from apps.passports.services import schedule_passport_update_for_credential_event
+
+            schedule_passport_update_for_credential_event(lifecycle_event_id=event.pk)
             return credential
     try:
         return _retry(operation)
@@ -123,6 +188,9 @@ def revoke_credential(*, public_reference, actor, reason):
             now = datetime.now(timezone.utc)
             locked.status, locked.revoked_at, locked.revoked_by, locked.revocation_reason = Credential.Status.REVOKED, now, actor_reference, reason
             locked.save(update_fields=["status", "revoked_at", "revoked_by", "revocation_reason"])
-            CredentialLifecycleEvent.objects.create(credential=locked, event_type="REVOKED", occurred_at=now, actor_reference=actor_reference, reason=reason)
+            event = CredentialLifecycleEvent.objects.create(credential=locked, event_type="REVOKED", occurred_at=now, actor_reference=actor_reference, reason=reason)
+            from apps.passports.services import schedule_passport_update_for_credential_event
+
+            schedule_passport_update_for_credential_event(lifecycle_event_id=event.pk)
             return locked
     return _retry(operation)
