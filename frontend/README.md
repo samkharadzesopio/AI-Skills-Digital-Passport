@@ -4,6 +4,8 @@ The live Student workspace uses the existing Django session and identity-scoped 
 
 ## Run locally
 
+For the guarded local PostgreSQL and file-mailbox login setup, follow [Local development](../ops/LOCAL_DEVELOPMENT.md) and use `ops/start_local.ps1` from the repository root.
+
 Use `npm.cmd` in PowerShell when execution policy blocks `npm.ps1`.
 
 ```text
