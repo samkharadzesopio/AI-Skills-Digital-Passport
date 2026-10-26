@@ -1,3 +1,4 @@
+import secrets
 import hashlib
 import io
 import tempfile
@@ -49,7 +50,7 @@ class PassportPDFAPITests(TransactionTestCase):
             email=self.other.email, student=self.other, is_email_verified=True,
         )
         self.admin = User.objects.create_admin_user(
-            email='pdf-admin@btu.edu.ge', password='SyntheticPDFAdmin!1927',
+            email=f'synthetic-pdf-{secrets.token_hex(8)}@btu.edu.ge', password=secrets.token_urlsafe(32),
             permission_codenames=['view_student_records', 'manage_credentials', 'revoke_credentials'],
         )
         self.skill = Skill.objects.create(

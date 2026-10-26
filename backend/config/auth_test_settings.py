@@ -46,7 +46,7 @@ REST_FRAMEWORK = {
 }
 ROOT_URLCONF = "config.auth_test_urls"
 TEST_RUNNER = "config.foundation_test_runner.FoundationPostgresRunner"
-SECRET_KEY = "auth-test-only-secret-key-not-for-deployment"
+SECRET_KEY = secrets.token_urlsafe(48)
 ACCOUNTS_OTP_HMAC_KEY = secrets.token_hex(32)
 ACCOUNTS_ACTIVE_STUDENT_STATUSES = ["ACTIVE", "Active"]
 ACCOUNTS_ALLOW_TEST_EMAIL = True

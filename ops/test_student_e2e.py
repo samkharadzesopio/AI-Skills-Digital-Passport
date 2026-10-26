@@ -4,12 +4,12 @@ Uses local-only test settings, synthetic fixtures and local-memory email. Never
 imports production settings/.env. Requires the existing frontend npm dependencies.
 Run with the local PostgreSQL variables documented in STUDENT_INTEGRATION.md.
 """
+from disposable_tests import DisposableRun, test_database_name
 import contextvars
 import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 import tempfile
 import threading
@@ -19,15 +19,13 @@ from wsgiref.simple_server import make_server, WSGIRequestHandler, WSGIServer
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'apps.integrations.postgres_test_settings'
-os.environ['INTEGRATION_TEST_DB_NAME'] = 'test_student_frontend_e2e'
+os.environ['INTEGRATION_TEST_DB_NAME'] = test_database_name('student')
 # The imported test settings enforce an explicitly configured loopback DB.
 import django
 django.setup()
 from django.conf import settings
 from django.core import mail
 from django.core.wsgi import get_wsgi_application
-from django.db import connections
-from django.test.utils import setup_databases, teardown_databases
 from django.utils import timezone
 from apps.api.test_pdf import PassportPDFAPITests
 from apps.credentials.services import revoke_credential
@@ -47,10 +45,11 @@ class IsolatedServer(WSGIServer):
     allow_reuse_address = False
 
 
-db = setup_databases(verbosity=0, interactive=False)
 fixture = PassportPDFAPITests()
 server = None
-try:
+with DisposableRun() as resources:
+    resources.database()
+    resources.fixture(fixture)
     fixture.setUp()
     fixture.issue(fixture.student, issued_at=timezone.now() - timedelta(days=2), expires_at=timezone.now() - timedelta(days=1))
     revoked = fixture.issue(fixture.student)
@@ -91,9 +90,11 @@ try:
         }
         server = make_server('127.0.0.1', 0, get_wsgi_application(), server_class=IsolatedServer, handler_class=QuietHandler)
         context = contextvars.copy_context()
-        threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True).start()
-        env = {**os.environ, 'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}', 'BTU_E2E_FIXTURE': json.dumps(metadata), 'BTU_E2E_MAILBOX': str(artifact), 'VITE_ENABLE_DEMO': 'false'}
-        result = subprocess.run(['node', 'scripts/check-student-http.mjs'], cwd=ROOT / 'frontend', env=env, timeout=180)
+        thread = threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True)
+        thread.start()
+        resources.server(server, thread)
+        env = {**os.environ, 'BTU_TEST_VITE_CACHE': str(Path(settings.MEDIA_ROOT) / 'vite-cache'), 'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}', 'BTU_E2E_FIXTURE': json.dumps(metadata), 'BTU_E2E_MAILBOX': str(artifact), 'VITE_ENABLE_DEMO': 'false'}
+        result = resources.command(['node', 'scripts/check-student-http.mjs'], cwd=ROOT / 'frontend', env=env)
         if result.returncode:
             raise RuntimeError(f'Real Student UI/HTTP acceptance failed with exit {result.returncode}')
         documents = PassportDocument.objects.filter(status='ISSUED')
@@ -101,10 +102,3 @@ try:
         assert documents.filter(passport_version=fixture.version).count() == 1
         assert documents.count() == 2, 'No duplicate issued documents after repeated download'
         print('PASS PostgreSQL: exactly one registered PDF per requested version; all synthetic records discarded.', flush=True)
-finally:
-    if server:
-        server.shutdown()
-        server.server_close()
-    connections.close_all()
-    fixture.doCleanups()
-    teardown_databases(db, verbosity=0)

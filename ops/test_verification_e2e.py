@@ -4,12 +4,13 @@ No verification response is mocked. Fixture revocation delays the existing outbo
 consumer, representing a real worker lag; expired snapshots use an earlier actual
 effective_at. No blockchain code, production settings or shared data are changed.
 """
+from disposable_tests import DisposableRun, test_database_name
 import contextvars
 from datetime import timedelta
 import json
 import os
+import secrets
 from pathlib import Path
-import subprocess
 import sys
 import threading
 from unittest.mock import patch
@@ -19,13 +20,11 @@ from wsgiref.simple_server import make_server, WSGIRequestHandler, WSGIServer
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'apps.integrations.postgres_test_settings'
-os.environ['INTEGRATION_TEST_DB_NAME'] = 'test_public_verification_frontend_e2e'
+os.environ['INTEGRATION_TEST_DB_NAME'] = test_database_name('verification')
 import django
 django.setup()
 from django.conf import settings
 from django.core.wsgi import get_wsgi_application
-from django.db import connections
-from django.test.utils import setup_databases, teardown_databases
 from django.utils import timezone
 from apps.api.test_pdf import PassportPDFAPITests
 from apps.credentials.services import revoke_credential
@@ -47,11 +46,16 @@ class IsolatedServer(WSGIServer):
     allow_reuse_address = False
 
 
-db = setup_databases(verbosity=0, interactive=False)
 fixture = PassportPDFAPITests()
 server = None
-try:
+with DisposableRun() as resources:
+    resources.database()
+    resources.fixture(fixture)
     fixture.setUp()
+    # Ephemeral password exists only in this run and is never logged.
+    admin_password = secrets.token_urlsafe(32)
+    fixture.admin.set_password(admin_password)
+    fixture.admin.save(update_fields=['password'])
     historical = fixture.version
     fixture.student.program = 'Synthetic verification acceptance'
     fixture.student.save()
@@ -71,6 +75,7 @@ try:
         return {'passportId': str(passport.pk), 'versionId': str(version.pk), 'passportReference': str(passport.public_reference), 'versionReference': str(version.public_reference)}
 
     metadata = {
+        'testOnly': True, 'admin': {'email': fixture.admin.email, 'password': admin_password},
         'valid': case(fixture.passport, latest), 'historical': case(fixture.passport, historical),
         'revoked': case(revoked_passport, revoked_passport.latest_version), 'expired': case(expired_passport, expired_version),
         'credential': str(fixture.credential.public_reference), 'revokedCredential': str(revoked.public_reference),
@@ -79,17 +84,12 @@ try:
     }
     server = make_server('127.0.0.1', 0, get_wsgi_application(), server_class=IsolatedServer, handler_class=QuietHandler)
     context = contextvars.copy_context()
-    threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True).start()
-    env = {**os.environ, 'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}', 'BTU_VERIFICATION_FIXTURE': json.dumps(metadata), 'VITE_ENABLE_DEMO': 'false', 'VITE_PUBLIC_VERIFICATION_ENABLED': 'true', 'VITE_PUBLIC_VERIFICATION_SOURCES': 'POSTGRESQL_CREDENTIAL_REGISTRY,POSTGRESQL_PASSPORT_REGISTRY,POSTGRESQL_DOCUMENT_REGISTRY'}
-    result = subprocess.run(['node', 'scripts/check-verification-http.mjs'], cwd=ROOT/'frontend', env=env, timeout=180)
+    thread = threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True)
+    thread.start()
+    resources.server(server, thread)
+    env = {**os.environ, 'BTU_TEST_VITE_CACHE': str(Path(settings.MEDIA_ROOT) / 'vite-cache'), 'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}', 'BTU_VERIFICATION_FIXTURE': json.dumps(metadata), 'VITE_ENABLE_DEMO': 'false', 'VITE_PUBLIC_VERIFICATION_ENABLED': 'true', 'VITE_PUBLIC_VERIFICATION_SOURCES': 'POSTGRESQL_CREDENTIAL_REGISTRY,POSTGRESQL_PASSPORT_REGISTRY,POSTGRESQL_DOCUMENT_REGISTRY'}
+    result = resources.command(['node', 'scripts/check-verification-http.mjs'], cwd=ROOT/'frontend', env=env)
     if result.returncode:
         raise RuntimeError(f'Public verification HTTP acceptance failed with exit {result.returncode}')
     assert PassportDocument.objects.filter(status='ISSUED').count() == 4
     print('PASS PostgreSQL: four real issued PDF registry entries; public uploads issued no additional document.', flush=True)
-finally:
-    if server:
-        server.shutdown()
-        server.server_close()
-    connections.close_all()
-    fixture.doCleanups()
-    teardown_databases(db, verbosity=0)

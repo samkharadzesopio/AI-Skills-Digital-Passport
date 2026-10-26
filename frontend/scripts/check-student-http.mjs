@@ -7,9 +7,11 @@ import { createServer } from 'vite'
 import { JSDOM } from 'jsdom'
 assert.ok(process.env.BTU_E2E_FIXTURE && process.env.BTU_E2E_MAILBOX,'Run through ops/test_student_e2e.py')
 const fixture=JSON.parse(process.env.BTU_E2E_FIXTURE)
+delete process.env.BTU_E2E_FIXTURE
+assert.ok(process.env.BTU_TEST_VITE_CACHE,'A disposable Vite cache is required')
 const target=new URL(process.env.BTU_DEV_API_TARGET)
 assert.equal(target.hostname,'127.0.0.1')
-const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},server:{host:'127.0.0.1',port:0,strictPort:false}})
+const server=await createServer({cacheDir:process.env.BTU_TEST_VITE_CACHE,define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},server:{host:'127.0.0.1',port:0,strictPort:false}})
 await server.listen()
 const address=server.httpServer.address(), origin=`http://127.0.0.1:${address.port}`
 const dom=new JSDOM('<div id="root"></div>',{url:origin+'/student/dashboard',pretendToBeVisual:true})

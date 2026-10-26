@@ -1,6 +1,8 @@
 """Isolated catalog tests, including Student regressions when requested."""
 
-SECRET_KEY = "skill-model-tests-only"
+import secrets
+
+SECRET_KEY = secrets.token_urlsafe(48)
 INSTALLED_APPS = ["apps.students.apps.StudentsConfig", "apps.skills.apps.SkillsConfig"]
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 USE_TZ = True

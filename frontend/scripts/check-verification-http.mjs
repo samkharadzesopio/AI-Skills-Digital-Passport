@@ -4,8 +4,12 @@ import { createServer } from 'vite'
 import { JSDOM } from 'jsdom'
 assert.ok(process.env.BTU_VERIFICATION_FIXTURE,'Run through ops/test_verification_e2e.py')
 const fixture=JSON.parse(process.env.BTU_VERIFICATION_FIXTURE)
+assert.equal(fixture.testOnly,true)
+assert.ok(fixture.admin.email.startsWith('synthetic-pdf-'))
+delete process.env.BTU_VERIFICATION_FIXTURE
 assert.equal(new URL(process.env.BTU_DEV_API_TARGET).hostname,'127.0.0.1')
-const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},server:{host:'127.0.0.1',port:0,strictPort:false}})
+assert.ok(process.env.BTU_TEST_VITE_CACHE, 'A disposable Vite cache is required')
+const server=await createServer({cacheDir:process.env.BTU_TEST_VITE_CACHE,define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},server:{host:'127.0.0.1',port:0,strictPort:false}})
 await server.listen()
 const origin=`http://127.0.0.1:${server.httpServer.address().port}`
 const dom=new JSDOM('<div id="root"></div>',{url:origin+'/verify',pretendToBeVisual:true})
@@ -44,7 +48,7 @@ try {
     return expected===204?null:response.json()
   }
   csrf=(await privateJSON('/api/accounts/csrf/')).csrfToken
-  await privateJSON('/api/accounts/login/',{email:'pdf-admin@btu.edu.ge',password:'SyntheticPDFAdmin!1927'})
+  await privateJSON('/api/accounts/login/',fixture.admin)
   csrf=(await privateJSON('/api/accounts/csrf/')).csrfToken
   const pdfs={}
   for(const name of ['valid','historical','revoked','expired']){

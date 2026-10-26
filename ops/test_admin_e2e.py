@@ -3,13 +3,14 @@
 Application responses, permissions and domain services are never mocked. Classroom
 reads its existing controlled simulation; spreadsheets use actual uploaded bytes.
 """
+from disposable_tests import DisposableRun, test_database_name
 import contextvars
 from datetime import date
 import json
 import os
+import secrets
 from pathlib import Path
 import re
-import subprocess
 import sys
 import tempfile
 import threading
@@ -18,14 +19,12 @@ from wsgiref.simple_server import make_server, WSGIRequestHandler, WSGIServer
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'apps.integrations.postgres_test_settings'
-os.environ['INTEGRATION_TEST_DB_NAME'] = 'test_admin_frontend_e2e'
+os.environ['INTEGRATION_TEST_DB_NAME'] = test_database_name('admin')
 import django
 django.setup()
 from django.conf import settings
 from django.core.mail.backends.locmem import EmailBackend
 from django.core.wsgi import get_wsgi_application
-from django.db import connections
-from django.test.utils import setup_databases, teardown_databases
 from openpyxl import Workbook
 from apps.accounts.models import User
 from apps.credentials.models import Credential
@@ -53,9 +52,9 @@ class IsolatedServer(WSGIServer):
     allow_reuse_address = False
 
 
-db = setup_databases(verbosity=0, interactive=False)
 server = None
-try:
+with DisposableRun() as resources:
+    resources.database()
     with tempfile.TemporaryDirectory(prefix='admin-ui-http-') as directory:
         artifact = Path(directory)
         settings.MEDIA_ROOT = str(artifact / 'documents')
@@ -73,8 +72,10 @@ try:
         settings.EMAIL_BACKEND = '__main__.TestMailbox'
         student = Student.objects.create(external_student_id='BTU-T-0010', first_name='Synthetic', last_name='Admin Workflow', email='admin-journey-student@btu.edu.ge', program='Computing', education_level='Bachelor', student_status='ACTIVE')
         User.objects.create_user(email=student.email, student=student, is_email_verified=True)
-        full = User.objects.create_admin_user(email='journey-admin@btu.edu.ge', password='Synthetic-Admin-Journey!2026', permission_codenames=['view_student_records','manage_student_accounts','manage_credentials','revoke_credentials','sync_classroom','import_completions'])
-        User.objects.create_admin_user(email='journey-reader@btu.edu.ge', password='Synthetic-Reader-Journey!2026', permission_codenames=['view_student_records'])
+        admin_password = secrets.token_urlsafe(32)
+        reader_password = secrets.token_urlsafe(32)
+        full = User.objects.create_admin_user(email='journey-admin@btu.edu.ge', password=admin_password, permission_codenames=['view_student_records','manage_student_accounts','manage_credentials','revoke_credentials','sync_classroom','import_completions'])
+        User.objects.create_admin_user(email='journey-reader@btu.edu.ge', password=reader_password, permission_codenames=['view_student_records'])
         create_test_issuer('Business and Technology University')
         for code in ['AI_LITERACY','AI_FUNDAMENTALS','MACHINE_LEARNING','DATA_ANALYSIS','GENERATIVE_AI','PROMPT_ENGINEERING']:
             Skill.objects.create(skill_code=code, skill_name=code.replace('_', ' ').title(), category='Artificial Intelligence', subcategory='Learning evidence', description='Synthetic approved completion skill.', stamp_type='APPLIED', badge_asset_id='ai_applied.png')
@@ -92,12 +93,14 @@ try:
         ClassroomSyncEvent.objects.filter(pk=replay).update(state='FAILED', retryable=True, attempts=1, error_code='TemporaryFailure')
         run = ImportRun.objects.create(source='BTU_EXCEL', actor=full, state='FAILED')
         run.events.add(replay)
-        metadata = {'studentId':str(student.pk), 'email':student.email, 'recoveryRun':run.pk, 'recoveryEvent':str(replay)}
+        metadata = {'testOnly': True, 'adminPassword': admin_password, 'readerPassword': reader_password, 'studentId':str(student.pk), 'email':student.email, 'recoveryRun':run.pk, 'recoveryEvent':str(replay)}
         server = make_server('127.0.0.1', 0, get_wsgi_application(), server_class=IsolatedServer, handler_class=QuietHandler)
         context = contextvars.copy_context()
-        threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True).start()
-        env = {**os.environ, 'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}', 'BTU_ADMIN_FIXTURE':json.dumps(metadata), 'BTU_ADMIN_ARTIFACTS':directory, 'VITE_ENABLE_DEMO':'false', 'VITE_PUBLIC_VERIFICATION_ENABLED':'true'}
-        result = subprocess.run(['node','scripts/check-admin-http.mjs'], cwd=ROOT/'frontend', env=env, timeout=240)
+        thread = threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True)
+        thread.start()
+        resources.server(server, thread)
+        env = {**os.environ, 'BTU_TEST_VITE_CACHE': str(Path(settings.MEDIA_ROOT) / 'vite-cache'), 'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}', 'BTU_ADMIN_FIXTURE':json.dumps(metadata), 'BTU_ADMIN_ARTIFACTS':directory, 'VITE_ENABLE_DEMO':'false', 'VITE_PUBLIC_VERIFICATION_ENABLED':'true'}
+        result = resources.command(['node','scripts/check-admin-http.mjs'], cwd=ROOT/'frontend', env=env)
         if result.returncode:
             raise RuntimeError(f'Admin HTTP acceptance failed with exit {result.returncode}')
         assert VerifiedAchievement.objects.filter(student=student).count() == 6
@@ -108,9 +111,3 @@ try:
         assert ClassroomSyncEvent.objects.get(pk=replay).state == 'CREDENTIAL_ISSUED'
         assert ImportRun.objects.get(pk=run.pk).state == 'COMPLETED'
         print('PASS PostgreSQL: six verified achievements, four intended credentials, one revocation, one registered PDF, persisted row error and recovered import; no replay duplicates.', flush=True)
-finally:
-    if server:
-        server.shutdown()
-        server.server_close()
-    connections.close_all()
-    teardown_databases(db, verbosity=0)

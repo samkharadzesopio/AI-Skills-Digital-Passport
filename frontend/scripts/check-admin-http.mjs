@@ -6,8 +6,11 @@ import { createServer } from 'vite'
 import { JSDOM } from 'jsdom'
 assert.ok(process.env.BTU_ADMIN_FIXTURE && process.env.BTU_ADMIN_ARTIFACTS, 'Run through ops/test_admin_e2e.py')
 const fixture = JSON.parse(process.env.BTU_ADMIN_FIXTURE)
+assert.equal(fixture.testOnly, true)
+delete process.env.BTU_ADMIN_FIXTURE
 assert.equal(new URL(process.env.BTU_DEV_API_TARGET).hostname, '127.0.0.1')
-const server = await createServer({ define: { 'import.meta.env.VITE_ENABLE_DEMO':'false' }, server: { host:'127.0.0.1', port:0, strictPort:false } })
+assert.ok(process.env.BTU_TEST_VITE_CACHE, 'A disposable Vite cache is required')
+const server = await createServer({cacheDir:process.env.BTU_TEST_VITE_CACHE, define: { 'import.meta.env.VITE_ENABLE_DEMO':'false' }, server: { host:'127.0.0.1', port:0, strictPort:false } })
 await server.listen()
 const origin = `http://127.0.0.1:${server.httpServer.address().port}`, dom = new JSDOM('<div id="root"></div>', { url:origin+'/admin/login', pretendToBeVisual:true }), saved = new Map(), timers = new Set(), cookies = new Map(), requests = [], downloads = [], objects = new Map()
 const nativeFetch = globalThis.fetch, NativeRequest = globalThis.Request, originalCreate = URL.createObjectURL, originalRevoke = URL.revokeObjectURL, originalClick = dom.window.HTMLAnchorElement.prototype.click
@@ -43,7 +46,7 @@ try {
   async function fill(id,value) { await act(async()=>{ const el=document.getElementById(id);assert.ok(el,id);const proto=el.tagName==='TEXTAREA'?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,value);el.dispatchEvent(new window.Event('input',{bubbles:true})) }) }
   async function submit() { await act(async()=>document.querySelector('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}))) }
   async function click(label) { await until(()=>[...document.querySelectorAll('button')].some(b=>b.textContent===label&&!b.disabled),label);await act(async()=>[...document.querySelectorAll('button')].find(b=>b.textContent===label).click()) }
-  async function login(reader=false) { await mount('/admin/login');await until(()=>!!document.getElementById('admin-password'),'Admin password form');await fill('auth-email-administrator',reader?'journey-reader@btu.edu.ge':'journey-admin@btu.edu.ge');await fill('admin-password',reader?'Synthetic-Reader-Journey!2026':'Synthetic-Admin-Journey!2026');await submit();await until(()=>text().includes('Administration dashboard')&&text().includes('Verified achievements'),'authenticated Admin dashboard');assert.equal(client.getQueryData(['admin','demo']),undefined) }
+  async function login(reader=false) { await mount('/admin/login');await until(()=>!!document.getElementById('admin-password'),'Admin password form');await fill('auth-email-administrator',reader?'journey-reader@btu.edu.ge':'journey-admin@btu.edu.ge');await fill('admin-password',reader?fixture.readerPassword:fixture.adminPassword);await submit();await until(()=>text().includes('Administration dashboard')&&text().includes('Verified achievements'),'authenticated Admin dashboard');assert.equal(client.getQueryData(['admin','demo']),undefined) }
   async function logout() { await click('Sign out');await until(()=>!cookies.has('sessionid'),'server logout') }
   async function json(path, data, expected=200, method='POST') { let headers={Accept:'application/json'};if(data!==undefined) { const bootstrap=await fetch('/api/accounts/csrf/',{credentials:'include'});headers={...headers,'Content-Type':'application/json','X-CSRFToken':(await bootstrap.json()).csrfToken} } const r=await fetch(path,{method:data===undefined?'GET':method,credentials:'include',headers,body:data===undefined?undefined:JSON.stringify(data)});assert.equal(r.status,expected,path);return expected===204?null:r.json() }
   async function upload(blob,path,id,name) { await mount(path);await until(()=>!!document.getElementById(id),'upload form');await act(async()=>{ const file=new File([blob],name,{type:name.endsWith('.pdf')?'application/pdf':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});Object.defineProperty(document.getElementById(id),'files',{configurable:true,value:[file]});document.getElementById(id).dispatchEvent(new window.Event('change',{bubbles:true})) }) }
