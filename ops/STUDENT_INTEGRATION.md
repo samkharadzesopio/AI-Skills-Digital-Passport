@@ -1,5 +1,7 @@
 # Real Student frontend integration — 26 October 2026
 
+Subsequent milestones: [public verification](THIRD_PARTY_VERIFICATION.md) and [Admin integration](ADMIN_INTEGRATION.md). The limitations below describe this Student milestone's original scope.
+
 The authenticated Student milestone is complete and tested with persisted PostgreSQL records through the real Vite proxy and Django APIs. The React driver is jsdom with real HTTP, rather than a graphical browser. This is local synthetic acceptance, not a production deployment or a live university connection.
 
 ## Integrated files and behavior

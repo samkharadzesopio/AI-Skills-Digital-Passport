@@ -272,4 +272,34 @@ class ImportRetryView(AuditedAPIView):
         row = get_object_or_404(ClassroomSyncEvent.objects.filter(source__in=['BTU_EXCEL', 'BTU_GOOGLE_SHEETS']), pk=event_id)
         outcome = process_event(row.pk, force=True)
         row.refresh_from_db()
+        # Keep the derived run history current after the existing event replay.
+        # Reconciliation reads persisted outcomes; it never accepts replacement
+        # evidence or changes the recognition/idempotency rules.
+        from django.db import transaction
+        from .importers.durable import reconcile_run
+        from .models import ImportRun
+        with transaction.atomic():
+            for run in ImportRun.objects.select_for_update().filter(events=row).order_by('pk'):
+                reconcile_run(run)
         return Response({'result': outcome, 'state': row.state, 'error_code': row.error_code})
+
+
+class ImportEventsView(AuditedAPIView):
+    """Bounded event identifiers needed by the existing import retry contract."""
+    permission_classes = [IsAdminWithPermission]
+    required_permission = 'accounts.import_completions'
+
+    def get(self, request, run_id):
+        from django.shortcuts import get_object_or_404
+        from rest_framework.pagination import CursorPagination
+        from .models import ImportRun
+        run = get_object_or_404(ImportRun, pk=run_id)
+        pager = CursorPagination()
+        pager.page_size, pager.ordering = 50, '-created_at'
+        rows = pager.paginate_queryset(run.events.filter(source__in=['BTU_EXCEL', 'BTU_GOOGLE_SHEETS']), request)
+        return pager.get_paginated_response([{
+            'id': str(row.pk), 'source': row.source, 'source_event_id': row.source_event_id,
+            'state': row.state, 'attempts': row.attempts, 'retryable': row.retryable,
+            'next_retry_at': row.next_retry_at, 'error_code': row.error_code,
+            'credential_id': str(row.credential_id) if row.credential_id else None,
+        } for row in rows])

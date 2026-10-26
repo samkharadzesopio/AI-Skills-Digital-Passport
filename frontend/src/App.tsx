@@ -22,6 +22,11 @@ import { demoMode } from './demo/mode'
 import { LoginPage } from './auth/LoginPages'
 import { LiveAccountLayout, LiveStudentWorkspace } from './auth/SessionPanel'
 import { LiveDashboard, LiveProfile, LiveSkills, LiveAchievements, LiveCredentials, LiveCredential, LivePassport, LiveVersions, LiveVersion } from './student/pages'
+import { LiveAdminLayout } from './admin/live/Layout'
+import { Gate as AdminGate } from './admin/live/common'
+import * as AdminLive from './admin/live/pages'
+import { PassportPage as LiveAdminPassport } from './admin/live/PassportPage'
+import { SyncPage as LiveAdminSync, ImportsPage as LiveAdminImports } from './admin/live/integrations'
 const client = new QueryClient()
 function StudentDataBoundary() {
   if (!demoMode) return <LiveStudentWorkspace/>
@@ -66,22 +71,22 @@ export function AppRoutes() {
       <Route path="login" element={<LoginPage kind="administrator"/>}/>
       <Route element={<AccessBoundary role="administrator"/>}>
       <Route index element={<LegacyRedirect to="/admin/dashboard"/>}/>
-      <Route element={<AdminWorkspace/>}>
-        <Route element={<AdminLayout/>}>
-          <Route path="dashboard" element={<AdminDashboard/>}/>
-          <Route path="students" element={<StudentsPage/>}/>
-          <Route path="students/:id" element={<StudentDetail/>}/>
-          <Route path="students/:id/passport" element={<AdminPassportPage/>}/>
-          <Route path="passports/preview" element={<AdminPassportPage/>}/>
-          <Route path="skills" element={<CatalogPage/>}/>
-          <Route path="course-mappings" element={<MappingsPage/>}/>
+      <Route element={demoMode ? <AdminWorkspace/> : <Outlet/>}>
+        <Route element={demoMode ? <AdminLayout/> : <LiveAdminLayout/>}>
+          <Route path="dashboard" element={demoMode ? <AdminDashboard/> : <AdminGate capability="view_student_records"><AdminLive.DashboardPage/></AdminGate>}/>
+          <Route path="students" element={demoMode ? <StudentsPage/> : <AdminGate capability="view_student_records"><AdminLive.StudentsPage/></AdminGate>}/>
+          <Route path="students/:id" element={demoMode ? <StudentDetail/> : <AdminGate capability="view_student_records"><AdminLive.StudentDetail/></AdminGate>}/>
+          <Route path="students/:id/passport" element={demoMode ? <AdminPassportPage/> : <AdminGate capability="view_student_records"><LiveAdminPassport/></AdminGate>}/>
+          <Route path="passports/preview" element={demoMode ? <AdminPassportPage/> : <AdminGate capability="view_student_records"><LiveAdminPassport/></AdminGate>}/>
+          <Route path="skills" element={demoMode ? <CatalogPage/> : <AdminGate capability="view_student_records"><AdminLive.CatalogPage/></AdminGate>}/>
+          <Route path="course-mappings" element={demoMode ? <MappingsPage/> : <AdminGate capability="view_student_records"><AdminLive.MappingsPage/></AdminGate>}/>
           <Route path="courses" element={<LegacyRedirect to="/admin/course-mappings"/>}/>
-          <Route path="credentials" element={<CredentialsPage/>}/>
-          <Route path="credentials/:id" element={<CredentialDetail/>}/>
-          <Route path="classroom-sync" element={<SynchronizationPage/>}/>
+          <Route path="credentials" element={demoMode ? <CredentialsPage/> : <AdminGate capability="view_student_records"><AdminLive.CredentialsPage/></AdminGate>}/>
+          <Route path="credentials/:id" element={demoMode ? <CredentialDetail/> : <AdminGate capability="view_student_records"><AdminLive.CredentialDetail/></AdminGate>}/>
+          <Route path="classroom-sync" element={demoMode ? <SynchronizationPage/> : <AdminGate capability="sync_classroom"><LiveAdminSync/></AdminGate>}/>
           <Route path="sync" element={<LegacyRedirect to="/admin/classroom-sync"/>}/>
-          <Route path="imports" element={<ImportsPage/>}/>
-          <Route path="audit-logs" element={<AuditPage/>}/>
+          <Route path="imports" element={demoMode ? <ImportsPage/> : <AdminGate capability="import_completions"><LiveAdminImports/></AdminGate>}/>
+          <Route path="audit-logs" element={demoMode ? <AuditPage/> : <AdminGate capability="view_student_records"><AdminLive.AuditPage/></AdminGate>}/>
           <Route path="audit" element={<LegacyRedirect to="/admin/audit-logs"/>}/>
           <Route path="*" element={<NotFound/>}/>
         </Route>

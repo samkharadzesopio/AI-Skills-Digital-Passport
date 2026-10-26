@@ -5,8 +5,12 @@ import { Card, EmptyState, Loading } from '../components/ui'
 import { getAdminDemoData } from './mock'
 import type { AdminData } from './contracts'
 import { useAdminText } from './i18n'
+import { demoMode } from '../demo/mode'
 const Context = createContext<{ data: AdminData; update: (fn: (current: AdminData) => AdminData) => void } | null>(null)
 export function AdminWorkspace() {
+  return demoMode ? <DemoAdminWorkspace/> : <Outlet/>
+}
+function DemoAdminWorkspace() {
   const client = useQueryClient()
   const query = useQuery({ queryKey: ['admin', 'demo'], queryFn: getAdminDemoData, staleTime: Infinity })
   const t = useAdminText()

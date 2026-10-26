@@ -6,6 +6,18 @@ from rest_framework.exceptions import PermissionDenied as DRFPermissionDenied
 from .models import User
 
 
+# Public capabilities name product actions, never internal permission records.
+ADMIN_CAPABILITIES = (
+    'view_student_records', 'manage_student_accounts', 'manage_credentials',
+    'revoke_credentials', 'sync_classroom', 'import_completions',
+)
+
+
+def admin_capabilities(user):
+    return [name for name in ADMIN_CAPABILITIES
+            if has_admin_permission(user, f'accounts.{name}')]
+
+
 def has_admin_permission(user, permission):
     return bool(
         user

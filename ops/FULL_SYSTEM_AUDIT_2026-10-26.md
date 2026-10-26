@@ -1,6 +1,6 @@
 # BTU AI Skills Digital Passport — integration audit
 
-Historical audit snapshot. Subsequent [Student integration](STUDENT_INTEGRATION.md) and [public verification integration](THIRD_PARTY_VERIFICATION.md) complete their respective UI/API journeys with fresh React-to-Django HTTP acceptance. Other findings remain baseline findings; Admin integration and blockchain are outside these milestones.
+Historical audit snapshot. Subsequent [Student integration](STUDENT_INTEGRATION.md), [public verification integration](THIRD_PARTY_VERIFICATION.md) and [Admin integration](ADMIN_INTEGRATION.md) complete their respective UI/API journeys with fresh React-to-Django HTTP acceptance. These later reports supersede the corresponding disconnected-frontend findings. Blockchain remains separate and is not part of these milestones.
 
 Audit date: 26 October 2026 (Asia/Tbilisi). Backend baseline: `ab465ce`. Frontend inspected: `origin/work/2026-10-26-real-authentication` (`6b5bd0b`, includes preview `e8f2f83`). Recommendation feature: `f497c5e`; merged into `integration` as `4a0c4ac`.
 

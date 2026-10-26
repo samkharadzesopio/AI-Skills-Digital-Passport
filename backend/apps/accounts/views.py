@@ -100,6 +100,7 @@ class OTPLoginVerifyView(AuditedAPIView):
 
 
 def _user_summary(user):
+    from .authorization import admin_capabilities
     linked = bool(
         user
         and getattr(user, "role", None) == "STUDENT"
@@ -110,6 +111,7 @@ def _user_summary(user):
         "role": user.role,
         "email_verified": user.is_email_verified,
         "student_association": "linked" if linked else "unlinked",
+        "capabilities": admin_capabilities(user),
     }
 
 

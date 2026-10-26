@@ -19,8 +19,8 @@ try {
  const {getSession}=await server.ssrLoadModule('/src/services/session.ts')
  const {requestStudentOtp,verifyStudentOtp,loginAdministrator,logoutAccount}=await server.ssrLoadModule('/src/auth/service.ts')
  const {parseAccountSummary,accessDecision}=await server.ssrLoadModule('/src/auth/contracts.ts')
- const student={email:'unit.student@btu.edu.ge',role:'STUDENT',email_verified:true,student_association:'linked'}
- const admin={email:'unit.admin@btu.edu.ge',role:'ADMIN',email_verified:true,student_association:'unlinked'}
+ const student={email:'unit.student@btu.edu.ge',role:'STUDENT',email_verified:true,student_association:'linked',capabilities:[]}
+ const admin={email:'unit.admin@btu.edu.ge',role:'ADMIN',email_verified:true,student_association:'unlinked',capabilities:[]}
  let current=null,csrf=null,generation=0,logoutFailure=false,rateLimit=false,sessionNetwork=false,csrfFailure=false
  const calls=[]
  api.defaults.adapter=async config=>{
@@ -79,6 +79,9 @@ try {
  assert.equal(accessDecision({status:'anonymous'},'student'),'login')
  assert.deepEqual(Object.keys(parseAccountSummary({...admin,permissions:['fake'],userId:'fake-id'})).sort(),Object.keys(admin).sort())
  assert.throws(()=>parseAccountSummary({...student,role:'administrator'}))
+ assert.deepEqual(parseAccountSummary({...student,capabilities:['manage_credentials']}).capabilities,[])
+ assert.deepEqual(parseAccountSummary({...admin,capabilities:['manage_credentials','unknown_grant']}).capabilities,['manage_credentials'])
+ assert.equal(accessDecision({status:'authenticated',user:parseAccountSummary({...admin,capabilities:['sync_classroom']})},'administrator'),'allow')
  current=null;resetCsrfToken();calls.length=0
  const {default:App}=await server.ssrLoadModule('/src/App.tsx')
  async function until(check){const end=Date.now()+5000;while(!check()){if(Date.now()>end)throw new Error('Timed out waiting for auth UI');await act(async()=>{await new Promise(r=>setTimeout(r,20))})}}

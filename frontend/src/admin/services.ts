@@ -1,4 +1,4 @@
-// Production admin adapter. Do not guess routes or mutate demo records for official actions.
+// Legacy demo forms cannot execute official actions. Live adapters are in live/service.ts.
 import { demoMode } from '../demo/mode'
 export type AdminAction =
   | { type: 'issue'; studentId: string; title: string }

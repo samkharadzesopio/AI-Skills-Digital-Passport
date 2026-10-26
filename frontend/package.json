@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check:architecture": "node scripts/check-architecture.mjs",
-    "check:admin": "node scripts/check-admin.mjs",
+    "check:admin": "node scripts/check-admin.mjs && node scripts/check-admin-live.mjs",
     "check:verification": "node scripts/check-verification.mjs",
     "check:demo": "node scripts/check-demo.mjs",
     "check:preview": "node scripts/check-preview.mjs",

@@ -1,5 +1,6 @@
 from django.urls import include, path
 from .views import StudentView, AdminStudents, AdminCredentials, AdminIssue, AdminRevoke, AdminPassports, AdminStatistics
+from .admin_reads import AdminAchievements, AdminCatalog, AdminMappings, AdminCredentialHistory
 
 urlpatterns = [
     path('', include('apps.api.pdf_urls')),
@@ -13,6 +14,10 @@ urlpatterns = [
     path('student/passport/versions/<uuid:id>/', StudentView.as_view(resource='versions')),
     path('admin/students/', AdminStudents.as_view()),
     path('admin/students/<uuid:id>/', AdminStudents.as_view()),
+    path('admin/students/<uuid:id>/achievements/', AdminAchievements.as_view()),
+    path('admin/catalog/', AdminCatalog.as_view()),
+    path('admin/course-mappings/', AdminMappings.as_view()),
+    path('admin/credentials/<uuid:id>/history/', AdminCredentialHistory.as_view()),
     path('admin/credentials/', AdminCredentials.as_view()),
     path('admin/credentials/issue/', AdminIssue.as_view()),
     path('admin/credentials/<uuid:id>/', AdminCredentials.as_view()),
