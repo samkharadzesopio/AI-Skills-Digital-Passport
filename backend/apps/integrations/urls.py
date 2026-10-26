@@ -50,3 +50,8 @@ urlpatterns += [
     path('imports/', ImportHistoryView.as_view(), name='completion-import-history'),
     path('imports/events/<uuid:event_id>/retry/', ImportRetryView.as_view(), name='completion-import-retry'),
 ]
+
+from .recommendations.api import CourseRecommendationsView
+urlpatterns += [
+    path('course-recommendations/', CourseRecommendationsView.as_view(), name='course-recommendations'),
+]

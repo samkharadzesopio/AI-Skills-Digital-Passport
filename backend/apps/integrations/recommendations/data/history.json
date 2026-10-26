@@ -1,0 +1,20 @@
+{
+  "source": "SIMULATED_BTU_ACADEMIC_HISTORY",
+  "students": {
+    "DEMO-STUDENT-BEGINNER": [
+      "DEMO-DIGITAL-101",
+      "DEMO-CS-101",
+      "AI-101"
+    ],
+    "DEMO-STUDENT-ADVANCED": [
+      "DEMO-CS-101",
+      "DEMO-PYTHON-101",
+      "DEMO-DS-201",
+      "DEMO-DB-101",
+      "DEMO-MATH-101",
+      "AI-101",
+      "DEMO-NET-101",
+      "DEMO-OS-101"
+    ]
+  }
+}
