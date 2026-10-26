@@ -1,6 +1,8 @@
 import type { PassportDocument, PassportSkill, PassportSubcategory } from '../contracts/passport'
 import type { IssuedPassport } from '../student/adapter'
 import type { SnapshotSkill } from '../student/contracts'
+import { Link } from 'react-router-dom'
+import { verificationLink } from '../verification/validation'
 
 /** Issued snapshots use the actual Django contract; no evidence, proficiency or
  * current validity is inferred from a version's issuance state. */
@@ -10,6 +12,7 @@ export function IssuedPassportPreview({ passport }: { passport: IssuedPassport }
     <p>Snapshot issuance: {passport.issuanceStatus} · {passport.currentVersion ? 'Latest published version' : 'Historical version; a newer version is published'}</p>
     <p>Issued: {passport.issuedAt}</p><p>Passport public reference: {passport.passportReference}</p><p>Version public reference: {passport.versionReference}</p>
     <p>Verification reference: {passport.verificationReference}</p>
+    <p><Link className="button" to={verificationLink('passport', passport.passportReference)}>Verify current Passport</Link> <Link className="button" to={verificationLink('passport-version', passport.versionReference, true)}>Public verification link for this version</Link></p>
     <p className="notice">This is an issued learning snapshot. Current credential validity must be checked separately through public verification. Issuance alone does not establish current validity or blockchain anchoring.</p>
     <h3>Recognized competencies in this snapshot</h3>{passport.categories.length ? passport.categories.map(c => <details open key={c.name}><summary>{c.name}</summary>{skills(c.skills)}{c.subcategories.map(s => <details open key={s.name}><summary>{s.name}</summary>{skills(s.skills)}</details>)}</details>) : <p>No competencies in this version.</p>}
     <h3>Snapshot credential references</h3>{passport.credentials.length ? <ul>{passport.credentials.map(c => <li key={c.credential_public_reference}><strong>{c.credential_public_reference}</strong><p>{c.issuer_name} · Issuer reference: {c.issuer_reference}</p><p>Issued: {c.credential_issued_at} · Expires: {c.credential_expires_at ?? 'No expiry supplied'}</p></li>)}</ul> : <p>No credential references in this version.</p>}

@@ -1,4 +1,4 @@
-﻿# BTU AI Skills Digital Passport frontend
+# BTU AI Skills Digital Passport frontend
 
 The live Student workspace uses the existing Django session and identity-scoped APIs. See [the Student milestone report](../ops/STUDENT_INTEGRATION.md) for implementation, acceptance evidence, endpoints and remaining limitations.
 
@@ -25,7 +25,7 @@ Live Student routes include dashboard, read-only profile, skills, achievements, 
 
 The existing `src/contracts/passport.ts` recursive v2 model and `src/data/passport.ts` are a proposed demo presentation, not the live Django contract. The shared component module retains that demo preview and adds `IssuedPassportPreview` for real snapshots. The original BTU template and Georgian renderer are unchanged. See `docs/passport-template-integration.md` for historical preparation notes.
 
-Admin's existing demo interface is preserved; live management remains blocked pending explicit backend capabilities and API wiring. `/verify/*` stays public and independent of session queries. Public reference/upload configuration and existing parser limitations remain separate work. Gap Analyzer and game remain honest placeholders. No recommendation, blockchain, Neon, full Admin or redesign work is included in the Student milestone.
+Admin's existing demo interface is preserved; live management remains blocked pending explicit backend capabilities and API wiring. `/verify/*` stays public and independent of session queries. Public credential/Passport/version/PDF verification is connected; see `ops/THIRD_PARTY_VERIFICATION.md` for its independent authenticity, currency and current-validity results. Gap Analyzer and game remain honest placeholders. No recommendation, blockchain, Neon, full Admin or redesign work is included in the Student milestone.
 
 ## Checks
 

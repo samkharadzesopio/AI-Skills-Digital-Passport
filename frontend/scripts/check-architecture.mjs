@@ -44,7 +44,7 @@ try {
   assert.match(missing.markup,/Administrator permissions are not available/)
   assert.equal(missing.client.getQueryData(['admin','demo']),undefined);missing.client.clear()
   const publicPage = render('/verify')
-  assert.match(publicPage.markup, /Verification service not connected/)
+  assert.match(publicPage.markup, /No login required/)
   assert.doesNotMatch(publicPage.markup, /Nino|Student workspace|Authentication integration pending/)
   assert.equal(publicPage.client.getQueryData(['session']), undefined)
   assert.equal(publicPage.client.getQueryData(['demo-student']), undefined)

@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { Gamepad2 } from 'lucide-react'
 import { LocaleProvider } from './i18n'
@@ -7,7 +7,7 @@ import { StudentLayout } from './layouts/StudentLayout'
 import { AdminLayout } from './layouts/AdminLayout'
 import { VerificationLayout } from './layouts/VerificationLayout'
 import { Dashboard, Detail, Profile, Gap } from './pages'
-import { VerificationLanding, ReferenceVerification, PdfVerification, VerificationResults, QrVerification, VerificationNotFound } from './verification/pages'
+import { VerificationLanding, ReferenceVerificationPage, PdfVerification, VerificationResults, QrVerification, VerificationNotFound } from './verification/pages'
 import { AdminWorkspace } from './admin/store'
 import { AdminDashboard, StudentsPage, StudentDetail, CredentialsPage, CredentialDetail, SynchronizationPage, AuditPage } from './admin/pages'
 import { CatalogPage } from './admin/CatalogPage'
@@ -90,7 +90,7 @@ export function AppRoutes() {
     </Route>
     <Route path="verify" element={<VerificationLayout/>}>
       <Route index element={<VerificationLanding/>}/>
-      <Route path="reference" element={<ReferenceVerification/>}/>
+      <Route path="reference" element={<ReferenceVerificationPage/>}/>
       <Route path="upload" element={<PdfVerification/>}/>
       <Route path="result" element={<VerificationResults/>}/>
       <Route path="qr" element={<QrVerification/>}/>

@@ -77,6 +77,8 @@ For interactive development, set `VITE_ENABLE_DEMO=false`, run Django with appro
 
 ## Remaining scope and limitations
 
+Historical milestone note: the subsequent [public verification integration](THIRD_PARTY_VERIFICATION.md) supersedes the public-UI parser/configuration limitations described below. Student implementation and its original test evidence remain unchanged.
+
 Demo Mode remains labelled and development-only. Admin management still needs its future capability/API integration. Public verification UI retains its existing opt-in configuration and known Passport/document parser gaps; backend compatibility and downloaded bytes were verified directly. Credential details show the reference and link to the public form without claiming a UI verification occurred.
 
 Career Gap Analyzer and game remain placeholders. Recommendations, blockchain, Neon, live Classroom access, full Admin integration and redesign were not developed. Blockchain remains mandatory outstanding work. No live SMTP/institutional access, staging deployment, production load, graphical-browser/accessibility or complete Georgian translation is claimed; new live record labels are English. This report supersedes the historical audit's Student-placeholder/PDF integration findings only.

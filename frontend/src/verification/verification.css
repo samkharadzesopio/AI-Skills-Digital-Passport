@@ -68,6 +68,7 @@
 .verify-result dl { padding: 22px; border-radius: 8px; background: #faf7fd; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; margin: 25px 0; font-size: 11px; }
 .verify-result dt { color: #aa93b5; }
 .verify-result dd { margin: 0; color: #795b89; overflow-wrap: anywhere; }
+.verify-count { display: contents; }
 .verify-empty { text-align: center; padding-top: 45px; padding-bottom: 45px; }
 .verify-empty > svg { color: #ba95ca; margin: 0 auto 20px; }
 .verify-empty h1 { font-size: 25px; }

@@ -1,52 +1,34 @@
 # Public third-party verification
 
-## Routes and behavior
+The existing public interface is connected to Django's PostgreSQL credential, Passport/version and document registries. See [the implementation and acceptance report](../../../ops/THIRD_PARTY_VERIFICATION.md) for exact DTOs and test evidence.
 
-- `/verify`: BTU landing page, reference/PDF methods and verification-process explanation.
-- `/verify/reference`: explicit reference submission. Passport and credential scopes are distinct.
-- `/verify/upload`: single-file selection or drag-and-drop, filename/size, client type/size validation, cancelable multipart submission, transport progress and waiting-for-verification state.
-- `/verify/result`: in-memory result only. A URL, QR code, query parameter, browser history state or localStorage cannot supply a valid result. Reloading shows that no check has been performed.
-- `/verify/qr/:reference` or `/verify/qr?reference=…`: reviews and prefills a passport reference. An optional `kind=credential` selects credential lookup. Ambiguous/invalid references are rejected. QR links do not automatically submit requests or prove authenticity. The frontend does not generate official references, QR codes or official verification URLs.
+## Routes
 
-`VerificationLayout` and `VerificationProvider` are independent of student/admin layouts, session queries, private API clients and demo data. Only the language preference uses browser storage; no PDFs or results are stored there. Result state contains an allowlisted public DTO, not an uploaded file or raw API response. All new copy supports English and Georgian.
+- `/verify`: public landing and methods.
+- `/verify/reference`: choose credential, Passport or Passport version; submit a public reference.
+- `/verify/reference?kind=credential|passport|passport-version&reference=...`: validated prefilling for direct links.
+- `/verify/qr/:reference` or `/verify/qr?kind=...&reference=...`: QR-compatible entry URLs, with review before submission. Printed `passport:UUID` and `passport-version:UUID` references are supported. Duplicate/conflicting parameters are rejected.
+- `/verify/upload`: one PDF up to 5 MiB, standard multipart, cancel and indeterminate upload/registry feedback.
+- `/verify/result`: in-memory public result only. Reload or a `status=VALID` URL cannot restore/invent a result.
 
-## Backend inspection and confirmed contracts
+`validation.ts` normalizes references and constructs safe relative links. `adapters.ts` parses the real Django public DTOs and drops private/unknown fields. `service.ts` uses a public-only fetch client with credentials omitted, no referrer, no cache and redirect rejection. The public layout never requests account/Student/Admin data or mounts their session hooks.
 
-Read-only inspection covered `backend/config/urls.py` and `backend/apps/verification/{urls,views,serializers,document_serializers,services,document_service,repositories,document_repository}.py`.
+## Results
 
-Confirmed public routes:
+Authenticity, latest-versus-historical currency, current credential validity and lifecycle counts are separate facts. A recognized PDF may be latest while an included credential is revoked/expired. That does not mean its bytes were altered. Unrecognized bytes are described as unconfirmed, not automatically proven tampered. Credential lookup exposes only the public reference and current status; it does not invent a separate authenticity flag absent from that DTO.
 
-- `GET /api/verification/{credential_id}/`: fields `credential_id`, `status`, `verified`, `source`; statuses `VALID`, `REVOKED`, `EXPIRED`, `INVALID`, `NOT_FOUND`.
-- `POST /api/verification/document/`: multipart field `file`; PDF limit **5 MB**, not the old frontend's 10 MB. Fields `status`, `authentic`, `is_latest`, `passport_version`, `latest_version`, `message`, `source`; statuses `VALID`, `OUTDATED`, `INVALID`, `UNVERIFIABLE`.
+All authoritative decisions come from Django. Counts, stamps, format metadata, template artwork and QR links do not establish validity in React. Raw backend message/error text, private student records and PDF contents are not displayed/logged. Uploaded filenames are not needed by the registry and are transmitted as `passport.pdf`. Files/results are not put in localStorage or query caches.
 
-Both views are `AllowAny`, but their default services currently use mock repositories and return `SIMULATED_CREDENTIAL_REGISTRY` or `SIMULATED_DOCUMENT_REGISTRY`. **These responses are never displayed as official success, invalidity, revocation or expiration.** They produce an unavailable/simulated-source result.
+## Configuration
 
-The generated passport document uses `passport-version:<UUID>` (and the legacy generator uses `passport:<reference>`). The current public URLconf has no passport or passport-version reference lookup endpoint. UUID-based references from the database-backed generator can be validated syntactically, but lookup returns integration-unavailable without sending them to the credential endpoint. Legacy non-UUID passport identifiers require a confirmed backend format/adapter before they can be accepted. Credential lookup follows Django's single path-segment contract with a 512-character UI transport bound; no invented institutional credential regex is imposed.
+The same-origin `/api/` client and exact PostgreSQL registry contracts are enabled by default in live mode. `VITE_PUBLIC_VERIFICATION_ENABLED=false` disables requests. An explicitly empty `VITE_PUBLIC_VERIFICATION_SOURCES` also disables requests. Defaults/expected labels are POSTGRESQL_CREDENTIAL_REGISTRY, POSTGRESQL_PASSPORT_REGISTRY and POSTGRESQL_DOCUMENT_REGISTRY; method-specific labels must match. These labels are not signatures or issuer trust grants; Django enforces current issuer policy. Simulated/test/mock responses remain rejected even if listed, and Demo Mode cannot perform official verification.
 
-## Authoritative result handling
+Optional VITE_API_BASE_URL retains safe same-origin/HTTPS (development loopback HTTP) validation. Production still needs its approved API routing and source policy. Public requests do not use Student login cookies or private CSRF bootstrap; private API/session/CSRF behavior is unchanged.
 
-`service.ts` validates required fields, exact enum/boolean consistency, matching credential references and positive/consistent document versions. Unknown/malformed responses are technical failures. Only configured, approved source identifiers are admitted; simulated/mock/demo/test sources remain rejected even if added to the allowlist.
+## Tests and remaining scope
 
-Rendered public information is restricted to the returned credential reference, version numbers, latest-version flag, registry source and explicit status. No private student profile is fetched. Extra fields and arbitrary backend messages/errors are not displayed or logged.
+`npm.cmd run check:verification` covers DTO/response invariants, private-field rejection, lifecycle combinations, safe links, file limits, loading/cancel, sanitized failures and rate-limit cooldown. Its transport fixtures are tests, not application data. Build, lint, Student/auth/architecture/demo/Passport/Admin checks remain required.
 
-Reference `REVOKED`/`EXPIRED` and document `OUTDATED` have distinct views. `UNVERIFIABLE` is neutral and is not proof of tampering. The document contract does not yet have explicit revoked/expired states; the frontend does not infer them by parsing `message`. A bare HTTP 404 is a technical endpoint failure; only an authoritative JSON `NOT_FOUND` response represents an unknown reference.
+Run `.\.venv\Scripts\python.exe ops/test_verification_e2e.py` from repository root with the documented disposable loopback PostgreSQL settings for actual React/Vite/Django/PostgreSQL acceptance. It uses real generated/downloaded PDFs and public UI submission without login; no verification response is mocked. The driver is jsdom, not a graphical browser.
 
-HTTP 400/413/415/422 indicate a rejected request, never automatic document invalidity. HTTP 401/403 do not trigger a login flow. Network errors, timeouts, server errors and HTTP 429 are distinct from registry invalidity. Rate limits honor `Retry-After` seconds or HTTP dates, with a 60-second fallback; the cooldown is shared between public forms for this mounted session. There are no automatic retries. Django must enforce actual server-side limits.
-
-## Deployment dependencies
-
-Public transport is opt-in until a real registry is approved:
-
-- Keep `VITE_PUBLIC_VERIFICATION_ENABLED=false` and `VITE_PUBLIC_VERIFICATION_SOURCES` empty for the current simulated backend.
-- After backend approval, set the enabled flag and comma-separated exact authoritative source identifiers in deployment configuration. These are public configuration values, not credentials. This does not itself make a registry authoritative; Django must perform real verification.
-- Confirm `VITE_API_BASE_URL` (default `/api/`), source identities and deployment routing. Production accepts same-origin paths or HTTPS API origins; local HTTP is allowed only in development. Public fetch transport omits login credentials and referrers, disables caching and rejects redirects. Cross-origin deployment requires appropriate server CORS configuration.
-- Implement/wire a real passport-reference endpoint and its public response schema. Do not add an assumed route or map passport references onto credential IDs.
-- Wire actual registry repositories and remove simulated provenance only when verification is truly authoritative. Confirm public field minimization, document revocation/expiration semantics, rate limiting, upload policy/retention, source identity and allowed error states.
-
-Uploads remain in component memory until explicit submission. Client checks only use filename, browser MIME metadata and byte size; they do not parse PDF contents, compute authenticity or trust a PDF header. Server-side byte validation and registry matching remain authoritative. The upload progress bar reports transport progress only; 100% is not a verification result. Cancellation aborts the browser request but cannot guarantee a request already received by Django was not processed.
-
-## Validation
-
-`npm.cmd run check:verification` covers input/file boundaries, response invariants, allowlisted public fields, simulated-source rejection, HTTP error mapping, rate limits and result rendering. `check:architecture` checks public route independence and prevents URL-supplied result state. Student/Admin checks remain required.
-
-Browser file-selection/drag-and-drop, real HTTP transport/progress, QR-device behavior and live Django registry checks still require integration/browser testing. No official successful result can be demonstrated with the current mock backend.
+QR image generation/device scanning and graphical/mobile/accessibility acceptance remain future work. No PDF template, blockchain implementation or production configuration was changed. [Future blockchain DTO coordination](../../../ops/BLOCKCHAIN_VERIFICATION_DTO_PROPOSAL.md) is a proposal only; no blockchain proof is claimed here.
