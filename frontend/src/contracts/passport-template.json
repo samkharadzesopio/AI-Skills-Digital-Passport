@@ -1,0 +1,18 @@
+{
+  "templateId": "btu-passport-blank",
+  "publishedTemplateVersion": null,
+  "assetPath": "templates/btu-passport-blank.pdf",
+  "sourcePath": "templates/Passport_Blank.pdf",
+  "generatorTemplatePath": "backend/templates/Passport_Blank.pdf",
+  "sha256": "71a2efef1135bb00785db023404867c4220701038965da5608e735908f65d5b9",
+  "pages": 4,
+  "widthPoints": 841.89,
+  "heightPoints": 595.276,
+  "format": "PDF, A4 landscape, static artwork; no AcroForm fields",
+  "pageRoles": [
+    "cover",
+    "stamp-explanation",
+    "skill-card-grid",
+    "skill-supplement"
+  ]
+}

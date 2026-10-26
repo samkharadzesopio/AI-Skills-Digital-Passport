@@ -1,5 +1,7 @@
 # BTU AI Skills Digital Passport — integration audit
 
+Historical audit snapshot. The subsequent [Student integration milestone](STUDENT_INTEGRATION.md) completes the live Student records/history/PDF journey and records fresh React-to-Django HTTP acceptance. Other findings below remain baseline findings; Admin, public verification UI and blockchain are outside that milestone.
+
 Audit date: 26 October 2026 (Asia/Tbilisi). Backend baseline: `ab465ce`. Frontend inspected: `origin/work/2026-10-26-real-authentication` (`6b5bd0b`, includes preview `e8f2f83`). Recommendation feature: `f497c5e`; merged into `integration` as `4a0c4ac`.
 
 **Answer to the primary question: No. The frontend does not yet provide a complete connected product.** The backend has substantial tested domain and API functionality, but live student routes stop at a signed-in placeholder, live administrators stop at a permissions boundary, and most screens use explicit demo data. PDF export is disabled. Public Passport lookup is deliberately disconnected, and document verification has a stale response contract. Passing backend or mocked frontend tests does not establish an end-to-end frontend journey.
