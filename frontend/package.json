@@ -13,7 +13,8 @@
     "check:verification": "node scripts/check-verification.mjs",
     "check:demo": "node scripts/check-demo.mjs",
     "check:preview": "node scripts/check-preview.mjs",
-    "check:passport": "node scripts/check-passport.mjs"
+    "check:passport": "node scripts/check-passport.mjs",
+    "check:auth": "node scripts/check-auth.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

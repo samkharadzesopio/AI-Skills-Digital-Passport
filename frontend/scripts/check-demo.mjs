@@ -10,7 +10,7 @@ try {
   const { AppRoutes } = await server.ssrLoadModule('/src/App.tsx')
   const { DemoBanner } = await server.ssrLoadModule('/src/demo/DemoBanner.tsx')
   const { demoStudent } = await server.ssrLoadModule('/src/data/mock.ts'), { adminFixture } = await server.ssrLoadModule('/src/admin/mock.ts')
-  for (const path of ['/student/dashboard','/student/skills','/student/credentials','/student/passport','/student/profile','/student/gap-analyzer','/student/game','/admin/dashboard','/admin/passports/preview','/admin/students/DEMO-ST-001/passport','/admin/students','/admin/students/DEMO-ST-001','/admin/skills','/admin/course-mappings','/admin/credentials','/admin/credentials/DEMO-CR-1','/admin/classroom-sync','/admin/imports','/admin/audit-logs','/verify','/verify/reference','/verify/upload']) {
+  for (const path of ['/student/dashboard','/student/skills','/student/credentials','/student/passport','/student/profile','/student/gap-analyzer','/student/game','/admin/dashboard','/admin/passports/preview','/admin/students/DEMO-ST-001/passport','/admin/students','/admin/students/DEMO-ST-001','/admin/skills','/admin/course-mappings','/admin/credentials','/admin/credentials/DEMO-CR-1','/admin/classroom-sync','/admin/imports','/admin/audit-logs','/student/login','/admin/login','/verify','/verify/reference','/verify/upload']) {
     const client = new QueryClient()
     client.setQueryData(['demo-student'],demoStudent); client.setQueryData(['admin','demo'],structuredClone(adminFixture))
     const html = renderToString(React.createElement(QueryClientProvider,{client},React.createElement(MemoryRouter,{initialEntries:[path]},React.createElement(React.Fragment,{},React.createElement(DemoBanner),React.createElement(AppRoutes)))))
@@ -19,10 +19,11 @@ try {
     assert.equal(client.getQueryState(['session']),undefined,'Demo must never query authentication')
     client.clear()
   }
-  const children=React.Children.toArray(AppRoutes().props.children)
-  for(const [path,to] of [['student','/student/dashboard'],['admin','/admin/dashboard']]) assert.ok(children.some(route=>route.props.path===path && React.Children.toArray(route.props.children).some(child=>child.props.index && child.props.element.props.to===to)),'Namespace entry redirect: '+path)
+  // Redirect effects are verified by check:preview.
   const { api } = await server.ssrLoadModule('/src/services/api.ts')
   await assert.rejects(api.get('/private-data'),/DEMO_MODE_PRIVATE_API_DISABLED/)
+  const auth=await server.ssrLoadModule('/src/auth/service.ts')
+  for(const operation of [()=>auth.requestStudentOtp('unit@btu.edu.ge'),()=>auth.verifyStudentOtp('unit@btu.edu.ge','123456'),()=>auth.loginAdministrator('unit@btu.edu.ge','unit password'),()=>auth.logoutAccount()])await assert.rejects(operation(),error=>error.code==='demoDisabled')
   const { requestAdminAction } = await server.ssrLoadModule('/src/admin/services.ts')
   for (const type of ['issue','revoke','commit-import','retry-sync','preview-sheet']) await assert.rejects(requestAdminAction({type}),/DEMO_MODE_OFFICIAL_ACTION_DISABLED/)
   const { verificationConfig,lookupReference,uploadPdf,parseVerification }=await server.ssrLoadModule('/src/verification/service.ts')

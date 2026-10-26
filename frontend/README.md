@@ -8,6 +8,7 @@ Use `npm.cmd` in PowerShell if execution policy blocks `npm.ps1`.
 - `npm.cmd run dev`
 - `npm.cmd run build`
 - `npm.cmd run lint`
+- `npm.cmd run check:auth`
 - `npm.cmd run check:architecture`
 - `npm.cmd run check:admin`
 - `npm.cmd run check:verification`
@@ -21,7 +22,7 @@ Use `npm.cmd` in PowerShell if execution policy blocks `npm.ps1`.
 - `/verify/*` uses `VerificationLayout` and requires no session or student query. Landing, reference, PDF upload, QR review and in-memory results are implemented; see `src/verification/README.md` for inspected backend contracts and integration limits. Unknown paths inside each namespace show a not-found page.
 - `/` and the former root-level student page URLs redirect with replacement to `/student/...`, preserving search and fragment. Redirect targets pass through the access boundary before student queries mount.
 
-`src/services/session.ts` deliberately returns `unavailable` until Django authentication and explicit role/permission contracts are confirmed. Student and admin routes deny access by default; there is no fabricated logged-in user. Frontend access boundaries are UX only. Every protected API request and PDF download must still be authenticated and authorized by Django. Never trust browser roles or passport provenance as a security boundary.
+Live authentication uses Django session cookies and the registered account endpoints. `/student/login` supports university OTP and `/admin/login` supports administrator email/password. `/me/` is restored on refresh; mutations bootstrap HttpOnly-cookie CSRF via the JSON token endpoint and send `X-CSRFToken`. See `docs/auth-integration.md` for the exact contracts and tests. Linked verified students can authenticate; Live academic pages remain on a data-dependency view until their identifiers/APIs exist. Admin management remains blocked because `/me/` exposes no explicit permissions. No frontend role is converted into a permission grant.
 
 For local Demo Mode, create `frontend/.env.local` (beside `package.json`) with `VITE_ENABLE_DEMO=true`, then run `npm.cmd run dev` and restart any existing dev server. Open `/student/dashboard`, `/admin/dashboard`, or `/verify` on the URL Vite prints. `/student` and `/admin` redirect to their dashboard URLs. The single flag replaces the old separate preview flags, which are no longer read.
 
@@ -72,3 +73,7 @@ The Admin sidebar uses `/admin/course-mappings`, `/admin/classroom-sync`, and `/
 ## Passport template preparation
 
 The shared `PassportPreview` is used at `/student/passport`, `/admin/passports/preview`, and `/admin/students/:id/passport`. It preserves the recursive presentation hierarchy and distinguishes internal Student UUID, external student ID, public Passport ID and public Passport Version ID. The source blank PDF is embedded unchanged as an explicitly unfilled reference; sample values are displayed separately. No QR codes, signatures or official credentials are generated. See `docs/passport-template-integration.md` for the exact field mapping, source evidence, schema v2 incompatibilities and required backend work.
+
+## Live authentication
+
+Keep Demo Mode enabled for previewing all mock dashboards. For real login, set `VITE_ENABLE_DEMO=false`, restart Vite, and open `/student/login` or `/admin/login`. The dev server proxies `/api/` to the separately running Django backend at `127.0.0.1:8000`; production requires same-origin reverse proxy routing. No backend security configuration is weakened. Current `/me/` lacks linked student identifiers and administrator capabilities, so actual academic/admin data access remains blocked/pending as documented in `docs/auth-integration.md`. `check:auth` is mocked DOM/transport testing; real Django accounts/email delivery have not been tested.

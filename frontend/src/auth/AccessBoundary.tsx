@@ -1,8 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
-import { Outlet } from 'react-router-dom'
-import { getSession } from '../services/session'
+import { Navigate, Outlet } from 'react-router-dom'
 import { Card, EmptyState, Loading } from '../components/ui'
 import { demoMode } from '../demo/mode'
+import { useCountdown, useSession } from './hooks'
+import { accessDecision } from './contracts'
+import { AccessBlocked } from './SessionPanel'
+import { useAuthText } from './i18n'
+import { AuthError } from './errors'
 
 export function AccessBoundary({ role }: { role: 'student' | 'administrator' }) {
   // Mount no session hook or real authentication code while previewing mock workspaces.
@@ -10,11 +13,13 @@ export function AccessBoundary({ role }: { role: 'student' | 'administrator' }) 
   return <AuthenticatedBoundary role={role}/>
 }
 function AuthenticatedBoundary({ role }: { role: 'student' | 'administrator' }) {
-  const session = useQuery({ queryKey: ['session'], queryFn: getSession, retry: false })
+  const session = useSession(), t = useAuthText()
+  const failure=session.error instanceof AuthError?session.error:null
+  const retryIn=useCountdown(failure?.retryAt??0)
   if (session.isPending) return <Loading/>
-  if (session.isError) return <Card><EmptyState title="Unable to check access">Try again when the university authentication service is available.</EmptyState><button className="button" onClick={() => session.refetch()}>Retry</button></Card>
-  if (session.data?.status === 'authenticated' && session.data.roles.includes(role)) return <Outlet/>
-  return <Card><EmptyState title={session.data?.status === 'unavailable' ? 'Authentication integration pending' : 'Access required'}>
-    {role === 'administrator' ? 'Explicit administrator permission from Django is required.' : 'Authenticated student access from Django is required.'} No protected data has been loaded.
-  </EmptyState></Card>
+  if (session.isError) return <Card><EmptyState title={t('unavailable')}>{t(failure?.code??'network')}</EmptyState><button className="button" disabled={retryIn>0} onClick={() => session.refetch()}>{t('retry')}</button>{retryIn>0&&<p role="status">{t('retryIn')} {retryIn} {t('seconds')}</p>}</Card>
+  const decision=accessDecision(session.data,role)
+  if(decision==='login')return <Navigate replace to={role==='student'?'/student/login':'/admin/login'}/>
+  if(decision==='allow')return <Outlet/>
+  return <AccessBlocked decision={decision} role={role}/>
 }

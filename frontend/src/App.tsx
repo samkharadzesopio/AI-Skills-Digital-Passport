@@ -19,8 +19,14 @@ import { getDemoStudent } from './data/mock'
 import './App.css'
 import { DemoBanner } from './demo/DemoBanner'
 import { demoMode } from './demo/mode'
+import { LoginPage } from './auth/LoginPages'
+import { LiveAccountLayout, LiveStudentWorkspace } from './auth/SessionPanel'
 const client = new QueryClient()
 function StudentDataBoundary() {
+  if (!demoMode) return <LiveStudentWorkspace/>
+  return <DemoStudentDataBoundary/>
+}
+function DemoStudentDataBoundary() {
   const student = useQuery({ queryKey: ['demo-student'], queryFn: getDemoStudent })
   if (student.isPending) return <Loading/>
   if (student.isError) return <Card><EmptyState title="Unable to load student preview">Please try again.</EmptyState><button className="button" onClick={() => student.refetch()}>Retry</button></Card>
@@ -33,9 +39,11 @@ function LegacyRedirect({ to }: { to: string }) {
 function NotFound() { return <EmptyState title="Page not found"><Link to="/verify">Go to public verification</Link></EmptyState> }
 export function AppRoutes() {
   return <Routes>
-    <Route path="student" element={<AccessBoundary role="student"/>}>
+    <Route path="student">
+      <Route path="login" element={<LoginPage kind="student"/>}/>
+      <Route element={<AccessBoundary role="student"/>}>
       <Route index element={<LegacyRedirect to="/student/dashboard"/>}/>
-      <Route element={<StudentLayout/>}>
+      <Route element={demoMode ? <StudentLayout/> : <LiveAccountLayout/>}>
         <Route element={<StudentDataBoundary/>}>
           <Route path="dashboard" element={<Dashboard/>}/>
           <Route path="skills" element={<Detail page="AI skills & competencies"/>}/>
@@ -47,8 +55,11 @@ export function AppRoutes() {
           <Route path="*" element={<NotFound/>}/>
         </Route>
       </Route>
+      </Route>
     </Route>
-    <Route path="admin" element={<AccessBoundary role="administrator"/>}>
+    <Route path="admin">
+      <Route path="login" element={<LoginPage kind="administrator"/>}/>
+      <Route element={<AccessBoundary role="administrator"/>}>
       <Route index element={<LegacyRedirect to="/admin/dashboard"/>}/>
       <Route element={<AdminWorkspace/>}>
         <Route element={<AdminLayout/>}>
@@ -69,6 +80,7 @@ export function AppRoutes() {
           <Route path="audit" element={<LegacyRedirect to="/admin/audit-logs"/>}/>
           <Route path="*" element={<NotFound/>}/>
         </Route>
+      </Route>
       </Route>
     </Route>
     <Route path="verify" element={<VerificationLayout/>}>

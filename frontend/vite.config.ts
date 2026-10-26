@@ -11,6 +11,8 @@ export default defineConfig(({ command, isPreview }) => ({
   }],
   define: { __BTU_LOCAL_DEVELOPMENT__: JSON.stringify(command === 'serve' && !isPreview) },
   server: {
+    // Keep browser cookies and CSRF checks same-origin; preserve Host/Origin for Django.
+    proxy: { '/api': { target: 'http://127.0.0.1:8000', changeOrigin: false } },
     watch: {
       // Check scripts are not app inputs. OneDrive can lock them while syncing.
       ignored: [/[\\/]scripts(?:[\\/]|$)/],

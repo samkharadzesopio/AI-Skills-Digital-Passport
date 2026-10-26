@@ -13,45 +13,36 @@ try {
   const { PassportPreview } = await server.ssrLoadModule('/src/components/PassportPreview.tsx')
   const { demoPassport } = await server.ssrLoadModule('/src/data/passport.ts')
   const { demoStudent } = await server.ssrLoadModule('/src/data/mock.ts')
-  const { adminFixture } = await server.ssrLoadModule('/src/admin/mock.ts')
+
   function render(path, session, student) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     if (session) client.setQueryData(['session'], session)
     if (student) client.setQueryData(['demo-student'], student)
-    if (session?.status === 'authenticated' && session.roles.includes('administrator')) client.setQueryData(['admin', 'demo'], structuredClone(adminFixture))
+
     const markup = renderToString(React.createElement(QueryClientProvider, { client }, React.createElement(MemoryRouter, { initialEntries: [path] }, React.createElement(AppRoutes))))
     return { markup, client }
   }
-  for (const path of ['/student/dashboard', '/student/passport', '/student/game', '/admin/dashboard']) {
-    const { markup, client } = render(path, { status: 'unavailable' })
-    assert.match(markup, /Authentication integration pending/)
-    assert.doesNotMatch(markup, /Nino|Example AI skill|Recent credentials/)
-    assert.equal(client.getQueryData(['demo-student']), undefined)
-    assert.equal(client.getQueryData(['admin', 'demo']), undefined)
-    client.clear()
-  }
-  const studentDenied = render('/student/dashboard', { status: 'anonymous' })
-  assert.match(studentDenied.markup, /Access required/)
-  studentDenied.client.clear()
-  const adminDenied = render('/admin/dashboard', { status: 'authenticated', userId: 'test-only', roles: ['student'] })
-  assert.match(adminDenied.markup, /Explicit administrator permission/)
-  adminDenied.client.clear()
-  const adminAllowed = render('/admin/dashboard', { status: 'authenticated', userId: 'test-only', roles: ['administrator'] })
-  assert.match(adminAllowed.markup, /Course-to-skill mapping/)
-  assert.doesNotMatch(adminAllowed.markup, /Nino|Student workspace/)
-  adminAllowed.client.clear()
-  for (const [path, expected] of [['/admin/students','Demo student 01'], ['/admin/students/DEMO-ST-001','student1@example.invalid'], ['/admin/skills','Data communication'], ['/admin/course-mappings','AI for business'], ['/admin/credentials','Request issuance'], ['/admin/credentials/DEMO-CR-1','Request revocation'], ['/admin/classroom-sync','Request retry'], ['/admin/imports','Validate local workbook'], ['/admin/audit-logs','Affected record']]) {
-    const page = render(path, { status: 'authenticated', userId: 'test-only', roles: ['administrator'] })
-    assert.ok(page.markup.includes(expected), path)
-    assert.doesNotMatch(page.markup, /Student workspace/)
+  const studentSession={status:'authenticated',user:{email:'unit@btu.edu.ge',role:'STUDENT',email_verified:true,student_association:'linked'}}
+  const adminSession={status:'authenticated',user:{email:'unit-admin@btu.edu.ge',role:'ADMIN',email_verified:true,student_association:'unlinked'}}
+  for(const path of ['/student/dashboard','/student/passport','/student/game','/admin/dashboard']){
+    const page=render(path)
+    assert.doesNotMatch(page.markup,/Nino|Example AI skill|Recent credentials/)
+    assert.equal(page.client.getQueryData(['demo-student']),undefined)
+    assert.equal(page.client.getQueryData(['admin','demo']),undefined)
     page.client.clear()
   }
-  // Synthetic sessions below exercise route behavior only; no application login state is created.
-  for (const [path, expected] of [['/student/dashboard', 'Recent credentials'], ['/student/skills', 'Generative AI'], ['/student/credentials', 'Sample credentials only'], ['/student/passport', 'Inspect passport data and hierarchy'], ['/student/profile', 'Display name'], ['/student/gap-analyzer', 'Your career goal'], ['/student/game', 'AI playground coming soon']]) {
-    const page = render(path, { status: 'authenticated', userId: 'test-only', roles: ['student'] }, demoStudent)
-    assert.ok(page.markup.includes(expected), path)
+  for(const path of ['/student/dashboard','/student/skills','/student/credentials','/student/passport','/student/profile']){
+    const page=render(path,studentSession)
+    assert.match(page.markup,/Student data integration pending/)
+    assert.doesNotMatch(page.markup,/Nino|DEMO-PASSPORT|Recent credentials/)
+    assert.equal(page.client.getQueryData(['demo-student']),undefined)
     page.client.clear()
   }
+  const denied=render('/admin/dashboard',studentSession)
+  assert.match(denied.markup,/different workspace/);denied.client.clear()
+  const missing=render('/admin/dashboard',adminSession)
+  assert.match(missing.markup,/Administrator permissions are not available/)
+  assert.equal(missing.client.getQueryData(['admin','demo']),undefined);missing.client.clear()
   const publicPage = render('/verify')
   assert.match(publicPage.markup, /Verification service not connected/)
   assert.doesNotMatch(publicPage.markup, /Nino|Student workspace|Authentication integration pending/)
