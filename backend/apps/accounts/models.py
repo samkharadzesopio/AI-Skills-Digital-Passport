@@ -20,6 +20,8 @@ ADMIN_PERMISSION_CODENAMES = frozenset(
         "revoke_credentials",
         "sync_classroom",
         "import_completions",
+        "manage_legal_identity",
+        "manage_passport_lifecycle",
     }
 )
 

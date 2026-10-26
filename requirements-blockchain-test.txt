@@ -1,0 +1,3 @@
+-r requirements.txt
+# Tests require the pinned Anvil binary from blockchain/package-lock.json.
+# No simulated Ethereum backend or public-chain credentials are used.

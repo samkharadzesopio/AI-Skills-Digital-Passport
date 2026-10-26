@@ -1,5 +1,6 @@
 """Private API contracts. Internal source payloads and account metadata stay private."""
 from collections.abc import Mapping
+from django.conf import settings
 from rest_framework import serializers
 from apps.students.models import Student
 from apps.students.serializers import StudentProfileSerializer
@@ -99,12 +100,31 @@ class VersionSerializer(serializers.ModelSerializer):
 class PassportSerializer(serializers.ModelSerializer):
     latest_version = VersionSerializer(read_only=True)
     status = serializers.SerializerMethodField()
+    blockchain = serializers.SerializerMethodField()
+    lifecycle_status = serializers.CharField(source='status',read_only=True)
     class Meta:
         model = DigitalPassport
-        fields = ('id', 'public_reference', 'student_id', 'status', 'created_at', 'updated_at', 'latest_version')
+        fields = ('id', 'public_reference', 'student_id', 'status', 'lifecycle_status', 'created_at', 'updated_at', 'latest_version', 'first_issued_at', 'blockchain')
 
     def get_status(self, obj):
+        if obj.status!='ACTIVE':
+            return obj.status
+        if obj.latest_version_id and getattr(settings,'PASSPORT_BLOCKCHAIN_ENFORCE',True):
+            proof=self.get_blockchain(obj)
+            if proof.get('passport_status') in ('REPLACED','REVOKED'):
+                return proof['passport_status']
+            if proof.get('registry_status') in ('REVOKED','EXPIRED','INVALID'):
+                return proof['registry_status']
+            if proof.get('blockchain_verified') and proof.get('institutional_identity_verified'):
+                return 'BLOCKCHAIN_VERIFIED'
+            return 'PENDING_BLOCKCHAIN' if proof.get('status') in ('PENDING_BLOCKCHAIN','FAILED','NOT_CONFIGURED') else 'UNVERIFIABLE'
         return obj.latest_version.status if obj.latest_version else 'NOT_ISSUED'
+
+    def get_blockchain(self,obj):
+        if not hasattr(obj,'_api_blockchain_proof'):
+            from apps.blockchain.services import version_proof
+            obj._api_blockchain_proof=version_proof(obj.latest_version_id)
+        return obj._api_blockchain_proof
 
 
 class IssueSerializer(StrictInputMixin, serializers.Serializer):

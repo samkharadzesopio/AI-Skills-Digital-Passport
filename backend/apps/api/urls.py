@@ -1,7 +1,11 @@
 from django.urls import include, path
 from .views import StudentView, AdminStudents, AdminCredentials, AdminIssue, AdminRevoke, AdminPassports, AdminStatistics
+from .lifecycle_views import LegalNameChangeView, PassportRevocationView, PassportLifecycleHistoryView
 
 urlpatterns = [
+    path('admin/students/<uuid:id>/legal-name-change/',LegalNameChangeView.as_view(),name='admin-legal-name-change'),
+    path('admin/students/<uuid:id>/passport-lifecycle/',PassportLifecycleHistoryView.as_view(),name='admin-passport-lifecycle-history'),
+    path('admin/passports/<uuid:id>/revoke/',PassportRevocationView.as_view(),name='admin-revoke-passport'),
     path('', include('apps.api.pdf_urls')),
     path('student/dashboard/', StudentView.as_view(resource='dashboard')),
     path('student/skills/', StudentView.as_view(resource='skills')),

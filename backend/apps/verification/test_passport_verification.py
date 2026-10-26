@@ -44,7 +44,7 @@ class PassportPublicTests(DocumentDataMixin, TransactionTestCase):
         self.assertEqual(result['status'], 'VALID')
 
     def test_historical_version_is_outdated_but_credentials_current(self):
-        self.student.first_name = 'New profile'
+        self.student.program = 'New academic program'
         self.student.save()
         publish_passport_version(student_id=self.student.pk, event_key='PUBLIC-NEW-VERSION')
         result = PassportVerificationService().verify(self.version.public_reference, kind='version')

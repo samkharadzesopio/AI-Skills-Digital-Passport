@@ -17,9 +17,11 @@ class PDFStatusSerializer(serializers.Serializer):
     available_for_download = serializers.BooleanField()
     download_document_reference = serializers.UUIDField(allow_null=True)
     error = serializers.CharField(allow_null=True)
+    blockchain = serializers.DictField(required=False)
 
 
 def pdf_status(version, document, downloadable):
+    from apps.blockchain.services import document_proof
     return PDFStatusSerializer({
         'document_reference': document.public_reference if document else None,
         'passport_reference': version.passport.public_reference,
@@ -29,4 +31,5 @@ def pdf_status(version, document, downloadable):
         'available_for_download': downloadable is not None,
         'download_document_reference': downloadable.public_reference if downloadable else None,
         'error': 'GENERATION_FAILED' if document and document.status == 'FAILED' else None,
+        'blockchain': document_proof(downloadable.public_reference if downloadable else None),
     }).data

@@ -107,7 +107,7 @@ class PostgreSQLVerificationTests(DocumentDataMixin, TransactionTestCase):
 
     def test_historical_pdf_tamper_and_corruption(self):
         content = self.pdf_bytes()
-        self.student.first_name = 'Updated'
+        self.student.program = 'Updated academic program'
         self.student.save()
         publish_passport_version(student_id=self.student.pk, event_key='PUBLIC-VERIFY-V2')
         self.assertEqual(self.upload(content).json()['status'], 'OUTDATED')

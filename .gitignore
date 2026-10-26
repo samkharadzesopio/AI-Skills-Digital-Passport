@@ -32,3 +32,7 @@ output/*.pdf
 backend/output/*.pdf
 backend/media/
 backend/tmp/
+blockchain/out/
+blockchain/cache/
+blockchain/broadcast/
+blockchain/keystores/

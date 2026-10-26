@@ -344,7 +344,7 @@ class PassportPDFAPITests(TransactionTestCase):
         self.assertEqual(result.status_code, 422)
         self.assertEqual(result.data['error'], 'PDF_NOT_REPRESENTABLE')
         self.assertEqual(self.generate().status_code, 200)
-        self.student.first_name = 'Ana \U0001f431'; self.student.save()
+        self.student.program = 'AI \U0001f431'; self.student.save()
         publish_passport_version(student_id=self.student.pk, event_key='FONT-LIMIT')
         result = self.generate()
         self.assertEqual(result.status_code, 422)
@@ -355,15 +355,21 @@ class PassportPDFAPITests(TransactionTestCase):
         self.assertEqual(first.status_code, 200)
         old_document = PassportDocument.objects.get()
         _, old_bytes = self.download()
-        self.student.first_name = 'გიორგი'
-        self.student.last_name = 'მაისურაძე'
-        self.student.program = 'კომპიუტერული მეცნიერება'
-        self.student.save()
+        # Establish this holder's name before first issuance; a later legal
+        # correction requires the separate, permissioned replacement workflow.
+        self.other.first_name = 'გიორგი'
+        self.other.last_name = 'მაისურაძე'
+        self.other.program = 'კომპიუტერული მეცნიერება'
+        self.other.save()
         Skill.objects.filter(pk=self.skill.pk).update(
             skill_name='AI ანალიზი', category='AI უნარები', subcategory='ანალიზი',
             description='მონაცემთა ანალიზი და შეფასება.',
         )
-        version, _ = publish_passport_version(student_id=self.student.pk, event_key='GEORGIAN-PDF')
+        self.issue(self.other)
+        version=DigitalPassport.objects.get(student=self.other,status='ACTIVE').latest_version
+        self.student.program='Updated AI program'; self.student.save()
+        publish_passport_version(student_id=self.student.pk,event_key='ACADEMIC-UPDATE')
+        self.client.force_authenticate(self.other_user)
         result = self.generate()
         self.assertEqual(result.status_code, 200, result.data)
         self.assertEqual(result.data['passport_version_reference'], str(version.public_reference))
@@ -375,6 +381,7 @@ class PassportPDFAPITests(TransactionTestCase):
         for expected in ['გიორგი', 'მაისურაძე', 'კომპიუტერული მეცნიერება', 'ანალიზი', 'მონაცემთა ანალიზი და შეფასება.']:
             self.assertIn(expected, text)
         old_url = f'/api/student/passport/versions/{self.version.pk}/pdf/'
+        self.client.force_authenticate(self.user)
         _, historical = self.download(old_url)
         self.assertEqual(historical, old_bytes)
         old_document.refresh_from_db()
@@ -457,7 +464,7 @@ class PassportPDFAPITests(TransactionTestCase):
         self.assertIn('Sub 10', text)
 
     def test_textbox_overflow_returns_422_instead_of_partial_pdf(self):
-        self.student.first_name = 'W' * 90
+        self.student.program = 'W' * 75
         self.student.save()
         publish_passport_version(student_id=self.student.pk, event_key='OVERFLOW')
         result = self.generate()

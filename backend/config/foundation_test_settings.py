@@ -8,6 +8,10 @@ from apps.skills.test_settings import *  # noqa: F403
 
 INSTALLED_APPS += ["apps.credentials.apps.CredentialsConfig"]
 INSTALLED_APPS += ["apps.passports.apps.PassportsConfig"]
+INSTALLED_APPS += ["apps.blockchain.apps.BlockchainConfig"]
+# Legacy domain regressions exercise registry behavior separately from the new
+# real-Anvil lifecycle tests, which explicitly enforce chain confirmation.
+PASSPORT_BLOCKCHAIN_ENFORCE = False
 
 if os.environ.get("FOUNDATION_TEST_PG_HOST") != "127.0.0.1":
     raise ImproperlyConfigured("Foundation tests require an explicit 127.0.0.1 host.")

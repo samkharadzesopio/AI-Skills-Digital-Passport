@@ -25,7 +25,7 @@ class PassportVerificationRepository:
             from django.db.models import F
             rows = rows.filter(passport__public_reference=public, pk=F('passport__latest_version_id'))
         return rows.values('id', 'status', 'content_sha256', 'version_number',
-                           'passport__latest_version_id', 'passport__latest_version__version_number').first()
+                           'passport__status', 'passport__latest_version_id', 'passport__latest_version__version_number').first()
 
     def credentials(self, version_id):
         # Snapshot membership fixes the credential set; current status/trust comes
@@ -41,7 +41,7 @@ class PassportVerificationService:
         self.repository = repository or PassportVerificationRepository()
         self.clock = clock or timezone.now
 
-    def verify(self, reference, *, kind='passport', number=None):
+    def verify(self, reference, *, kind='passport', number=None, include_blockchain=True):
         # Match the exact verification reference already printed by the renderer.
         if isinstance(reference, str) and reference.startswith('passport-version:'):
             reference, kind = reference.split(':', 1)[1], 'version'
@@ -49,6 +49,7 @@ class PassportVerificationService:
         result = {'status': 'NOT_FOUND', 'authentic': False, 'is_latest': None,
                   'passport_version': None, 'latest_version': None,
                   'credential_status': 'UNVERIFIABLE', 'credential_counts': {},
+                  'credential_membership_empty': False,
                   'source': 'POSTGRESQL_PASSPORT_REGISTRY'}
         if row is None:
             return result
@@ -58,9 +59,14 @@ class PassportVerificationService:
             return result
         result.update(authentic=True, is_latest=row['id'] == row['passport__latest_version_id'],
                       passport_version=row['version_number'], latest_version=latest)
+        lifecycle=row.get('passport__status','ACTIVE')
+        if lifecycle!='ACTIVE':
+            result.update(status=lifecycle,is_latest=False)
+            return self._with_proof(result,row['id'],include_blockchain)
         credentials = self.repository.credentials(row['id'])
         if not credentials or len(credentials) > MAX_PUBLIC_CREDENTIALS:
-            return result
+            result['credential_membership_empty'] = not credentials
+            return self._with_proof(result, row['id'], include_blockchain)
         counts = dict.fromkeys(['VALID', 'REVOKED', 'EXPIRED', 'INVALID'], 0)
         now = self.clock()
         verifier = CredentialVerificationService(clock=lambda: now)
@@ -70,4 +76,14 @@ class PassportVerificationService:
         aggregate = next((s for s in ['REVOKED', 'INVALID', 'EXPIRED'] if counts[s]), 'VALID')
         result['credential_counts'], result['credential_status'] = counts, aggregate
         result['status'] = ('VALID' if result['is_latest'] else 'OUTDATED') if aggregate == 'VALID' else aggregate
+        return self._with_proof(result, row['id'], include_blockchain)
+
+    def _with_proof(self,result, version_id, include_blockchain):
+        if include_blockchain:
+            from apps.blockchain.services import version_proof
+            from .blockchain_policy import apply_passport_proof
+            proof=version_proof(version_id)
+            if proof.get('version_reference'):
+                result=self.verify(proof['version_reference'],kind='version',include_blockchain=False)
+            return apply_passport_proof(result,proof)
         return result

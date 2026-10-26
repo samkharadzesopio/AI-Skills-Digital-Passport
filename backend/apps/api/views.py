@@ -54,11 +54,23 @@ def uuid_parameter(request, name):
     return serializers.UUIDField().run_validation(raw) if raw is not None else None
 
 
+def current_passport_summary(student_id,render):
+    from apps.passports.models import DigitalPassport
+    for _ in range(2):
+        passport=q.passports().filter(student_id=student_id).first()
+        if passport is None:
+            return None
+        data=render(PassportSerializer,passport)
+        if DigitalPassport.objects.filter(pk=passport.pk,status='ACTIVE').exists():
+            return data
+    error=APIException('Current Passport changed; retry the request.'); error.status_code=409; raise error
+
+
 def student_summary(student_id, now, render):
     awards = q.achievements().filter(student_id=student_id)
     skills = q.recognized_skills(student_id)
     credentials = q.credentials().filter(student_id=student_id)
-    passport = q.passports().filter(student_id=student_id).first()
+    passport = current_passport_summary(student_id,render)
     return {
         'profile': StudentSerializer(Student.objects.get(pk=student_id)).data,
         'recognized_skills': skills.count(),
@@ -68,7 +80,7 @@ def student_summary(student_id, now, render):
         'credentials': q.credential_counts(credentials, now),
         'recent_achievements': render(AchievementSerializer, awards[:5], many=True),
         'recent_credentials': render(CredentialSerializer, credentials[:5], many=True),
-        'passport': render(PassportSerializer, passport) if passport else None,
+        'passport': passport,
     }
 
 
@@ -104,10 +116,8 @@ class StudentView(PrivateView):
             rows = q.credentials().filter(student_id=student_id)
             return self.detail(rows, CredentialSerializer, id) if id else self.listing(rows, CredentialSerializer)
         if self.resource == 'passport':
-            passport = q.passports().filter(student_id=student_id).first()
-            if passport:
-                self.check_object_permissions(request, passport)
-            return Response(self.render(PassportSerializer, passport) if passport else {'passport': None})
+            passport=current_passport_summary(student_id,self.render)
+            return Response(passport if passport else {'passport': None})
         rows = q.versions().filter(passport__student_id=student_id)
         return self.detail(rows, VersionSerializer, id) if id else self.listing(rows, VersionSerializer)
 
@@ -208,14 +218,15 @@ class AdminRevoke(AdminView):
 
 class AdminPassports(AdminView):
     def get(self, request, id=None, versions=False):
-        rows = q.passports()
+        rows = q.passports(include_inactive=True)
         student_id = uuid_parameter(request, 'student_id')
         if student_id:
             rows = rows.filter(student_id=student_id)
         if id:
             passport = get_object_or_404(rows, pk=id)
             if versions:
-                return self.listing(q.versions().filter(passport=passport), VersionSerializer)
+                from apps.passports.models import PassportVersion
+                return self.listing(PassportVersion.objects.filter(passport=passport,status='ISSUED').select_related('passport').prefetch_related('skill_snapshots','credential_snapshots').order_by('-version_number'), VersionSerializer)
             return Response(self.render(PassportSerializer, passport))
         return self.listing(rows, PassportSerializer)
 
