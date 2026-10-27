@@ -1,3 +1,5 @@
+import { PassportCard } from './PassportCard'
+import { structuredPassportCard } from './passport-card-data'
 import type { PassportDocument, PassportSkill, PassportSubcategory } from '../contracts/passport'
 
 function SkillList({ skills, passport }: { skills: PassportSkill[]; passport: PassportDocument }) {
@@ -17,12 +19,12 @@ function Subcategory({ category, passport }: { category: PassportSubcategory; pa
     <ul>{category.subcategories.map(child => <Subcategory key={child.id} category={child} passport={passport}/>)}</ul>
   </details></li>
 }
-/** Shared semantic renderer. It does not invent an HTML replacement for the PDF. */
+/** Interactive artwork view plus the existing inspectable semantic record. */
 export function PassportPreview({ passport, showTemplate = false }: { passport: PassportDocument; showTemplate?: boolean }) {
   const status = passport.provenance === 'demo' ? 'unverified (demo)' : passport.verification.status
   return <section className="passport-structure" aria-label="Passport structured data preview">
-    <p className="notice">Structured data preview only. The supplied four-page BTU PDF is the visual reference; populated PDF alignment and missing-field placement require approval. {passport.provenance === 'demo' ? 'All values below are illustrative and are not official credentials. No official reference, stamp or signature has been issued.' : 'Verified information is supplied by the university backend.'}</p>
-    {showTemplate && <details className="passport-template-reference"><summary>View supplied blank BTU template (unfilled reference)</summary><p>The template artwork contains verification and issuer wording. That artwork is not evidence of issuance, blockchain anchoring, or authenticity. Sample data below has not been written into this PDF.</p><object data={`${import.meta.env.BASE_URL}templates/btu-passport-blank.pdf`} type="application/pdf" aria-label="Unfilled supplied BTU passport template"><p>PDF embedding is unavailable.</p></object><a className="button" href={`${import.meta.env.BASE_URL}templates/btu-passport-blank.pdf`} target="_blank" rel="noopener noreferrer">Open unfilled template PDF</a></details>}
+    <PassportCard data={structuredPassportCard(passport)}/><p className="notice">Interactive web representation of the official four-page BTU artwork. The official generated PDF remains a separate document. {passport.provenance === 'demo' ? 'All values below are illustrative and are not official credentials. No official reference, stamp or signature has been issued.' : 'Verified information is supplied by the university backend.'}</p>
+    {showTemplate && <details className="passport-template-reference"><summary>View supplied blank BTU template (unfilled reference)</summary><p>The template artwork contains verification and issuer wording. That artwork is not evidence of issuance, blockchain anchoring, or authenticity. Sample data below has not been written into this PDF.</p><a className="button" href={`${import.meta.env.BASE_URL}templates/btu-passport-blank.pdf`} target="_blank" rel="noopener noreferrer">Open unfilled template PDF</a></details>}
     <details><summary>Inspect passport data and hierarchy</summary>
       <dl>
         <dt>Holder</dt><dd>{passport.holder.displayName}</dd>

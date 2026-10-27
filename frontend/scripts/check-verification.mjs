@@ -1,7 +1,7 @@
 ﻿import assert from 'node:assert/strict'
 import { createServer } from 'vite'
 import { AxiosError } from 'axios'
-const server = await createServer({ define: { 'import.meta.env.VITE_ENABLE_DEMO': 'false' }, server: { middlewareMode: true }, appType: 'custom' })
+const server = await createServer({ define: { 'import.meta.env.VITE_ENABLE_DEMO': 'false' }, optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, watch: null }, appType: 'custom' })
 try {
   const { validateReference, validatePdf, MAX_PDF_BYTES, retryDeadline, isPublicApiBaseSafe } = await server.ssrLoadModule('/src/verification/validation.ts')
   const { parseVerification, mapVerificationError, lookupReference, uploadPdf, verificationConfig } = await server.ssrLoadModule('/src/verification/service.ts')
@@ -10,6 +10,19 @@ try {
   const credential = status => ({ credential_id: reference, status, verified: status === 'VALID', source, private_student_email: 'private@example.invalid' })
   const document = (status, passport_version = null, latest_version = null) => ({ status, authentic: status === 'VALID' || status === 'OUTDATED', is_latest: status === 'VALID' ? true : status === 'OUTDATED' ? false : null, passport_version, latest_version, message: 'Private arbitrary text must not be displayed', source, private_record: { name: 'PRIVATE NAME' } })
   const uuid = '00000000-0000-0000-0000-000000000001'
+  const passport = (status, authentic = true, version = 2, latest = 2) => ({ status, authentic, is_latest: authentic ? version === latest : null, passport_version: authentic ? version : null, latest_version: authentic ? latest : null, source, credential_status: status, credential_counts: {}, private_student_email: 'PRIVATE EMAIL' })
+  for (const status of ['VALID', 'REVOKED', 'EXPIRED', 'INVALID', 'UNVERIFIABLE']) {
+    const result = parseVerification(passport(status), 'passport', trusted)
+    assert.equal(result.kind, 'result'); assert.equal(result.status, status.toLowerCase())
+    assert.ok(!JSON.stringify(result).includes('PRIVATE EMAIL'))
+  }
+  assert.equal(parseVerification(passport('OUTDATED', true, 1, 2), 'passport', trusted).status, 'outdated')
+  assert.equal(parseVerification(passport('NOT_FOUND', false), 'passport', trusted).status, 'not_found')
+  assert.equal(parseVerification(passport('VALID', false), 'passport', trusted).reason, 'contract')
+  assert.equal(parseVerification(passport('PENDING'), 'passport', trusted).reason, 'contract')
+  assert.equal(parseVerification(passport('FAILED'), 'passport', trusted).reason, 'contract')
+  assert.equal(parseVerification({ ...document('REVOKED', 2, 2), authentic: true, is_latest: true }, 'document', trusted).status, 'revoked')
+  assert.equal(validateReference(uuid, 'passport'), null)
   assert.equal(validateReference(`passport-version:${uuid}`, 'passport'), null)
   assert.equal(validateReference(`passport:${uuid}`, 'passport'), null)
   assert.equal(validateReference('student-id', 'passport'), 'passportFormat')
@@ -57,17 +70,22 @@ try {
   assert.equal(mapVerificationError(new AxiosError('network','ERR_NETWORK')).reason,'network')
   // Disabled integration must not send a request, including for a locally valid PDF.
   const previous = verificationConfig.enabled; verificationConfig.enabled = false
-  assert.equal((await lookupReference(`passport:${uuid}`,'passport',new AbortController().signal)).reason,'passport_endpoint_missing')
+  assert.equal((await lookupReference(`passport:${uuid}`,'passport',new AbortController().signal)).reason,'disconnected')
   assert.equal((await lookupReference(reference,'credential',new AbortController().signal)).reason,'disconnected')
   assert.equal((await uploadPdf(new File(['not inspected client-side'],'passport.pdf',{ type:'application/pdf' }),new AbortController().signal,()=>{})).reason,'disconnected')
   verificationConfig.enabled = previous
   const React = await import('react'), { renderToString } = await import('react-dom/server'), { MemoryRouter } = await import('react-router-dom')
   const { VerificationResultView } = await server.ssrLoadModule('/src/verification/pages.tsx')
+  const { ReferenceVerification } = await server.ssrLoadModule('/src/verification/pages.tsx')
+  const { VerificationProvider } = await server.ssrLoadModule('/src/verification/state.tsx')
+  const form = renderToString(React.createElement(MemoryRouter, {}, React.createElement(VerificationProvider, {}, React.createElement(ReferenceVerification))))
+  assert.doesNotMatch(form, /<select|Credential reference|Check Certificate/)
+  assert.match(form, /Verify Passport/)
   const render = outcome => renderToString(React.createElement(MemoryRouter,{},React.createElement(VerificationResultView,{outcome})))
   assert.match(render(null), /No verification has been performed/)
   assert.match(render(mapVerificationError(error(500))), /Verification service unavailable/)
-  assert.match(render(parseVerification(credential('REVOKED'),'credential',trusted,reference)), /Revoked credential/)
-  assert.match(render(parseVerification(credential('EXPIRED'),'credential',trusted,reference)), /Expired credential/)
+  assert.match(render(parseVerification(credential('REVOKED'),'credential',trusted,reference)), /Revoked passport or credential/)
+  assert.match(render(parseVerification(credential('EXPIRED'),'credential',trusted,reference)), /Expired passport or credential/)
   assert.doesNotMatch(render(parseVerification(document('VALID',1,1),'document',trusted)), /PRIVATE NAME|Private arbitrary text/)
   console.log('Verification checks passed: input/file validation, authoritative status contracts, simulated-source rejection, public-field allowlist, technical failures, rate limits, disabled requests and result rendering.')
 } finally { await server.close() }

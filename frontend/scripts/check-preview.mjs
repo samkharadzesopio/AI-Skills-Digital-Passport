@@ -68,7 +68,8 @@ try {
     ['/admin/courses?from=legacy#mapping','/admin/course-mappings','AI for business'],
     ['/admin/sync','/admin/classroom-sync','DEMO-SYNC-01'],
     ['/admin/audit','/admin/audit-logs','Affected record'],
-    ['/verify','/verify','Confidence in every credential.'],
+    ['/','/verify','Verify an AI Skills Passport.'],
+    ['/verify','/verify','Verify an AI Skills Passport.'],
     ['/verify/reference','/verify/reference','Verification reference'],
     ['/verify/upload','/verify/upload','Drop a PDF here'],
   ]

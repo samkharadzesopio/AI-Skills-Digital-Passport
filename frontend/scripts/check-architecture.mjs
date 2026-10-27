@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'vite'
-const server = await createServer({ define: { 'import.meta.env.VITE_ENABLE_DEMO': 'false' }, server: { middlewareMode: true }, appType: 'custom' })
+const server = await createServer({ define: { 'import.meta.env.VITE_ENABLE_DEMO': 'false' }, optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, watch: null }, appType: 'custom' })
 const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
 // Browser preference storage stub for server-rendered UI checks, not authentication.
 Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => null } })
@@ -33,7 +33,7 @@ try {
   }
   for(const path of ['/student/dashboard','/student/skills','/student/credentials','/student/passport','/student/profile']){
     const page=render(path,studentSession)
-    assert.match(page.markup,/Student data integration pending/)
+    assert.match(page.markup,/Student workspace/)
     assert.doesNotMatch(page.markup,/Nino|DEMO-PASSPORT|Recent credentials/)
     assert.equal(page.client.getQueryData(['demo-student']),undefined)
     page.client.clear()

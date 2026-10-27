@@ -2,7 +2,7 @@
 import { JSDOM } from 'jsdom'
 import { createServer } from 'vite'
 import { AxiosError, AxiosHeaders } from 'axios'
-const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},server:{middlewareMode:true},appType:'custom'})
+const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},optimizeDeps:{noDiscovery:true,include:[]},server:{middlewareMode:true,hmr:false,watch:null},appType:'custom'})
 const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost:5173/',pretendToBeVisual:true})
 const descriptors=new Map(),timers=new Set()
 function expose(key,value){descriptors.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{configurable:true,writable:true,value})}
@@ -36,6 +36,7 @@ try {
    if(sessionNetwork)throw new AxiosError('Synthetic network error','ERR_NETWORK',config)
    return current?response(200,current):response(403,{detail:'Authentication credentials were not provided.'})
   }
+  if(path==='student/dashboard/')return response(200,{profile:{email:student.email},recognized_skills:0,verified_achievements:0,credentials:{total:0},recent_achievements:[],passport:null})
   assert.equal(config.headers.get('X-CSRFToken'),csrf,'Mutation must send the latest server CSRF token')
   assert.ok(csrf,'Mutation must bootstrap CSRF first')
   if(csrfFailure){csrfFailure=false;return response(403,'Synthetic HTML CSRF failure')}
@@ -93,11 +94,11 @@ try {
  await until(()=>document.body.textContent.includes('invalid or expired'))
  assert.equal(document.getElementById('student-otp').value,'')
  await fill('student-otp','123456');await submit()
- await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes('Student data integration pending'))
+ await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes(student.email))
  assert.match(document.body.textContent,/unit.student@btu.edu.ge/);assert.doesNotMatch(document.body.textContent,/Nino|DEMO-PASSPORT/)
  const beforeRefresh=calls.filter(c=>c.path==='accounts/me/').length
  await mount('/student/dashboard')
- await until(()=>calls.filter(c=>c.path==='accounts/me/').length>beforeRefresh&&document.body.textContent.includes('Student data integration pending'))
+ await until(()=>calls.filter(c=>c.path==='accounts/me/').length>beforeRefresh&&document.body.textContent.includes(student.email))
  logoutFailure=true;await clickLogout()
  await until(()=>document.body.textContent.includes('Could not confirm server logout'))
  assert.ok(current,'Failed logout must not claim the server session ended')
@@ -127,12 +128,12 @@ try {
  assert.doesNotMatch(document.body.textContent,/Nino|Recent credentials/)
  sessionNetwork=false
  current={...student}
- await mount('/student/dashboard');await until(()=>document.body.textContent.includes('Student data integration pending'))
+ await mount('/student/dashboard');await until(()=>document.body.textContent.includes(student.email))
  current=null
  await mount('/student/dashboard');await until(()=>window.location.pathname==='/student/login')
  assert.doesNotMatch(document.body.textContent,/unit.student@btu.edu.ge|Nino/)
  for(const key of Object.keys(localStorage))assert.equal(key,'btu-locale','No credentials/tokens/identity persisted')
- assert.ok(calls.every(c=>c.path.startsWith('accounts/')),'No dashboard/private data routes called')
+ assert.ok(calls.every(c=>c.path.startsWith('accounts/')||c.path==='student/dashboard/'),'Only authorized dashboard and authentication routes called')
  assert.equal(calls.filter(c=>c.path==='accounts/login/').at(-1).body.password,' unit-test password ')
  console.log('Mocked auth integration passed: exact payloads, CSRF bootstrap/rotation, OTP, invalid credentials, restoration, logout/failure, rate limits, guards, capability dependency and no persisted secrets. No real Django account was used.')
 } finally {
