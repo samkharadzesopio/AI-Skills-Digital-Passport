@@ -14,6 +14,7 @@ import socket
 import sys
 import threading
 import time
+import traceback
 from unittest.mock import patch
 from uuid import uuid4
 from wsgiref.simple_server import make_server, WSGIRequestHandler
@@ -32,6 +33,7 @@ from openpyxl import Workbook
 from django.conf import settings
 from django.core import mail
 from django.core.management import call_command
+from django.core.signals import got_request_exception
 from django.core.wsgi import get_wsgi_application
 from django.db import connections
 from django.test import TransactionTestCase, override_settings
@@ -93,9 +95,28 @@ def main():
                 category='AI', description='Synthetic assessed AI learning evidence.',
                 stamp_type='FOCUSED', badge_asset_id='synthetic')
 
+        server_errors = []
+        def capture_server_error(sender, **kwargs):
+            error = sys.exception()
+            if error is not None:
+                # Test-only stack locations, without request bodies, exception
+                # messages, local variables or credential/provider values.
+                server_errors.append((type(error).__name__, [
+                    (Path(frame.filename).name, frame.name, frame.lineno)
+                    for frame in traceback.extract_tb(error.__traceback__)
+                ]))
+        got_request_exception.connect(capture_server_error, weak=False)
+        resources.callback(got_request_exception.disconnect, capture_server_error)
         server = make_server('127.0.0.1', 0, get_wsgi_application(), handler_class=QuietHandler)
         context = contextvars.copy_context()
-        thread = threading.Thread(target=lambda: context.run(server.serve_forever), daemon=True)
+        def serve():
+            try:
+                server.serve_forever()
+            finally:
+                # Django connections belong to this thread. Main-thread cleanup
+                # cannot close one left open by an interrupted/failed request.
+                connections.close_all()
+        thread = threading.Thread(target=lambda: context.run(serve), daemon=True)
         thread.start()
         resources.server(server, thread)
         base = f'http://127.0.0.1:{server.server_port}'
@@ -120,7 +141,10 @@ def main():
             response = session.request(method, base + path, headers=headers, timeout=15, **kwargs)
             evidence['http_requests'] += 1
             elapsed = round(time.monotonic() - start, 4)
-            assert response.status_code == expected, (method, path, response.status_code, expected)
+            assert response.status_code == expected, (
+                method, path, response.status_code, expected,
+                server_errors[-1] if response.status_code >= 500 and server_errors else None,
+            )
             if capture:
                 evidence['responses'].append({'method': method, 'path': path,
                     'http_status': response.status_code, 'seconds': elapsed,

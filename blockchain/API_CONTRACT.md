@@ -38,11 +38,11 @@ No login/cookies are required for:
 - POST `/api/verification/document/` with multipart field `file`
 - GET `/api/verification/blockchain/document/<public document reference>/`
 
-The first three preserve existing fields: status, authentic, is_latest, passport_version, latest_version, credential_status, credential_counts and source. Their additional `blockchain` facts must be parsed separately. Unknown reference returns NOT_FOUND. Uploading changed bytes cannot inherit the original file's proof.
+The first three preserve existing fields: status, authentic, is_latest, passport_version, latest_version, credential_status, credential_counts and source. Their additional `blockchain` facts must be parsed separately. Unknown reference returns NOT_FOUND. A known identity without an issued version returns NOT_ISSUED, authentic=false and no blockchain assessment. Uploading changed bytes cannot inherit the original file's proof.
 
 | Public status | Meaning |
 |---|---|
-| VALID | Current identity/version, currently valid credentials (when present), trusted configured issuer and an independently validated confirmed commitment on the configured registry |
+| VALID | Current identity/version, a nonempty set of currently valid represented credentials, trusted configured issuer and an independently validated confirmed commitment on the configured registry |
 | OUTDATED | Authentic earlier version of an active identity; do not present as the latest Passport |
 | REPLACED | Identity cancelled for approved replacement; never current/valid, even if its old chain record remains authentic |
 | REVOKED | Institution or registry explicitly invalidated the identity/represented credential |
@@ -50,6 +50,7 @@ The first three preserve existing fields: status, authentic, is_latest, passport
 | PENDING_BLOCKCHAIN | An actual pending issuance/confirmation; nested FAILED or NOT_CONFIGURED instead produces UNVERIFIABLE |
 | UNVERIFIABLE | Chain/issuer trust/integrity cannot be established; never render a positive badge |
 | NOT_FOUND | Unknown public reference |
+| NOT_ISSUED | Known Passport identity with no issued version; no authenticity or blockchain confirmation is claimed |
 
 `authentic=true` is historical registered-document authenticity, not a current-validity badge. `is_latest` describes version currency. A replaced identity always has `is_latest=false` even though its immutable internal last-version pointer remains for audit.
 
@@ -65,6 +66,9 @@ The chain object uses:
 - `operation_state`: durable worker state (PENDING, SIGNED, SUBMITTED, CONFIRMED or FAILED), when an operation exists. This can remain CONFIRMED during a reorganization/RPC outage; use live `status` and flags for badges.
 - `operator_review_required`: true for exhausted/terminal failures, a stuck submission or an externally consumed nonce. It never grants permission to re-sign or reset a nonce.
 - `environment`: LOCAL_ANVIL or POLYGON_AMOY. Never display Anvil data as a public Amoy deployment.
+- `network`: `Anvil`, `Polygon Amoy`, or null if deployment configuration cannot be assessed. This label is derived from the validated server chain ID, never a caller's network name.
+- `transaction_explorer_url`: a fixed-origin `https://amoy.polygonscan.com/tx/<32-byte transaction hash>` link only for chain 80002 with a saved valid hash. Null for local Anvil, unsigned operations or unavailable configuration. A link can exist while a transaction is pending, failed or unavailable; it never establishes verification.
+- `required_confirmations`: the configured minimum when deployment policy is valid, including before PDF anchoring. Observed `confirmations` remains available only from validated live evidence; clients must not substitute the required minimum for the observed count.
 - When available: chain_id, contract_address, issuer_address, transaction_hash (null before signing), block_number, block_hash, confirmations, onchain_status, opaque keys, commitment, commitment_salt, pdf_sha256 and snapshot_sha256. A known signed hash remains available during pending confirmation or RPC outage; block fields come from live validated evidence.
 - `replacement_transaction_hash`: confirmed old-key cancellation dependency for a replacement PDF.
 - `error` and `retryable`: bounded classifications; no raw provider errors, signing data, storage paths or private keys.
@@ -136,6 +140,8 @@ Private and public root mappings are now aligned: only nested PENDING_BLOCKCHAIN
 
 The upload verifier now calls `document_proof(document['document_id'], known_document=True)` only after `PassportDocumentRepository.find_by_hash` found the issued document. This server-only hint removes a duplicate disabled-transport existence lookup; it never bypasses enabled-chain validation and is never sourced from request parameters. The existing three-query assertion is preserved unchanged.
 
-The target frontend at cc74833 discards unknown blockchain fields and does not accept the new pending/replaced public statuses. Its owners must update the explicit DTO allowlists, adapters and HTTP acceptance fixtures. Build explorer links only from validated chain ID 80002 and a 32-byte transaction hash using the fixed Amoy explorer origin. Label LOCAL_ANVIL as local test evidence. No private keys, provider URLs or arbitrary explorer URLs are sent to clients.
+The integration frontend at bec0d83 still needs the explicit DTO allowlists, adapters and HTTP acceptance fixtures described in `ops/BACKEND_API_HANDOFF.md`. Retain the backend's additive `network`, `transaction_explorer_url` and `required_confirmations` fields. Use the server-provided explorer link; it is constrained to the fixed Amoy origin and a validated hash. Label LOCAL_ANVIL as local test evidence. No private keys, provider URLs or arbitrary explorer URLs are sent to clients.
+
+A concurrent new version can make an otherwise confirmed document historical during assessment. A current badge therefore requires the final institutional registry assessment to be VALID and latest, in addition to the independent chain checks. Historical chain integrity remains separate.
 
 Student current/PDF reads require the existing verified linked Student session. Registrar corrections require `accounts.manage_legal_identity`; Passport revocation requires `accounts.manage_passport_lifecycle`; historical registrar reads require the registrar permission and are audited. Existing admin PDF reads retain `accounts.view_student_records` plus their existing audit rules. Session-authenticated mutations require CSRF. The public endpoints need no session or keys.

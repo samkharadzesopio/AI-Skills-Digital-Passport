@@ -16,6 +16,7 @@ from .chain import configured_gateway as ChainGateway, ProofError, ProofPending,
 from .models import PassportAnchor, SignerNonce, ProofObservation
 from .commitments import passport_key, document_material
 from .policy import load_policy, load_signer
+from .metadata import network_metadata
 from .rpc import rpc_budget, VERIFICATION_SECONDS, WORKER_SECONDS, RPCUnavailable, RPCDeadlineExceeded
 
 MAX_FAILURES = 10
@@ -257,6 +258,7 @@ def process_batch(*, batch_size=20):
 def document_proof(document_reference,*,gateway=None,known_document=False):
     with rpc_budget(VERIFICATION_SECONDS):
         result=_document_proof(document_reference,gateway=gateway,known_document=known_document)
+    result.update(network_metadata(result.get('chain_id'), result.get('transaction_hash')))
     result['assessed_at']=None if result['status']=='NOT_CONFIGURED' else timezone.now().isoformat()
     return result
 
@@ -270,6 +272,8 @@ def _document_proof(document_reference,*,gateway=None,known_document=False):
             if not known_document and document_reference is not None and not PassportDocument.objects.filter(public_reference=document_reference).exists():
                 return {**result,'status':'NOT_FOUND'}
             return {**result,'status':'NOT_CONFIGURED'}
+        result.update(chain_id=policy.chain_id, environment=policy.environment,
+                      required_confirmations=policy.confirmations)
         if document_reference is None:
             return result
         anchor=_rows().filter(document__public_reference=document_reference,operation_type='ISSUE').first()
@@ -308,11 +312,15 @@ def _document_proof(document_reference,*,gateway=None,known_document=False):
         registry=PassportVerificationService().verify(result['version_reference'],kind='version',include_blockchain=False)
         result['registry_status']=registry['status']
         result['credential_status']=registry['credential_status']
+        result['latest_version']=registry['latest_version']
         # An empty update after revocation/expiry retains historical issuance,
         # but cannot establish current certification through an empty-set rule.
         valid_credentials=registry['authentic'] and registry['credential_status']=='VALID'
+        # The immutable version may have become historical since the preceding
+        # identity read. The newer registry assessment must also confirm currency.
         current=(latest['status']=='ACTIVE' and proof['onchain_status']=='ACTIVE'
-                 and latest['latest_version_id']==anchor.document.passport_version_id and valid_credentials)
+                 and latest['latest_version_id']==anchor.document.passport_version_id
+                 and registry['status']=='VALID' and registry['is_latest'] is True and valid_credentials)
         return {**result,**proof,'transaction_hash':anchor.transaction_hash,'status':'CONFIRMED',
                 'blockchain_verified':current,'historical_blockchain_authentic':True,'issuer_key_authorized':True}
     except ProofPending:
@@ -342,7 +350,8 @@ def version_proof(version_id):
         return document_proof(None)
     except Exception:
         return {'status':'UNAVAILABLE','blockchain_verified':False,'historical_blockchain_authentic':False,
-                'issuer_key_authorized':False,'institutional_issuer_approved':False,'assessed_at':timezone.now().isoformat()}
+                'issuer_key_authorized':False,'institutional_issuer_approved':False,'assessed_at':timezone.now().isoformat(),
+                **network_metadata()}
 
 
 def reconcile_confirmed(batch_size=20):

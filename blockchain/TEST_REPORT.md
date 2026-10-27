@@ -1,5 +1,19 @@
 # Local blockchain integration acceptance
 
+Current integrated follow-up: `feature/blockchain-mvp-completion` starts from
+`integration` commit `bec0d83`, preserving the already integrated Developer 1
+corrections. See `MVP_INTEGRATION_2026-10-27.md` for the exact changes, local
+evidence and external blockers. The final full backend run passed **563 tests in
+1007.430 seconds** (565 discovered; only the two existing legacy reference-SQL
+comparisons excluded). Foundry passed 11 tests and the recompiled artifact
+matched exactly. The diagnostic and final normal HTTP/Anvil runs each passed all
+11 lifecycle journeys and verified owned-resource cleanup. The first combined
+run had stopped at a dashboard HTTP 500 after three journeys; its cause was not
+reproduced or identified. Server-thread connection cleanup was corrected and
+sanitized stack-location capture added without changing expected HTTP statuses.
+This follow-up adds no migrations and does not establish public Amoy deployment,
+browser/Chrome acceptance or completion of the mandatory blockchain MVP.
+
 Final correction follow-up: `fix/blockchain-premerge-stabilization` at the subsequently published commit is documented in `FINAL_STABILIZATION_2026-10-27.md`. Its final release run passed 551 tests in 525.681 seconds, with the same two explicit legacy reference-SQL exclusions; Foundry passed 11 tests and artifact comparison matched. The required three-query regression remains unchanged and passes. The older NOT READY classification and partial/failing runs below describe prior revisions; they are retained as historical evidence.
 
 Updated: 2026-10-27. Reviewed baseline: `044264f`, `feature/passport-blockchain-proof`. Publication of the reviewed stabilization changes was subsequently authorized; see Git history for the resulting commit. The NOT READY classification and recorded test results are unchanged.

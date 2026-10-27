@@ -49,7 +49,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "ACTIVE"
+      "onchain_status": "ACTIVE",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_pending": {
@@ -73,7 +76,12 @@
       "blockchain_verified": false,
       "historical_blockchain_authentic": false,
       "issuer_key_authorized": false,
-      "institutional_issuer_approved": false
+      "institutional_issuer_approved": false,
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "chain_id": 31337,
+      "environment": "LOCAL_ANVIL",
+      "required_confirmations": 3
     }
   },
   "public_unavailable": {
@@ -116,7 +124,10 @@
       "commitment_salt": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "passport_reference": "10000000-0000-4000-8000-000000000001",
       "version_reference": "20000000-0000-4000-8000-000000000001",
-      "error": "RPC_TIMEOUT"
+      "error": "RPC_TIMEOUT",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_replaced_passport": {
@@ -160,7 +171,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "REPLACED"
+      "onchain_status": "REPLACED",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_revoked_passport": {
@@ -204,7 +218,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "REVOKED"
+      "onchain_status": "REVOKED",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_revoked_credential": {
@@ -253,7 +270,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "ACTIVE"
+      "onchain_status": "ACTIVE",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_expired_credential": {
@@ -302,7 +322,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "ACTIVE"
+      "onchain_status": "ACTIVE",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_historical_outdated": {
@@ -351,7 +374,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "ACTIVE"
+      "onchain_status": "ACTIVE",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "student_verified": {
@@ -423,7 +449,10 @@
       "block_number": 123,
       "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "confirmations": 3,
-      "onchain_status": "ACTIVE"
+      "onchain_status": "ACTIVE",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_failed": {
@@ -466,7 +495,10 @@
       "commitment_salt": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "passport_reference": "10000000-0000-4000-8000-000000000001",
       "version_reference": "20000000-0000-4000-8000-000000000001",
-      "error": "UNAPPROVED_SIGNING_KEY"
+      "error": "UNAPPROVED_SIGNING_KEY",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "student_pending": {
@@ -513,7 +545,12 @@
       "blockchain_verified": false,
       "historical_blockchain_authentic": false,
       "issuer_key_authorized": false,
-      "institutional_issuer_approved": false
+      "institutional_issuer_approved": false,
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "chain_id": 31337,
+      "environment": "LOCAL_ANVIL",
+      "required_confirmations": 3
     }
   },
   "student_unavailable": {
@@ -579,11 +616,24 @@
       "commitment_salt": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "passport_reference": "10000000-0000-4000-8000-000000000001",
       "version_reference": "20000000-0000-4000-8000-000000000001",
-      "error": "RPC_TIMEOUT"
+      "error": "RPC_TIMEOUT",
+      "network": "Anvil",
+      "transaction_explorer_url": null,
+      "required_confirmations": 3
     }
   },
   "public_not_found": {
     "status": "NOT_FOUND",
+    "authentic": false,
+    "is_latest": null,
+    "passport_version": null,
+    "latest_version": null,
+    "credential_status": "UNVERIFIABLE",
+    "credential_counts": {},
+    "source": "POSTGRESQL_PASSPORT_REGISTRY"
+  },
+  "public_not_issued": {
+    "status": "NOT_ISSUED",
     "authentic": false,
     "is_latest": null,
     "passport_version": null,

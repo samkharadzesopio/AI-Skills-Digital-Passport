@@ -34,7 +34,7 @@ States: PENDING, SIGNED, SUBMITTED, CONFIRMED, FAILED. Pending confirmations are
 
 The reconciliation worker checks confirmed receipts against the current canonical chain and keeps separate observations. It can rebroadcast an unchanged transaction lost in a reorganization. Public verification independently rereads the chain each time; the original database CONFIRMED receipt is not accepted as live proof. Provider outages/reorganizations cannot produce a positive result from stale database state.
 
-The Amoy provider injects Polygon PoA header normalization at middleware layer zero. Provider selection validates the complete deployment policy; the independent checker uses the same factory. Verification has a shared six-second RPC budget across replacement dependencies, bounded streaming bodies and no HTTP redirects/retries. Register `apps.blockchain.middleware.BlockchainRPCBudgetMiddleware` during integration to extend that budget across multiple proofs in one HTTP request; the current shared settings have deliberately not been overwritten.
+The Amoy provider injects Polygon PoA header normalization at middleware layer zero. Provider selection validates the complete deployment policy; the independent checker uses the same factory. Verification has a shared six-second RPC budget across replacement dependencies, bounded streaming bodies and no HTTP redirects/retries. `apps.blockchain.middleware.BlockchainRPCBudgetMiddleware` is registered in the integrated production and authentication-test settings and shares that budget across multiple proofs in one HTTP request.
 
 Signing records a SIGNED observation in the existing observation table, in the nonce-reservation transaction. Pending transactions known to the node are not repeatedly broadcast. After fifteen minutes from signing, submissions remain SUBMITTED with `STUCK_TRANSACTION_REVIEW_REQUIRED`; the exact signed bytes and nonce are retained. Legacy signed operations without that observation conservatively use the original operation creation time. Confirmation still recovers automatically if the transaction is mined. If an absent transaction's nonce was consumed elsewhere, the operation fails with `NONCE_CONSUMED_REVIEW_REQUIRED`, retaining all evidence for operator review. A later genuine receipt can still be recovered by reconciliation.
 
@@ -95,6 +95,8 @@ Existing endpoints remain authoritative. See `API_CONTRACT.md` for response rule
 
 Existing private current Passport/PDF endpoints now return only the active identity. Existing public Passport/version/PDF-upload verifiers return chain/issuer facts separately from historical authenticity and present-day validity. Registry-only test behavior is confined to the legacy isolated test settings; production sets `PASSPORT_BLOCKCHAIN_ENFORCE=True` unconditionally. Missing chain proof or configured issuer trust must not return VALID or a BLOCKCHAIN_VERIFIED Passport status.
 
+The same nested proof includes `network`, `required_confirmations` and `transaction_explorer_url`. Only Polygon Amoy hashes produce an HTTPS link on the fixed Amoy explorer; Anvil has no public explorer link. A saved transaction link is not a confirmation. Current certification also requires the final registry read to identify the assessed immutable version as latest and VALID, preventing a concurrent version update from retaining a stale current badge.
+
 The frontend/Chrome viewer should display BLOCKCHAIN VERIFIED only when root status is BLOCKCHAIN_VERIFIED and `blockchain.blockchain_verified` is true. REPLACED/REVOKED identities must disappear from current views; clear private queries on identity change/logout and refetch current data, never reuse a cached former Passport. Browser UI integration/deployment acceptance is separate from the backend API tests; no Chrome extension is claimed built by this feature.
 
 ## Migration plan for Developer 1 review
@@ -113,7 +115,7 @@ Review a staging schema snapshot and migration plan before any shared apply. Bac
 
 See `TEST_REPORT.md` for the recorded local acceptance scope, exact results and remaining public-network blockers.
 
-The October 27 stabilization review, exact shared-code dependencies, integration conflicts and readiness classification are in `STABILIZATION_HANDOFF_2026-10-27.md`. Complete illustrative response bodies are in `API_EXAMPLES.json`.
+The earlier stabilization history is in `STABILIZATION_HANDOFF_2026-10-27.md` and `FINAL_STABILIZATION_2026-10-27.md`. The integrated baseline and current follow-up are described in `MVP_INTEGRATION_2026-10-27.md`. Complete illustrative response bodies are in `API_EXAMPLES.json`.
 
 Install Python requirements and pinned contract tools:
 
@@ -127,9 +129,35 @@ npm --prefix blockchain run check
 
 Foundry 1.7.1, OpenZeppelin 5.4.0 and Solidity 0.8.30/Cancun are pinned. `run check` recompiles with Foundry and compares the committed ABI/creation/runtime bytecode. For a restricted compiler cache, set `SOLC_PATH` to a verified native Solidity 0.8.30 binary. A normal Foundry install can manage the compiler itself. Node wrapper scripts propagate actual native exit codes. Generated artifacts/broadcast/keystore folders are ignored.
 
-Run `python blockchain/scripts/test_backend.py` from repository root. It always initializes a new owned loopback PostgreSQL cluster and random test database, uses generated isolated settings and removes its owned cluster/media on exit. It never imports production settings or adopts a database. Set `PASSPORT_PG_BIN` to installed PostgreSQL binaries when needed. Optional positional test labels select a supported subset; the default includes all nine backend applications, including apps.blockchain. Preserve integration's newer disposable launcher when merging later and add apps.blockchain to its discovery list.
+Run `python blockchain/scripts/test_backend.py` from repository root. It always initializes a new owned loopback PostgreSQL cluster and random test database, uses generated isolated settings and removes its owned cluster/media on exit. It never imports production settings or adopts a database. Set `PASSPORT_PG_BIN` to installed PostgreSQL binaries when needed. Optional positional test labels select a supported subset; the default includes all nine backend applications, including apps.blockchain. The integrated launcher is `python -B ops/run_isolated_tests.py --backend --chain-http`; it also checks resource cleanup and exercises the real HTTP/session/CSRF/Anvil journeys. Both paths automatically start and stop their own local Anvil instances with fresh local-only signing material.
 
 On Windows use `npm.cmd ci --ignore-scripts` in blockchain: the pinned generic Foundry package postinstall uses POSIX environment-assignment syntax. Platform-native optional binaries are already locked; the project wrappers invoke those binaries directly. `npm.cmd test` and `npm.cmd run check` exercise the same pinned tools. Artifact checks normalize Git checkout line endings while retaining the complete ABI/bytecode comparison.
+
+## Manual local Django and Anvil
+
+For a development viewer, use the existing guarded database/mail configuration in `ops/LOCAL_DEVELOPMENT.md`. Keep it separate from the disposable automated tests above. Start a loopback-only node with a standard Foundry installation (or invoke the pinned platform-native Anvil executable under `blockchain/node_modules/@foundry-rs/`):
+
+```text
+anvil --host 127.0.0.1 --port 8545 --chain-id 31337 --silent
+```
+
+Anvil accounts and funds are local test material; never reuse those keys on Amoy. Choose local-only admin, issuer and deployer accounts/keystores, and fund the latter two on this Anvil instance. With their public `BTU_REGISTRY_ADMIN` and `BTU_REGISTRY_ISSUER` environment values set, run from `blockchain/`:
+
+```text
+forge script script/Deploy.s.sol:Deploy --rpc-url http://127.0.0.1:8545 --chain 31337 --account LOCAL_ONLY_DEPLOYER --broadcast
+```
+
+That command broadcasts only to the explicit loopback node. Use its actual deployed address, never a documentation example. Configure `PASSPORT_BLOCKCHAIN_ENABLED=true`, `PASSPORT_BLOCKCHAIN_CHAIN_ID=31337`, `PASSPORT_BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545`, the local contract/issuer addresses, a restricted local issuer key file, and the existing trusted fixed BTU issuer/allowlist. One confirmation can be used for local development; Amoy's reviewed confirmation policy is separate. A restarted empty Anvil chain requires a new local deployment; saved database receipts cannot establish proof on an empty chain.
+
+With the reviewed **local** migrations already applied through the existing local-development workflow, start these in separate terminals from repository root:
+
+```text
+python backend/manage.py runserver 127.0.0.1:8000 --settings=config.local_dev_settings
+python backend/manage.py run_backend_workers --settings=config.local_dev_settings
+python backend/manage.py process_blockchain_proofs --watch --settings=config.local_dev_settings
+```
+
+The guarded local profile requires `BTU_LOCAL_DEVELOPMENT=1`, `DJANGO_DEBUG=true`, a loopback `btu_passport_local` database and the existing explicit account policy. These commands do not apply migrations or provision issuers. Test the existing authenticated Student/PDF APIs and anonymous verification APIs from `API_CONTRACT.md`. Local evidence reports `network: Anvil`, `environment: LOCAL_ANVIL` and no public explorer URL. Frontend parser/display acceptance remains necessary; running a Django server does not complete the website integration.
 
 The chain tests start their own Anvil subprocess with an ephemeral mnemonic generated at runtime, deploy the actual contract, send real signed local transactions and exercise Django/PostgreSQL/PDF/public endpoints. They do not use eth-tester or a database-only EVM simulator. `PASSPORT_ANVIL_BIN` can select an installed native binary. No public wallet or RPC credentials are needed for local tests.
 
