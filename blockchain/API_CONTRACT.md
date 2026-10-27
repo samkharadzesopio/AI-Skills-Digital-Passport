@@ -1,5 +1,17 @@
 # Passport lifecycle contract for React, Chrome and authorized Classroom viewers
 
+## Current environment: Anvil MVP
+
+The primary environment for this handoff is Anvil, chain 31337. Amoy deployment
+and funding are not prerequisites. Confirmed Anvil transactions are real local
+EVM evidence and may satisfy the existing verification rules, but every consumer
+must retain `environment: LOCAL_ANVIL`, `network: Anvil`, `chain_id: 31337` and
+`transaction_explorer_url: null`. A verified label must identify this local test
+network; it must never imply Polygon Amoy or public-network consensus. Local
+issuance, failure, historical and cancellation semantics below remain unchanged.
+The trusted database issuer and explicit permissions remain mandatory on Anvil.
+No authentication, confirmation or issuer-trust check is disabled for the demo.
+
 This backend feature does not copy the website or create an alternative Passport design. All clients use the same existing self-scoped Django APIs and exact stored PDF bytes. The Chrome implementation remains a separate, paused task; these are its server contracts, not a claim that an extension has been implemented.
 
 ## Current student Passport

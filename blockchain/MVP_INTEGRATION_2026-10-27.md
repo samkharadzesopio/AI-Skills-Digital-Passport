@@ -1,5 +1,11 @@
 # Blockchain MVP integration follow-up — 27 October 2026
 
+Historical scope notice: this report records the earlier Amoy-focused request.
+The subsequent Anvil-first handoff is documented in
+`ANVIL_HANDOFF_2026-10-27.md`; public Amoy deployment is no longer a prerequisite
+for that handoff. The historical test results and unresolved initial HTTP 500
+below are retained unchanged.
+
 ## Readiness: NOT READY for complete MVP acceptance
 
 The local backend corrections and normal HTTP acceptance pass. The mandatory

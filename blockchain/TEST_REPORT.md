@@ -1,5 +1,32 @@
 # Local blockchain integration acceptance
 
+Latest scope: **Anvil-first handoff on `feature/passport-blockchain-proof`**.
+See `ANVIL_HANDOFF_2026-10-27.md` for complete evidence, setup and integration
+requirements. Public Amoy deployment/funding is not required by the user's
+current handoff instruction.
+
+- Fresh broad PostgreSQL run: 563 ran in 1238.650 seconds, 562 passed and one
+  privacy-test fixture failed to connect to local PostgreSQL within the existing
+  five-second limit. 565 discovered; only the same two legacy reference-SQL
+  comparisons excluded. The broad run is not reported green.
+- Unchanged full lifecycle module rerun: all 23 passed in 117.149 seconds,
+  including the previously blocked calldata-privacy case.
+- Separate real HTTP/Anvil acceptance: all 11 journeys passed and all owned
+  resources were cleaned up; the earlier dashboard HTTP 500 did not recur.
+- Foundry: 11 passed, no failures/skips; rebuilt ABI/bytecode exact match.
+- Actual local Forge deployment script: successful receipt, pinned runtime and
+  correct admin/issuer roles. No public transaction or private-key CLI argument.
+- Anvil CLI state load/graceful restart retained independently verifiable
+  issuance and at least three confirmations; interval mining advanced blocks.
+- Resource cleanup checks: 6 passed, plus 3 local-policy tests. System checks
+  passed; no migration drift. The documented local issuer-generation example
+  passed its file-permission, loader, no-secret-output and overwrite guards.
+
+Ready for **Anvil backend integration testing with the recorded limitations**,
+not an assertion of entirely green combined CI, completed website/Chrome
+acceptance, public-network validation or a production security certification.
+The older reports below retain their original scope and test history.
+
 Current integrated follow-up: `feature/blockchain-mvp-completion` starts from
 `integration` commit `bec0d83`, preserving the already integrated Developer 1
 corrections. See `MVP_INTEGRATION_2026-10-27.md` for the exact changes, local

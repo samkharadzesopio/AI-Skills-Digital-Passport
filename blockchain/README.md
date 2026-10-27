@@ -1,6 +1,8 @@
-# Mandatory Polygon Passport lifecycle
+# BTU Passport blockchain lifecycle — Anvil MVP
 
-This feature implements the local, testable backend lifecycle. It is **not an assertion that Polygon Amoy is deployed or that the MVP is complete**. No public transaction, funded wallet, frontend browser acceptance or shared Neon migration has been performed by this work.
+**Anvil (chain 31337) is the primary MVP environment for this handoff.** It uses real local EVM transactions, PostgreSQL persistence and independently checked receipts. No Polygon Amoy deployment, faucet balance or real money is required for integration testing. The Amoy adapter remains available but has not been publicly deployed or validated by this work. Frontend/Chrome browser acceptance and shared database rollout remain separate from backend test results.
+
+Start with [ANVIL_HANDOFF_2026-10-27.md](ANVIL_HANDOFF_2026-10-27.md) for the assigned branch, fresh test results, security review, setup and integration requirements. Earlier reports retain their original Amoy-focused acceptance criteria as historical evidence; the user's current Anvil-first handoff instructions supersede those criteria.
 
 ## Architecture
 
@@ -30,7 +32,7 @@ Current student/dashboard/version/PDF queries filter ACTIVE identities. Students
 
 An operation's target, namespace, digest and deployment are immutable. Nonces are reserved under a PostgreSQL row lock per chain/signing address. The fully signed transaction and deterministic hash are saved before broadcasting. RPC calls, file reads and receipt verification take place outside PostgreSQL transactions. Retries reuse the saved transaction; a process crash after sending cannot silently create another issuance.
 
-States: PENDING, SIGNED, SUBMITTED, CONFIRMED, FAILED. Pending confirmations are explicit and never count as verified. Transient RPC/storage/signing-configuration failures have ten bounded exponential-backoff attempts. An operator can requeue transient failures with `--retry-failed`; signed bytes are retained. Reverted transactions and target/key mismatches fail closed for investigation. Fee-bump/replacement transactions are deliberately not guessed automatically. Use a dedicated, exclusively operated issuer signing account; do not consume its nonces with unrelated transactions. Fund it only with test POL for the approved testnet flow.
+States: PENDING, SIGNED, SUBMITTED, CONFIRMED, FAILED. Pending confirmations are explicit and never count as verified. Transient RPC/storage/signing-configuration failures have ten bounded exponential-backoff attempts. An operator can requeue transient failures with `--retry-failed`; signed bytes are retained. Reverted transactions and target/key mismatches fail closed for investigation. Fee-bump/replacement transactions are deliberately not guessed automatically. Use a dedicated, exclusively operated issuer signing account; do not consume its nonces with unrelated transactions. For Anvil, fund fresh local-only accounts through its loopback administrative RPC; no faucet is needed. Any later approved Amoy deployment uses separate testnet custody and test POL.
 
 The reconciliation worker checks confirmed receipts against the current canonical chain and keeps separate observations. It can rebroadcast an unchanged transaction lost in a reorganization. Public verification independently rereads the chain each time; the original database CONFIRMED receipt is not accepted as live proof. Provider outages/reorganizations cannot produce a positive result from stale database state.
 
@@ -113,7 +115,7 @@ Review a staging schema snapshot and migration plan before any shared apply. Bac
 
 ## Local build and tests
 
-See `TEST_REPORT.md` for the recorded local acceptance scope, exact results and remaining public-network blockers.
+See `TEST_REPORT.md` and the current Anvil handoff for the recorded local acceptance scope and exact results. Public-network access is not an acceptance prerequisite for this handoff.
 
 The earlier stabilization history is in `STABILIZATION_HANDOFF_2026-10-27.md` and `FINAL_STABILIZATION_2026-10-27.md`. The integrated baseline and current follow-up are described in `MVP_INTEGRATION_2026-10-27.md`. Complete illustrative response bodies are in `API_EXAMPLES.json`.
 
@@ -138,7 +140,7 @@ On Windows use `npm.cmd ci --ignore-scripts` in blockchain: the pinned generic F
 For a development viewer, use the existing guarded database/mail configuration in `ops/LOCAL_DEVELOPMENT.md`. Keep it separate from the disposable automated tests above. Start a loopback-only node with a standard Foundry installation (or invoke the pinned platform-native Anvil executable under `blockchain/node_modules/@foundry-rs/`):
 
 ```text
-anvil --host 127.0.0.1 --port 8545 --chain-id 31337 --silent
+anvil --host 127.0.0.1 --port 8545 --chain-id 31337 --block-time 1 --silent
 ```
 
 Anvil accounts and funds are local test material; never reuse those keys on Amoy. Choose local-only admin, issuer and deployer accounts/keystores, and fund the latter two on this Anvil instance. With their public `BTU_REGISTRY_ADMIN` and `BTU_REGISTRY_ISSUER` environment values set, run from `blockchain/`:
@@ -147,7 +149,7 @@ Anvil accounts and funds are local test material; never reuse those keys on Amoy
 forge script script/Deploy.s.sol:Deploy --rpc-url http://127.0.0.1:8545 --chain 31337 --account LOCAL_ONLY_DEPLOYER --broadcast
 ```
 
-That command broadcasts only to the explicit loopback node. Use its actual deployed address, never a documentation example. Configure `PASSPORT_BLOCKCHAIN_ENABLED=true`, `PASSPORT_BLOCKCHAIN_CHAIN_ID=31337`, `PASSPORT_BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545`, the local contract/issuer addresses, a restricted local issuer key file, and the existing trusted fixed BTU issuer/allowlist. One confirmation can be used for local development; Amoy's reviewed confirmation policy is separate. A restarted empty Anvil chain requires a new local deployment; saved database receipts cannot establish proof on an empty chain.
+That command broadcasts only to the explicit loopback node. Use its actual deployed address, never a documentation example. Configure `PASSPORT_BLOCKCHAIN_ENABLED=true`, `PASSPORT_BLOCKCHAIN_CHAIN_ID=31337`, `PASSPORT_BLOCKCHAIN_RPC_URL=http://127.0.0.1:8545`, the local contract/issuer addresses, a restricted local issuer key file, and the existing trusted fixed BTU issuer/allowlist. The one-second block interval allows the default three-confirmation policy to progress even without other transactions. Automated tests also exercise one-confirmation and explicitly pending three-confirmation scenarios. A restarted empty Anvil chain requires a new local deployment; saved database receipts cannot establish proof on an empty chain. Keep Anvil on the Django host's loopback interface; its administrative RPC must not be exposed publicly.
 
 With the reviewed **local** migrations already applied through the existing local-development workflow, start these in separate terminals from repository root:
 
@@ -173,7 +175,9 @@ This command uses no signing key. It validates the original signature, chain, ta
 
 No automatic or manual fee increase is implemented. A temporarily underpriced transaction must wait until its original fee is acceptable, then the dropped original may be rebroadcast. If that cannot resolve an incident, a reviewed forward transaction-attempt design is required. Do not reset nonces, edit signed rows, send unrelated transactions from the issuer, or discard history. This explicit limitation is preferable to an untested replacement mechanism. Public-network recovery is an operator action requiring its normal authorization; this stabilization executed local Anvil transactions only.
 
-## Polygon Amoy deployment: prepared, not executed
+## Optional later Polygon Amoy deployment: prepared, not executed
+
+This section is retained for a separately approved public-testnet deployment. It is **not required for the current Anvil MVP handoff**.
 
 Required external inputs: explicit authorization, an approved administrator/issuer key policy, an Amoy RPC endpoint, a deployer funded with test POL and a separately controlled issuer funded for its transactions. Students never need wallets. No mainnet deployment is permitted.
 
@@ -201,4 +205,4 @@ PASSPORT_IDENTITY_EVIDENCE_SOURCES=BTU_REGISTRAR
 
 Provision the fixed BTU database issuer through the existing authorized service. Use TLS/private storage, restrictive Unix key-file mode 0600 or equivalent Windows ACLs, supervised workers and a dedicated issuer account. The RPC endpoint must report 80002; do not use an Anvil result as evidence of Amoy success. Keep old signing keys authorized until their queued work is safely drained or explicitly resolved. Retain historic deployment artifacts and trust records when planning future deployments; this MVP currently permits one reviewed registry deployment per environment.
 
-Acceptance on Amoy must reproduce: approved completion → PDF → confirmed proof → anonymous upload/reference check; legal replacement → old REPLACED + new independent proof; revocation; failed RPC/restart recovery; changed bytes; unauthorized key; current/historical distinction. Confirm receipt and events via an independent Amoy RPC or explorer, and test the real website/extension consumers. Until that succeeds, report the MVP as awaiting public-network and client acceptance.
+If a later public Amoy release is requested, its acceptance must reproduce: approved completion → PDF → confirmed proof → anonymous upload/reference check; legal replacement → old REPLACED + new independent proof; revocation; failed RPC/restart recovery; changed bytes; unauthorized key; current/historical distinction. Confirm receipt and events via an independent Amoy RPC or explorer, and test the real website/extension consumers. Until then, label that public-network deployment untested; it does not block the present Anvil integration handoff.
