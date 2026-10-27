@@ -61,3 +61,72 @@ class ImportRun(models.Model):
     events = models.ManyToManyField(ClassroomSyncEvent, related_name='import_runs')
     created_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True)
+
+
+class SpreadsheetProfile(models.Model):
+    """Operator-provisioned, immutable version of an institutional source policy."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    key = models.SlugField(max_length=80)
+    version = models.PositiveIntegerField()
+    source = models.CharField(max_length=30, choices=[('BTU_EXCEL', 'Excel'), ('BTU_GOOGLE_SHEETS', 'Google Sheets')])
+    kind = models.CharField(max_length=16, choices=[('COMPLETION', 'Completion'), ('SKILL_AWARD', 'Skill award')])
+    definition = models.JSONField()
+    definition_sha256 = models.CharField(max_length=64)
+    approval_reference = models.CharField(max_length=255)
+    enabled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['key', 'version'], name='uq_spreadsheet_profile_version'),
+            models.CheckConstraint(condition=models.Q(version__gte=1), name='chk_spreadsheet_profile_version'),
+            models.CheckConstraint(condition=models.Q(source__in=['BTU_EXCEL', 'BTU_GOOGLE_SHEETS']), name='chk_spreadsheet_profile_source'),
+            models.CheckConstraint(condition=models.Q(kind__in=['COMPLETION', 'SKILL_AWARD']), name='chk_spreadsheet_profile_kind'),
+            models.CheckConstraint(condition=models.Q(definition_sha256__regex=r'^[0-9a-f]{64}$'), name='chk_spreadsheet_profile_hash'),
+        ]
+
+
+class SpreadsheetPreview(models.Model):
+    """Private reviewed snapshot. No uploaded workbook or source PII is returned."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    profile = models.ForeignKey(SpreadsheetProfile, on_delete=models.PROTECT)
+    source_sha256 = models.CharField(max_length=64)
+    snapshot_sha256 = models.CharField(max_length=64)
+    records = models.JSONField(default=list)
+    report = models.JSONField(default=dict)
+    state = models.CharField(max_length=16, default='READY')
+    attempts = models.PositiveSmallIntegerField(default=0)
+    lease_token = models.UUIDField(null=True)
+    lease_until = models.DateTimeField(null=True)
+    confirmed_at = models.DateTimeField(null=True)
+    expires_at = models.DateTimeField()
+    run = models.OneToOneField(ImportRun, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(state__in=['READY', 'PROCESSING', 'COMPLETED', 'FAILED']), name='chk_spreadsheet_preview_state'),
+            models.CheckConstraint(condition=models.Q(attempts__lte=5), name='chk_spreadsheet_preview_attempts'),
+        ]
+
+
+class SpreadsheetAward(models.Model):
+    """Atomic skill-evidence receipt; uses the existing achievement/credential ledger."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    source = models.CharField(max_length=30)
+    profile_key = models.CharField(max_length=80)
+    namespace = models.CharField(max_length=80)
+    record_id = models.CharField(max_length=120)
+    payload_sha256 = models.CharField(max_length=64)
+    payload = models.JSONField()
+    profile = models.ForeignKey(SpreadsheetProfile, on_delete=models.PROTECT)
+    achievement_event = models.OneToOneField('skills.AchievementSourceEvent', on_delete=models.PROTECT)
+    credential = models.OneToOneField('credentials.Credential', on_delete=models.PROTECT)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['namespace', 'record_id'], name='uq_spreadsheet_award_record'),
+        ]

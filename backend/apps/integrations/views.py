@@ -85,6 +85,17 @@ class AdminExcelImportView(AuditedAPIView):
     def post(self, request):
         uploaded_file = request.FILES.get("file")
 
+        # An explicit saved profile selects the additive preview/confirmation
+        # workflow. Omitting it retains the original strict completion contract.
+        if 'profile_id' in request.data:
+            from .spreadsheet_views import ExcelPreviewView
+            from .importers.preview import ImportProblem
+            try:
+                return ExcelPreviewView.post(self, request)
+            except ImportValidationError as exc:
+                return Response({'code': exc.code if isinstance(exc, ImportProblem) else 'INVALID_SPREADSHEET_OR_MAPPING'},
+                                status=exc.status if isinstance(exc, ImportProblem) else 400)
+
         if uploaded_file is None:
             return Response(
                 {"error": "Excel file is required"},

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -282,6 +283,19 @@ if set(BTU_AUTHORIZED_COMPLETION_SOURCES) - {'BTU_EXCEL', 'BTU_GOOGLE_SHEETS'}:
     raise ImproperlyConfigured('Only approved spreadsheet source identifiers are supported.')
 BTU_GOOGLE_SHEET_ID = os.environ.get('BTU_GOOGLE_SHEET_ID', '').strip()
 GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE', '').strip()
+try:
+    _spreadsheet_sources_json = os.environ.get('BTU_SPREADSHEET_GOOGLE_SOURCES_JSON', '{}')
+    if len(_spreadsheet_sources_json) > 50_000:
+        raise ValueError()
+    BTU_SPREADSHEET_GOOGLE_SOURCES = json.loads(_spreadsheet_sources_json)
+    if not isinstance(BTU_SPREADSHEET_GOOGLE_SOURCES, dict) or len(BTU_SPREADSHEET_GOOGLE_SOURCES) > 100:
+        raise ValueError()
+    if any(not isinstance(v, dict) or set(v) != {'spreadsheet_id', 'worksheet'}
+           or any(not isinstance(x, str) or not x.strip() or len(x) > 200 for x in v.values())
+           for v in BTU_SPREADSHEET_GOOGLE_SOURCES.values()):
+        raise ValueError()
+except (ValueError, TypeError):
+    raise ImproperlyConfigured('Invalid server-side spreadsheet source configuration.') from None
 EMAIL_TIMEOUT = 10
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 30
