@@ -94,11 +94,11 @@ try {
  await until(()=>document.body.textContent.includes('invalid or expired'))
  assert.equal(document.getElementById('student-otp').value,'')
  await fill('student-otp','123456');await submit()
- await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes(student.email))
- assert.match(document.body.textContent,/unit.student@btu.edu.ge/);assert.doesNotMatch(document.body.textContent,/Nino|DEMO-PASSPORT/)
+ await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes('No passport issued yet'))
+ assert.ok(document.querySelector('.dashboard-passport')); assert.equal(document.querySelectorAll('.stats,.dashboard-grid').length,0);assert.doesNotMatch(document.body.textContent,/Nino|DEMO-PASSPORT/)
  const beforeRefresh=calls.filter(c=>c.path==='accounts/me/').length
  await mount('/student/dashboard')
- await until(()=>calls.filter(c=>c.path==='accounts/me/').length>beforeRefresh&&document.body.textContent.includes(student.email))
+ await until(()=>calls.filter(c=>c.path==='accounts/me/').length>beforeRefresh&&document.body.textContent.includes('No passport issued yet'))
  logoutFailure=true;await clickLogout()
  await until(()=>document.body.textContent.includes('Could not confirm server logout'))
  assert.ok(current,'Failed logout must not claim the server session ended')
@@ -128,7 +128,7 @@ try {
  assert.doesNotMatch(document.body.textContent,/Nino|Recent credentials/)
  sessionNetwork=false
  current={...student}
- await mount('/student/dashboard');await until(()=>document.body.textContent.includes(student.email))
+ await mount('/student/dashboard');await until(()=>document.body.textContent.includes('No passport issued yet'))
  current=null
  await mount('/student/dashboard');await until(()=>window.location.pathname==='/student/login')
  assert.doesNotMatch(document.body.textContent,/unit.student@btu.edu.ge|Nino/)

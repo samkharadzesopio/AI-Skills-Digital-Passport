@@ -29,7 +29,7 @@ const base = `http://127.0.0.1:${server.httpServer.address().port}`
 const browser = await chromium.launch({ headless: true })
 const results = [], apiCalls = [], failures = []
 try {
-  for (const [width, height] of [[1920,1080],[1366,768],[1024,768],[768,1024],[390,844],[375,667]]) {
+  for (const [width, height] of [[1920,1080],[1440,900],[1366,768],[1280,720],[1024,768],[768,1024],[390,844],[375,667]]) {
     const context = await browser.newContext({ viewport: { width, height }, hasTouch: width < 500, reducedMotion: 'reduce' })
     const page = await context.newPage()
     await page.route('**/api/**', route => route.abort())
@@ -61,17 +61,23 @@ try {
     await page.locator('.dashboard-passport .passport-carousel').waitFor({timeout:10000}).catch(async error => { console.log('Dashboard text: '+(await page.locator('body').innerText()).slice(0,1600)); await page.screenshot({path:path.join(output,'debug.png'),fullPage:true}); throw error })
     assert.equal(await page.locator('.hero').count(), 0)
     assert.equal(await page.locator('.passport-carousel').count(), 1)
-    assert.ok(await page.locator('.dashboard-passport').evaluate(element => !!(element.compareDocumentPosition(document.querySelector('.stats')) & Node.DOCUMENT_POSITION_FOLLOWING)))
+    assert.equal(await page.locator('.stats,.dashboard-grid,.next-step,.dashboard-greeting').count(),0)
+    const composition = await page.locator('.dashboard-passport').evaluate(element => {
+      const main = element.closest('main').getBoundingClientRect(), card = element.getBoundingClientRect(), controls = element.querySelector('.passport-navigation').getBoundingClientRect(), actions = element.querySelector('.dashboard-passport-actions').getBoundingClientRect()
+      return { centered: Math.abs(card.x + card.width/2 - main.x - main.width/2) < 2, controlsCentered: Math.abs(controls.x + controls.width/2 - card.x - card.width/2) < 2, actionsCentered: Math.abs(actions.x + actions.width/2 - card.x - card.width/2) < 2, bottom: card.bottom, top: card.top, verticalCenterError: Math.abs(card.y + card.height/2 - main.y - main.height/2) }
+    })
+    assert.ok(composition.centered && composition.controlsCentered && composition.actionsCentered, JSON.stringify(composition))
+    if (width >= 1280) { assert.ok(composition.top >= 0 && composition.bottom <= height, JSON.stringify(composition)); assert.ok(composition.verticalCenterError < 3, JSON.stringify(composition)) }
+    assert.equal(await page.locator('.dashboard-passport-actions button:disabled').count(),3)
     for (const label of ['Cover','About the Passport','Verified AI Skillset','AI Skill Supplement']) {
       await page.getByRole('button', { name: label, exact: true }).click()
       await checkCard(`dashboard ${label}`)
-      if (label === 'Cover' && [1920,390].includes(width)) { await page.evaluate(() => window.scrollTo(0,0)); await page.screenshot({ path: path.join(output, `dashboard-${width}.png`), fullPage: true }) }
+      if (label === 'Cover' && [1920,1440,1366,390].includes(width)) { await page.evaluate(() => window.scrollTo(0,0)); await page.screenshot({ path: path.join(output, `dashboard-${width}.png`), fullPage: true }) }
     }
     await page.goto(`${base}/verify`)
-    for (const label of ['Cover','About the Passport','Verified AI Skillset','AI Skill Supplement']) {
-      await page.getByRole('button', { name: label, exact: true }).click()
-      await checkCard(`landing ${label}`)
-    }
+    assert.equal(await page.locator('.passport-carousel,.passport-viewport,.passport-landing').count(),0)
+    await page.locator('#verification-reference').waitFor()
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2))
     await page.goto(`${base}/__passport-layout-fixture`)
     await page.locator('.passport-carousel').waitFor()
     assert.equal(await page.locator('.passport-track').evaluate(element=>getComputedStyle(element).transitionDuration),'0s')
@@ -100,6 +106,36 @@ try {
     console.log(`PASS ${width}x${height}: dashboard, landing, all ${count} variable-content pages; no internal scroll or clipping`)
   }
   assert.deepEqual(failures, []); assert.deepEqual(apiCalls, [], 'Demo layout tests must never call private APIs')
+  // Real React Live Mode routes, served with synthetic HTTP responses only.
+  const liveServer = await createServer({ root: path.resolve(import.meta.dirname, '..'), cacheDir: path.join(output, 'live-vite-cache'), define: { 'import.meta.env.VITE_ENABLE_DEMO': JSON.stringify('false') }, optimizeDeps: { include: ['react', 'react-dom/client', 'react-router-dom'] }, server: { host: '127.0.0.1', port: 0, hmr: false, watch: null } })
+  await liveServer.listen()
+  try {
+    for (const [width,height] of [[1920,1080],[1440,900],[1366,768],[1280,720],[768,1024],[390,844]]) {
+      const context = await browser.newContext({ viewport:{width,height}, reducedMotion:'reduce' }), page = await context.newPage()
+      await page.route('**/api/**', async route => {
+        const path = new URL(route.request().url()).pathname
+        const data = path.endsWith('/accounts/me/') ? { email:'layout.synthetic@btu.edu.ge', role:'STUDENT', email_verified:true, student_association:'linked', capabilities:[] } : path.endsWith('/student/dashboard/') ? { profile:{first_name:'Synthetic',last_name:'Student'}, passport:{id:'00000000-0000-0000-0000-000000000001',public_reference:'00000000-0000-0000-0000-000000000001',status:'ISSUED',latest_version:{status:'ISSUED',skills:[]}} } : path.endsWith('/pdf/status/') ? {status:'ISSUED',available_for_download:true} : null
+        if (!data) throw new Error('Unexpected live-layout fixture request '+path)
+        await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)})
+      })
+      await page.goto('http://127.0.0.1:'+liveServer.httpServer.address().port+'/student/dashboard')
+      await page.locator('.dashboard-passport .passport-carousel').waitFor()
+      assert.equal(await page.locator('.stats,.dashboard-grid,.dashboard-greeting').count(),0)
+      for (const label of ['Cover','About the Passport','Verified AI Skillset','AI Skill Supplement']) {
+        await page.getByRole('button',{name:label,exact:true}).click()
+        const geometry = await page.locator('.dashboard-passport').evaluate(element=>{
+          const card=element.getBoundingClientRect(),main=element.closest('main').getBoundingClientRect(),active=element.querySelector('.passport-slide[aria-hidden=false]'),canvas=active.querySelector('.passport-canvas')
+          return {centered:Math.abs(card.x+card.width/2-main.x-main.width/2)<2,bottom:card.bottom,overflow:document.documentElement.scrollWidth>innerWidth+2,internalOverflow:canvas.scrollWidth>canvas.clientWidth+2||canvas.scrollHeight>canvas.clientHeight+2}
+        })
+        assert.ok(geometry.centered&&!geometry.overflow&&!geometry.internalOverflow,JSON.stringify(geometry))
+        if(width>=1280) assert.ok(geometry.bottom<=height,JSON.stringify(geometry))
+      }
+      if(width===1366) await page.screenshot({path:path.join(output,'student-live-fixture-1366.png'),fullPage:true})
+      await context.close()
+      console.log('PASS synthetic Live Mode landing '+width+'x'+height+': all sections centered, controls visible, no overflow')
+    }
+  } finally { await liveServer.close() }
+
   await fs.writeFile(path.join(output, 'results.json'), JSON.stringify({ results, failures, apiCalls }, null, 2))
   console.log(`Screenshots and report: ${output}`)
 } finally { await browser.close(); await server.close() }

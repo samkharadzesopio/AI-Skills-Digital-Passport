@@ -22,7 +22,7 @@ try {
   const uuid = '00000000-0000-0000-0000-000000000001'
   const student = { email: 'synthetic@btu.edu.ge', role: 'STUDENT', email_verified: true, student_association: 'linked', capabilities: [] }
   const admin = { email: 'synthetic-admin@btu.edu.ge', role: 'ADMIN', email_verified: true, student_association: 'unlinked', capabilities: ['view_student_records', 'manage_credentials', 'revoke_credentials', 'import_completions'] }
-  let user = student, passport = null, denied = false, malformed = false, ready = false, revoked = false, issueAttempts = 0, issueKey, historyRecords = []
+  let dashboardPassport, user = student, passport = null, denied = false, malformed = false, ready = false, revoked = false, issueAttempts = 0, issueKey, historyRecords = []
   let profilesAvailable = false, confirmAttempts = 0
   const previewSnapshot = { id: uuid, snapshot_sha256: 'a'.repeat(64), state: 'READY', expires_at: '2099-01-01T00:00:00Z', report: { valid_records: 1, duplicate_records: 1, invalid_records: 1, review_records: 1, rows: [{ row: 2, status: 'REVIEW', code: 'INSTITUTIONAL_CONFIRMATION_REQUIRED' }] }, result: null }
   const calls = []
@@ -39,7 +39,7 @@ try {
     if (path.startsWith('student/passport/versions/?')) return respond({ count: historyRecords.length, next: null, results: historyRecords })
     if (path.startsWith('student/passport/versions/') && path.endsWith('/pdf/status/')) return respond({ status: 'ISSUED', available_for_download: true })
     if (path === 'student/passport/') return denied ? respond({}, 403) : respond(passport ?? { passport: null })
-    if (path === 'student/dashboard/') return respond(malformed ? { profile: [] } : { profile: { email: user.email, first_name: 'Synthetic' }, credentials: { total: 0 }, recognized_skills: 0, verified_achievements: 0, recent_achievements: [] })
+    if (path === 'student/dashboard/') return respond(malformed ? { profile: [] } : { passport: dashboardPassport, profile: { email: user.email, first_name: 'Synthetic' }, credentials: { total: 0 }, recognized_skills: 0, verified_achievements: 0, recent_achievements: [] })
     if (path === 'student/passport/pdf/status/') return respond({ status: ready ? 'ISSUED' : 'NOT_REQUESTED', available_for_download: ready })
     if (path === 'student/passport/pdf/') { assert.equal(config.headers.get('X-CSRFToken'), 'A'.repeat(64)); assert.deepEqual(body, {}); ready = true; return respond({ status: 'ISSUED' }) }
     if (path === 'student/passport/pdf/download/') return respond(new Blob(['%PDF-synthetic'], { type: 'application/pdf' }), 200, { 'content-type': 'application/pdf' })
@@ -83,6 +83,17 @@ try {
   URL.revokeObjectURL = () => {}
   dom.window.HTMLAnchorElement.prototype.click = function () { downloaded = this.download.endsWith('.pdf') }
   try { await downloadPassport('student/passport/'); assert.equal(downloaded, true) } finally { URL.createObjectURL = originalCreate; URL.revokeObjectURL = originalRevoke; dom.window.HTMLAnchorElement.prototype.click = originalClick }
+  dashboardPassport = passport
+  await mount('/student/dashboard'); await until(() => !!document.querySelector('.dashboard-passport-actions'))
+  assert.equal(document.querySelectorAll('.stats,.dashboard-grid,.dashboard-greeting,.dashboard-recent').length, 0)
+  await until(() => ![...document.querySelectorAll('button')].find(b => b.textContent === 'Download PDF').disabled)
+  await click('Share Passport'); await until(() => document.body.textContent.includes('Select and copy the verification link below.'))
+  assert.ok(document.querySelector('.dashboard-share-link input').value.includes('passport%3A'))
+  dashboardPassport = null
+  await mount('/student/dashboard'); await until(() => document.body.textContent.includes('No passport issued yet'))
+  assert.ok([...document.querySelectorAll('button')].find(b => b.textContent === 'Download PDF').disabled)
+  assert.ok([...document.querySelectorAll('button')].find(b => b.textContent === 'Share Passport').disabled)
+  assert.ok(document.querySelector('a[href="/student/passport#passport-history"]'))
   const historicalId = '00000000-0000-0000-0000-000000000002'
   historyRecords = [{ id: historicalId, public_reference: historicalId, status: 'ISSUED', version_number: 1 }]
   await mount('/student/passport'); await until(() => document.body.textContent.includes('Historical version 1') && !!document.getElementById('passport-share'))
@@ -151,7 +162,7 @@ try {
   assert.equal(calls.filter(call => call.path.startsWith('integrations/')).length, requestsBefore)
   await mount('/admin/students/not-a-uuid'); await until(() => document.body.textContent.includes('Invalid student reference'))
   user = { ...student, email: 'second.synthetic@btu.edu.ge' }
-  await mount('/student/dashboard'); await until(() => document.body.textContent.includes(user.email))
+  await mount('/student/profile'); await until(() => document.body.textContent.includes(user.email))
   assert.ok(!document.body.textContent.includes(admin.email))
   for (const key of Object.keys(localStorage)) assert.equal(key, 'btu-locale')
   console.log('Synthetic product integration passed: no-passport state, sharing, PDF preparation/download, denied access, malformed responses, admin capability guards, issuance retry idempotency, revocation and import failure. No real services or blockchain were tested.')

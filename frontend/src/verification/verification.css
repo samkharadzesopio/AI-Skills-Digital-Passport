@@ -1,4 +1,10 @@
 .verification-layout { min-height: 100vh; background: #f7f7fb; color: #25203d; }
+.verification-layout > main { margin-inline:auto; width:100%; }
+.verification-layout .verify-form-page { width:100%; max-width:600px; margin:0 auto; }
+.verification-layout .verify-page-title { text-align:center; }
+.verification-layout .verify-white-card { border-radius:14px; box-shadow:0 8px 28px #23202708; }
+.verification-layout .verify-alternative { text-align:center; font-size:13px; margin:20px 0; }
+.verification-layout .verify-alternative a { color:#884000; text-decoration:underline; text-underline-offset:4px; }
 .verification-layout > header { height: 90px; padding: 0 max(25px, calc((100vw - 1120px) / 2)); gap: 30px; }
 .verify-brand { display: flex; align-items: center; gap: 20px; }
 .verify-brand > b { font-size: 36px; letter-spacing: -3px; color: #e5007d; position: relative; }
