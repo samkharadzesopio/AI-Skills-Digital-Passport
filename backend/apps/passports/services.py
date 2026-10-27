@@ -25,6 +25,7 @@ from .models import (
     PassportVersionCredential,
     PassportVersionCredentialSkill,
     PassportVersionSkill,
+    PassportPublication,
 )
 
 MAX_EVENT_KEY_LENGTH = 255
@@ -135,9 +136,11 @@ def get_or_create_passport(*, student_id):
         with transaction.atomic():
             student = Student.objects.select_for_update().only("id").get(pk=student_uuid)
             try:
-                passport = DigitalPassport.objects.get(student_id=student.pk)
+                passport = DigitalPassport.objects.get(student_id=student.pk, status='ACTIVE')
                 return passport, False
             except DigitalPassport.DoesNotExist:
+                if DigitalPassport.objects.filter(student_id=student.pk).exists():
+                    raise ValidationError('A cancelled Passport requires explicit institutional replacement.')
                 return DigitalPassport.objects.create(student_id=student.pk), True
 
     return _retry(operation)
@@ -172,12 +175,15 @@ def publish_passport_version(
                 )
                 .get(pk=student_uuid)
             )
-            passport, _ = DigitalPassport.objects.get_or_create(student_id=student.pk)
             passport = (
                 DigitalPassport.objects.select_for_update(of=("self",))
                 .select_related("latest_version")
-                .get(pk=passport.pk)
+                .filter(student_id=student.pk,status='ACTIVE').first()
             )
+            if passport is None:
+                if DigitalPassport.objects.filter(student_id=student.pk).exists():
+                    raise ValidationError('A cancelled Passport requires explicit institutional replacement.')
+                passport=DigitalPassport.objects.create(student=student)
 
             prior_event = (
                 PassportUpdateEvent.objects.select_related("version")
@@ -188,7 +194,17 @@ def publish_passport_version(
                 return prior_event.version, False
 
             credentials = _current_credential_rows(student.pk, effective_at)
+            if not passport.latest_version_id and not credentials:
+                from apps.skills.models import VerifiedAchievement
+                if not VerifiedAchievement.objects.filter(
+                    student_id=student.pk, verification_status='VERIFIED',
+                ).exists():
+                    raise ValidationError('An initial Passport requires approved learning evidence.')
             student_snapshot = _student_snapshot(student)
+            if passport.legal_name_snapshot:
+                student_snapshot.update(passport.legal_name_snapshot)
+            else:
+                passport.legal_name_snapshot = {key: student_snapshot[key] for key in ('first_name','last_name')}
             payload, content_sha256 = _snapshot_payload(student_snapshot, credentials)
 
             if (
@@ -275,7 +291,10 @@ def publish_passport_version(
             version.content_sha256 = content_sha256
             version.save(update_fields=["status", "issued_at", "content_sha256"])
             passport.latest_version = version
-            passport.save(update_fields=["latest_version", "updated_at"])
+            passport.first_issued_at = passport.first_issued_at or effective_at
+            passport.save(update_fields=["latest_version", "updated_at", "legal_name_snapshot", "first_issued_at"])
+            # This version is newly created and not visible outside this transaction.
+            PassportPublication.objects.create(version=version)
             PassportUpdateEvent.objects.create(
                 passport=passport,
                 version=version,

@@ -1,7 +1,13 @@
 import uuid
+import secrets
 
+from django.conf import settings
 from django.db import models
 from django.db.models.functions import Now
+
+
+def new_chain_salt():
+    return secrets.token_bytes(32)
 
 
 class DigitalPassport(models.Model):
@@ -9,9 +15,15 @@ class DigitalPassport(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_reference = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    student = models.OneToOneField(
-        "students.Student", on_delete=models.PROTECT, related_name="digital_passport"
+    student = models.ForeignKey(
+        "students.Student", on_delete=models.PROTECT, related_name="digital_passports"
     )
+    status = models.CharField(max_length=10, choices=[('ACTIVE','Active'),('REPLACED','Replaced'),('REVOKED','Revoked')], default='ACTIVE')
+    replaces = models.OneToOneField('self', null=True, blank=True, on_delete=models.PROTECT, related_name='replacement')
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    legal_name_snapshot = models.JSONField(default=dict)
+    first_issued_at = models.DateTimeField(null=True, blank=True)
+    chain_salt = models.BinaryField(default=new_chain_salt, editable=False)
     latest_version = models.ForeignKey(
         "PassportVersion",
         on_delete=models.PROTECT,
@@ -24,6 +36,50 @@ class DigitalPassport(models.Model):
 
     class Meta:
         db_table = "digital_passports"
+        constraints = [
+            models.UniqueConstraint(fields=['student'], condition=models.Q(status='ACTIVE'), name='uq_student_active_passport'),
+            models.CheckConstraint(condition=models.Q(status='ACTIVE', cancelled_at__isnull=True) | models.Q(status__in=['REPLACED','REVOKED'], cancelled_at__isnull=False), name='chk_passport_lifecycle'),
+        ]
+
+
+class PassportLifecycleEvent(models.Model):
+    """Private registrar approval. Former names/evidence never enter public APIs."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    student = models.ForeignKey('students.Student', on_delete=models.PROTECT)
+    previous = models.OneToOneField(DigitalPassport, on_delete=models.PROTECT, related_name='cancellation_event')
+    replacement = models.OneToOneField(DigitalPassport, null=True, on_delete=models.PROTECT, related_name='identity_event')
+    event_type = models.CharField(max_length=12, choices=[('NAME_CHANGE','Legal name change'),('REVOCATION','Revocation')])
+    idempotency_key = models.CharField(max_length=200)
+    payload_sha256 = models.CharField(max_length=64)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    evidence_source = models.CharField(max_length=100)
+    evidence_reference = models.CharField(max_length=200)
+    legal_names = models.JSONField(default=dict)
+    reason = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'passport_lifecycle_events'
+        constraints = [models.UniqueConstraint(fields=['student','idempotency_key'], name='uq_passport_lifecycle_request')]
+
+
+class PassportPublication(models.Model):
+    """Durable generation of every immutable version's official PDF."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    version = models.OneToOneField('PassportVersion', on_delete=models.PROTECT, related_name='publication')
+    document = models.ForeignKey('PassportDocument', null=True, on_delete=models.PROTECT)
+    state = models.CharField(max_length=12, default='PENDING', choices=[(v,v) for v in ['PENDING','PROCESSING','COMPLETE','FAILED','CANCELLED']])
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(null=True)
+    lease_token = models.UUIDField(null=True)
+    lease_expires_at = models.DateTimeField(null=True)
+    error_code = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'passport_publications'
+        indexes = [models.Index(fields=['state','next_attempt_at'], name='passport_publication_due_idx')]
 
 
 class PassportVersion(models.Model):

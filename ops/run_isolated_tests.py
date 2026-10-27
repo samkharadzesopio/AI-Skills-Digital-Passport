@@ -39,6 +39,7 @@ def main():
             port = probe.getsockname()[1]
         flags = {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
         def command(args, **kwargs):
+            print('RUN ' + ' '.join(map(str, args)), flush=True)
             if 'stdout' not in kwargs:
                 kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             result = run.command(args, **flags, **kwargs)
@@ -58,15 +59,19 @@ def main():
             run.callback(stop)
             running = True
             command([pg('pg_ctl'), '-D', str(data), '-l', str(directory / 'server.log'), '-o', f'-h 127.0.0.1 -p {port}', '-w', 'start'], stdout=log, stderr=log)
-            env = {key: value for key, value in os.environ.items() if not key.upper().startswith('PG')}
+            env = {key: value for key, value in os.environ.items()
+                   if not key.upper().startswith(('PG', 'PASSPORT_BLOCKCHAIN_', 'DJANGO_'))}
             env.update(FOUNDATION_TEST_PG_HOST='127.0.0.1', FOUNDATION_TEST_PG_PORT=str(port), FOUNDATION_TEST_PG_PASSWORD='', AUTH_TEST_PG_PORT=str(port), PYTHONDONTWRITEBYTECODE='1')
             command([sys.executable, 'ops/test_disposable_tests.py'], cwd=ROOT, env=env)
             command([sys.executable, 'ops/test_disposable_postgres.py'], cwd=ROOT, env=env)
+            command([sys.executable, 'backend/manage.py', 'check', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'makemigrations', '--check', '--dry-run', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
             if '--full' in sys.argv or '--backend' in sys.argv:
-                command([sys.executable, 'backend/manage.py', 'test', 'apps.api', 'apps.integrations', 'apps.skills', 'apps.credentials', 'apps.passports', 'apps.students', 'apps.accounts', 'apps.verification', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env)
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.api', 'apps.integrations', 'apps.skills', 'apps.credentials', 'apps.passports', 'apps.students', 'apps.accounts', 'apps.verification', 'apps.blockchain', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env, timeout=1800)
+            if '--chain-http' in sys.argv:
+                command([sys.executable, 'ops/test_backend_chain_e2e.py'], cwd=ROOT, env=env)
             if '--full' in sys.argv:
-                for label in ('verification', 'student', 'admin'):
+                for label in ('backend_chain', 'verification', 'student', 'admin'):
                     command([sys.executable, f'ops/test_{label}_e2e.py'], cwd=ROOT, env=env)
         run.close()
         if directory.exists():

@@ -19,6 +19,8 @@ class DocumentVerificationResultSerializer(
             "UNVERIFIABLE",
             "REVOKED",
             "EXPIRED",
+            "REPLACED",
+            "PENDING_BLOCKCHAIN",
         ]
     )
     authentic = serializers.BooleanField()
@@ -36,3 +38,5 @@ class DocumentVerificationResultSerializer(
 
     credential_status = serializers.ChoiceField(choices=['VALID', 'REVOKED', 'EXPIRED', 'INVALID', 'UNVERIFIABLE'])
     credential_counts = serializers.DictField(child=serializers.IntegerField(min_value=0))
+    # Registry validity is separate from live chain proof and institutional identity.
+    blockchain = serializers.DictField(required=False)

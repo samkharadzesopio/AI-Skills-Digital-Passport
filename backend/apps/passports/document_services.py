@@ -184,6 +184,7 @@ def _render_context(version):
             "public_reference": str(version.public_reference),
             "number": version.version_number,
             "issued_date": version.issued_at.date().isoformat(),
+            "first_issued_date": (version.passport.first_issued_at or version.issued_at).date().isoformat(),
         },
         "verification_reference": f"passport-version:{version.public_reference}",
         "credentials": credential_rows,
@@ -311,6 +312,9 @@ def _finalize(document_id, token, storage_key, pdf_sha256, byte_size):
                 "lease_token", "lease_expires_at", "updated_at",
             ]
         )
+        # The proof receipt is committed with issuance. No RPC/signing under locks.
+        from apps.blockchain.services import enqueue_document
+        enqueue_document(document)
         return document
 
 

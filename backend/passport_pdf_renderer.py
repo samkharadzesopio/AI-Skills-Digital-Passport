@@ -8,7 +8,7 @@ import pymupdf as fitz
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE = BASE_DIR / "templates" / "Passport_Blank.pdf"
-RENDERER_VERSION = "pymupdf-template-v4-georgian-fonts"
+RENDERER_VERSION = "pymupdf-template-v5-passport-lifecycle"
 
 FONT_FILES = {
     "regular": BASE_DIR / "templates" / "NotoSansGeorgian-Regular.ttf",
@@ -93,7 +93,7 @@ def _render_cover(document, data):
     _insert_line(page, (255, 335), _text(student.get("external_student_id"), 60), fontsize=8, max_x=620)
     page.insert_text((150, 352), "PROGRAM:", fontsize=8, fontname="hebo")
     _insert_line(page, (255, 352), _text(student.get("program"), 80), fontsize=8, max_x=620)
-    page.insert_text((655, 263), _text(version["issued_date"], 20), fontsize=10)
+    page.insert_text((655, 263), _text(version.get("first_issued_date", version["issued_date"]), 20), fontsize=10)
     page.insert_text((655, 282), f"VERSION {version['number']}", fontsize=8)
     page.insert_text((650, 515), _text(passport["public_reference"], 40), fontsize=7)
     page.insert_text((510, 220), f"VERSION ID: {_text(version['public_reference'], 40)}", fontsize=6.5)
