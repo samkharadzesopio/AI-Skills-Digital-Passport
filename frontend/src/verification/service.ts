@@ -28,17 +28,21 @@ export function parseVerification(value: unknown, method: 'credential' | 'docume
     if (typeof value.status !== 'string' || !Object.hasOwn(statuses, value.status) || typeof value.verified !== 'boolean' || value.verified !== (value.status === 'VALID') || typeof value.credential_id !== 'string' || value.credential_id.length > 512 || !expectedReference || value.credential_id !== expectedReference) return failure('contract')
     return { kind: 'result', method, status: statuses[value.status as keyof typeof statuses], source: value.source, publicInfo: { credentialId: value.credential_id } }
   }
-  const statuses = { VALID: 'valid', OUTDATED: 'outdated', INVALID: 'invalid', UNVERIFIABLE: 'unverifiable', REVOKED: 'revoked', EXPIRED: 'expired', NOT_FOUND: 'not_found', REPLACED: 'replaced', PENDING_BLOCKCHAIN: 'pending' } as const
+  const statuses = { VALID: 'valid', OUTDATED: 'outdated', INVALID: 'invalid', UNVERIFIABLE: 'unverifiable', REVOKED: 'revoked', EXPIRED: 'expired', NOT_FOUND: 'not_found', REPLACED: 'replaced', PENDING_BLOCKCHAIN: 'pending', NOT_ISSUED: 'not_issued' } as const
   if (typeof value.status !== 'string' || !Object.hasOwn(statuses, value.status) || typeof value.authentic !== 'boolean' || (method === 'document' && typeof value.message !== 'string')) return failure('contract')
   if (['VALID', 'OUTDATED'].includes(value.status) && !value.authentic) return failure('contract')
-  if (value.status === 'NOT_FOUND' && value.authentic) return failure('contract')
+  if (['NOT_FOUND', 'NOT_ISSUED'].includes(value.status) && value.authentic) return failure('contract')
   if (value.authentic) {
     if (!positiveInteger(value.passport_version) || !positiveInteger(value.latest_version) || value.passport_version > value.latest_version || typeof value.is_latest !== 'boolean' || (value.is_latest && value.passport_version !== value.latest_version) || (!value.is_latest && value.passport_version === value.latest_version && !['REVOKED', 'REPLACED', 'EXPIRED', 'INVALID', 'UNVERIFIABLE', 'PENDING_BLOCKCHAIN'].includes(value.status)) || (value.status === 'VALID' && !value.is_latest) || (value.status === 'OUTDATED' && value.is_latest)) return failure('contract')
     const availability = blockchainAvailability(value.blockchain)
     const proof = Object.hasOwn(value, 'blockchain') && availability === 'missing' ? 'unavailable' : availability
     const reported = statuses[value.status as keyof typeof statuses]
-    const status = (reported === 'valid' || reported === 'pending') && proof !== 'missing' ? (proof === 'failed' ? 'failed' : proof === 'pending' ? 'pending' : 'unverifiable') : reported
+    const status = (reported === 'valid' || reported === 'pending' || reported === 'unverifiable') && proof !== 'missing' && proof !== 'verified' ? (proof === 'failed' ? 'failed' : proof === 'pending' ? 'pending' : 'unverifiable') : reported
     return { kind: 'result', method, status, blockchain: proof, source: value.source, publicInfo: { passportVersion: value.passport_version, latestVersion: value.latest_version, isLatest: value.is_latest } }
+  }
+  if (['PENDING_BLOCKCHAIN', 'UNVERIFIABLE'].includes(value.status)) {
+    const proof = blockchainAvailability(value.blockchain)
+    return { kind: 'result', method, status: proof === 'failed' ? 'failed' : proof === 'pending' ? 'pending' : 'unverifiable', source: value.source, blockchain: proof === 'verified' ? 'unverifiable' : proof, publicInfo: {} }
   }
   if (value.is_latest !== null || value.passport_version !== null || value.latest_version !== null) return failure('contract')
   return { kind: 'result', method, status: statuses[value.status as keyof typeof statuses], source: value.source, blockchain: blockchainAvailability(value.blockchain), publicInfo: {} }
@@ -63,6 +67,8 @@ export async function lookupReference(reference: string, method: 'passport' | 'c
       const normalized = normalizePassportReference(reference)!
       const [kind, id] = normalized.split(':')
       const response = await publicApi.get(`verification/${kind}/${encodeURIComponent(id)}/`, { signal })
+      const proof = record(response.data) && record(response.data.blockchain) ? response.data.blockchain : null
+      if (blockchainAvailability(proof) === 'verified' && proof?.[kind === 'passport' ? 'passport_reference' : 'version_reference'] !== id) return failure('contract')
       return parseVerification(response.data, 'passport', verificationConfig.trustedSources)
     }
     const response = await publicApi.get(`verification/${encodeURIComponent(reference.trim())}/`, { signal })

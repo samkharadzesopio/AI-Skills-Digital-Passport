@@ -23,9 +23,11 @@ try {
   const student = { email: 'synthetic@btu.edu.ge', role: 'STUDENT', email_verified: true, student_association: 'linked', capabilities: [] }
   const admin = { email: 'synthetic-admin@btu.edu.ge', role: 'ADMIN', email_verified: true, student_association: 'unlinked', capabilities: ['view_student_records', 'manage_credentials', 'revoke_credentials', 'import_completions'] }
   let user = student, passport = null, denied = false, malformed = false, ready = false, revoked = false, issueAttempts = 0, issueKey, historyRecords = []
+  let profilesAvailable = false, confirmAttempts = 0
+  const previewSnapshot = { id: uuid, snapshot_sha256: 'a'.repeat(64), state: 'READY', expires_at: '2099-01-01T00:00:00Z', report: { valid_records: 1, duplicate_records: 1, invalid_records: 1, review_records: 1, rows: [{ row: 2, status: 'REVIEW', code: 'INSTITUTIONAL_CONFIRMATION_REQUIRED' }] }, result: null }
   const calls = []
   api.defaults.adapter = async config => {
-    const path = config.url, body = config.data ? JSON.parse(config.data) : null
+    const path = config.url, body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data ?? null
     calls.push({ path, method: config.method, body })
     const respond = (data, status = 200, headers = {}) => {
       const response = { data, status, headers, config, statusText: 'Synthetic response' }
@@ -53,7 +55,10 @@ try {
       return respond({ id: uuid, validity_status: 'VALID' })
     }
     if (path === 'integrations/imports/') return respond({ results: [], next: null })
-    if (path === 'integrations/import/google-sheets/') return respond({}, 503)
+    if (path === 'integrations/import/profiles/?page=1') return profilesAvailable ? respond({ count: 2, next: null, results: [{ id: uuid, key: 'synthetic-approved', version: 1, source: 'BTU_GOOGLE_SHEETS', kind: 'SKILL_AWARD' }, { id: historicalId, key: 'synthetic-excel', version: 1, source: 'BTU_EXCEL', kind: 'COURSE_COMPLETION' }] }) : respond({}, 404)
+    if (path === 'integrations/import/excel/preview/') { assert.ok(body instanceof FormData); assert.equal(body.get('profile_id'), historicalId); assert.equal(body.get('file').name, 'synthetic.xlsx'); return respond(previewSnapshot) }
+    if (path === 'integrations/import/google-sheets/preview/') { assert.deepEqual(body, { profile_id: uuid }); return respond(previewSnapshot) }
+    if (path === 'integrations/import/previews/' + uuid + '/confirm/') { assert.deepEqual(body, { snapshot_sha256: 'a'.repeat(64), confirm: true }); confirmAttempts++; return respond({ ...previewSnapshot, state: 'COMPLETED', result: { processed: 1, issued: 1, failed: 0, skipped: 0, errors: [], import_id: 1 } }) }
     throw new Error(`Unexpected synthetic API request: ${path}`)
   }
   async function until(check) { const end = Date.now() + 5000; while (!check()) { if (Date.now() > end) throw new Error(`Timed out: ${document.body.textContent}`); await act(async () => { await new Promise(resolve => setTimeout(resolve, 15)) }) } }
@@ -118,9 +123,26 @@ try {
   await until(() => document.body.textContent.includes('REVOKED'))
   assert.equal(document.getElementById('revoke-reason-' + uuid), null)
   await mount('/admin/imports'); await until(() => document.body.textContent.includes('No records available.'))
-  await click('Import configured Google Sheet'); await until(() => document.body.textContent.includes('could not complete the request'))
+  await until(() => document.body.textContent.includes('Import is disabled until that backend workflow is integrated.')); assert.ok(!calls.some(call => call.path === 'integrations/import/google-sheets/' || call.path === 'integrations/import/excel/'))
   assert.doesNotMatch(document.body.textContent, /successfully imported|Credential issued/)
   assert.ok(calls.some(call => call.path.endsWith('/revoke/') && call.method === 'post'))
+  profilesAvailable = true
+  await mount('/admin/imports'); await until(() => !!document.getElementById('import-source'))
+  await act(async () => { const select = document.getElementById('import-source'); select.value = 'BTU_GOOGLE_SHEETS'; select.dispatchEvent(new window.Event('change', { bubbles: true })) })
+  await act(async () => { const select = document.getElementById('import-profile'); select.value = uuid; select.dispatchEvent(new window.Event('change', { bubbles: true })) })
+  await click('Preview incoming records'); await until(() => document.body.textContent.includes('INSTITUTIONAL_CONFIRMATION_REQUIRED'))
+  assert.equal(confirmAttempts, 0, 'Preview must not import')
+  assert.ok([...document.querySelectorAll('button')].find(b => b.textContent === 'Confirm reviewed import').disabled)
+  await until(() => !document.querySelector('input[type="checkbox"]').disabled)
+  await act(async () => document.querySelector('input[type="checkbox"]').click())
+  await click('Confirm reviewed import'); await until(() => document.body.textContent.includes('Persisted import result'))
+  assert.equal(confirmAttempts, 1)
+  assert.ok([...document.querySelectorAll('button')].find(b => b.textContent === 'Confirm reviewed import').disabled)
+  await act(async () => { const select = document.getElementById('import-source'); select.value = 'BTU_EXCEL'; select.dispatchEvent(new window.Event('change', { bubbles: true })) })
+  assert.ok(!document.body.textContent.includes('Review import preview'), 'Source changes must discard old review')
+  await act(async () => { const select = document.getElementById('import-profile'); select.value = historicalId; select.dispatchEvent(new window.Event('change', { bubbles: true })); const input = document.getElementById('completion-file'); Object.defineProperty(input, 'files', { configurable: true, value: [new File(['synthetic fixture bytes'], 'synthetic.xlsx')] }); input.dispatchEvent(new window.Event('change', { bubbles: true })) })
+  await click('Preview incoming records'); await until(() => document.body.textContent.includes('Review import preview'))
+  assert.equal(confirmAttempts, 1, 'Excel preview must not issue')
   user = { ...admin, capabilities: ['view_student_records'] }
   await mount('/admin/credentials'); await until(() => document.body.textContent.includes('synthetic-credential'))
   assert.equal(document.querySelector('textarea'), null)

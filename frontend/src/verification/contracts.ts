@@ -1,5 +1,5 @@
 export type VerificationMethod = 'passport' | 'credential' | 'document'
-export type PublicStatus = 'valid' | 'revoked' | 'expired' | 'invalid' | 'not_found' | 'outdated' | 'unverifiable' | 'replaced' | 'pending' | 'failed'
+export type PublicStatus = 'valid' | 'revoked' | 'expired' | 'invalid' | 'not_found' | 'not_issued' | 'outdated' | 'unverifiable' | 'replaced' | 'pending' | 'failed'
 export type FailureReason = 'disconnected' | 'passport_endpoint_missing' | 'simulated' | 'untrusted' | 'contract' | 'network' | 'server' | 'rate_limit' | 'rejected' | 'auth' | 'canceled' | 'timeout'
 export interface PublicResult {
   blockchain?: import('./blockchain').BlockchainAvailability
