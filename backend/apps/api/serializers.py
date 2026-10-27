@@ -115,7 +115,7 @@ class PassportSerializer(serializers.ModelSerializer):
                 return proof['passport_status']
             if proof.get('registry_status') in ('REVOKED','EXPIRED','INVALID'):
                 return proof['registry_status']
-            if proof.get('blockchain_verified') and proof.get('institutional_identity_verified'):
+            if proof.get('blockchain_verified'):
                 return 'BLOCKCHAIN_VERIFIED'
             return 'PENDING_BLOCKCHAIN' if proof.get('status') in ('PENDING_BLOCKCHAIN','FAILED','NOT_CONFIGURED') else 'UNVERIFIABLE'
         return obj.latest_version.status if obj.latest_version else 'NOT_ISSUED'

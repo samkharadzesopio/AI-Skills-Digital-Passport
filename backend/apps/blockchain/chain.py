@@ -8,6 +8,9 @@ from hexbytes import HexBytes
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
 from web3.logs import DISCARD
+from web3.middleware import ExtraDataToPOAMiddleware
+from .policy import AMOY, LOCAL_CHAINS, validate_policy
+from .rpc import BoundedHTTPProvider
 
 
 @lru_cache(maxsize=1)
@@ -41,7 +44,9 @@ class BlockchainProvider(Protocol):
 class ChainGateway:
     def __init__(self,policy,web3=None):
         self.policy=policy
-        self.web3=web3 or Web3(Web3.HTTPProvider(policy.rpc_url,request_kwargs={'timeout':5},exception_retry_configuration=None))
+        self.web3=web3 or Web3(BoundedHTTPProvider(policy.rpc_url))
+        if policy.chain_id == AMOY and 'passport_polygon_poa' not in self.web3.middleware_onion:
+            self.web3.middleware_onion.inject(ExtraDataToPOAMiddleware, name='passport_polygon_poa', layer=0)
         self.contract=self.web3.eth.contract(address=Web3.to_checksum_address(policy.contract_address),abi=artifact()['abi'])
 
     def validate_target(self):
@@ -61,7 +66,9 @@ class ChainGateway:
             return self.contract.encode_abi('anchorPassport',args=[key(op.passport_key),key(op.version_key),key(op.document_key),key(op.commitment)])
         if op.operation_type=='REPLACE':
             return self.contract.encode_abi('replacePassport',args=[key(op.passport_key),key(op.replacement_key)])
-        return self.contract.encode_abi('revokePassport',args=[key(op.passport_key)])
+        if op.operation_type=='REVOKE':
+            return self.contract.encode_abi('revokePassport',args=[key(op.passport_key)])
+        raise ProofError('UNKNOWN_OPERATION')
 
     def signing_context(self):
         self.validate_target()
@@ -79,6 +86,20 @@ class ChainGateway:
     def broadcast(self,raw):
         return hex_value(self.web3.eth.send_raw_transaction(bytes(raw)))
 
+    def submission_state(self,op):
+        """Read only: avoid rebroadcasting mined/pool-known transactions."""
+        self.validate_target()
+        try:
+            tx=self.web3.eth.get_transaction(op.transaction_hash)
+        except TransactionNotFound:
+            latest=self.web3.eth.get_transaction_count(Web3.to_checksum_address(op.issuer_address),'latest')
+            if latest > op.nonce:
+                raise ProofError('NONCE_CONSUMED_REVIEW_REQUIRED')
+            return 'ABSENT'
+        if hex_value(tx['hash']) != op.transaction_hash or tx['from'].lower() != op.issuer_address or tx['nonce'] != op.nonce:
+            raise ProofError('TRANSACTION_OR_NONCE_MISMATCH')
+        return 'MINED' if tx.get('blockNumber') is not None else 'PENDING'
+
     def verify(self,op):
         self.validate_target()
         try:
@@ -91,6 +112,9 @@ class ChainGateway:
         block=self.web3.eth.get_block(receipt['blockNumber'])
         confirmations=self.web3.eth.block_number-receipt['blockNumber']+1
         if (hex_value(receipt['transactionHash'])!=op.transaction_hash
+            or hex_value(tx['hash'])!=op.transaction_hash
+            or tx.get('chainId',self.policy.chain_id)!=self.policy.chain_id
+            or (getattr(op,'nonce',None) is not None and tx['nonce']!=op.nonce)
             or tx['from'].lower()!=op.issuer_address or (tx.get('to') or '').lower()!=op.contract_address
             or tx.get('value',0)!=0 or bytes(HexBytes(tx['input']))!=bytes(HexBytes(self.calldata(op)))
             or receipt['blockHash']!=block['hash'] or tx['blockHash']!=receipt['blockHash']
@@ -132,5 +156,6 @@ class AnvilProvider(ChainGateway):
 
 
 def configured_gateway(policy):
-    provider=AnvilProvider if policy.environment=='LOCAL_ANVIL' else PolygonAmoyProvider
+    validate_policy(policy)
+    provider=AnvilProvider if policy.chain_id in LOCAL_CHAINS else PolygonAmoyProvider
     return provider(policy)

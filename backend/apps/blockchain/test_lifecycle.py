@@ -31,9 +31,6 @@ class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
         self.data=dict(student_id=self.student.pk,expected_passport_reference=self.version.passport.public_reference,
             first_name='ანა',last_name='ახალი',idempotency_key='REGISTRAR-CHANGE-1',evidence_source='BTU_REGISTRAR',
             evidence_reference='REGISTRAR-APPROVAL-0001',reason='Approved synthetic legal name correction')
-        # Synthetic registrar/root approval only; all EVM transactions and RPCs are real Anvil.
-        authority=patch('apps.blockchain.authority.institution_approves_registry',return_value=True)
-        authority.start(); self.addCleanup(authority.stop)
 
     def replace(self,**changes):
         return change_legal_name(actor=self.admin,**{**self.data,**changes})
@@ -270,11 +267,13 @@ class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
     def test_inflight_public_verification_rechecks_institutional_cancellation(self):
         self.assertEqual(self.process(),'CONFIRMED')
         changed=[]
-        def approved_after_correction(policy):
+        original=self.gateway.verify
+        def verify_then_correct(operation):
+            proof=original(operation)
             if not changed:
                 changed.append(self.replace())
-            return True
-        with patch('apps.blockchain.authority.institution_approves_registry',side_effect=approved_after_correction):
+            return proof
+        with patch('apps.blockchain.services.ChainGateway',return_value=self.gateway), patch.object(self.gateway,'verify',side_effect=verify_then_correct):
             result=APIClient().get(f'/api/verification/passport/{self.version.passport.public_reference}/').json()
         self.assertEqual(result['status'],'REPLACED')
         self.assertFalse(result['blockchain']['blockchain_verified'])
@@ -283,12 +282,14 @@ class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
     def test_inflight_current_view_reloads_new_identity_after_correction(self):
         self.assertEqual(self.process(),'CONFIRMED')
         changed=[]
-        def approved_after_correction(policy):
+        original=self.gateway.verify
+        def verify_then_correct(operation):
+            proof=original(operation)
             if not changed:
                 changed.append(self.replace())
-            return True
+            return proof
         client=APIClient(); client.force_authenticate(self.user)
-        with patch('apps.blockchain.authority.institution_approves_registry',side_effect=approved_after_correction):
+        with patch('apps.blockchain.services.ChainGateway',return_value=self.gateway), patch.object(self.gateway,'verify',side_effect=verify_then_correct):
             result=client.get('/api/student/passport/').json()
         self.assertEqual(result['public_reference'],str(changed[0].replacement.public_reference))
         self.assertEqual(result['status'],'PENDING_BLOCKCHAIN')

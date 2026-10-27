@@ -13,11 +13,12 @@ def apply_passport_proof(result,proof):
     if not getattr(settings,'PASSPORT_BLOCKCHAIN_ENFORCE',True):
         return result
     if proof.get('historical_blockchain_authentic'):
-        if not proof.get('institutional_identity_verified'):
+        if proof.get('institutional_issuer_approved') is not True:
+            proof['blockchain_verified']=False
             result['status']='UNVERIFIABLE'
             return result
         if result['status']=='UNVERIFIABLE' and result.get('credential_membership_empty',False):
             result['status']='VALID' if result['is_latest'] else 'OUTDATED'
     else:
-        result['status']='PENDING_BLOCKCHAIN' if proof.get('status') in ('PENDING_BLOCKCHAIN','FAILED','NOT_CONFIGURED') else 'UNVERIFIABLE'
+        result['status']='PENDING_BLOCKCHAIN' if proof.get('status')=='PENDING_BLOCKCHAIN' else 'UNVERIFIABLE'
     return result

@@ -115,7 +115,7 @@ class BlockchainTests(ChainDataMixin,TransactionTestCase):
         proof = response.json()
         self.assertTrue(proof['blockchain_verified'])
         self.assertTrue(proof['issuer_key_authorized'])
-        self.assertFalse(proof['institutional_identity_verified'])
+        self.assertNotIn('institutional_identity_verified',proof)
         self.assertEqual(proof['environment'], 'LOCAL_ANVIL')
         self.assertEqual(proof['pdf_sha256'], self.anchor.pdf_sha256)
         self.assertEqual(response['Cache-Control'], 'no-store')
@@ -371,12 +371,28 @@ class BlockchainTests(ChainDataMixin,TransactionTestCase):
             operation=PassportAnchor.objects.get(document=document)
             self.assertEqual(self.await_operation(operation.pk,signer=self.local.other_signer),'CONFIRMED')
 
-    def test_public_verification_requires_external_university_identity_approval(self):
+    def test_public_verification_uses_configured_registry_without_website_publication(self):
         self.assertEqual(self.process(),'CONFIRMED')
-        result=APIClient().get(f'/api/verification/passport/{self.version.passport.public_reference}/').json()
+        from requests import Session
+        original=Session.request
+        def rpc_only(session,method,url,*args,**kwargs):
+            self.assertEqual(url,self.local.rpc_url)
+            return original(session,method,url,*args,**kwargs)
+        with patch.object(Session,'request',autospec=True,side_effect=rpc_only):
+            result=APIClient().get(f'/api/verification/passport/{self.version.passport.public_reference}/').json()
+            uploaded=APIClient().post('/api/verification/document/',{'file':SimpleUploadedFile('passport.pdf',self.pdf_bytes(),content_type='application/pdf')},format='multipart').json()
         self.assertTrue(result['blockchain']['historical_blockchain_authentic'])
-        self.assertFalse(result['blockchain']['institutional_identity_verified'])
-        self.assertEqual(result['status'],'UNVERIFIABLE')
+        self.assertTrue(result['blockchain']['issuer_key_authorized'])
+        self.assertNotIn('institutional_identity_verified',result['blockchain'])
+        self.assertEqual(result['status'],'VALID')
+        self.assertEqual(uploaded['status'],'VALID')
+
+    def test_confirmed_proof_does_not_override_removed_issuer_trust(self):
+        self.assertEqual(self.process(),'CONFIRMED')
+        with override_settings(VERIFICATION_TRUSTED_ISSUER_REFERENCES=[]):
+            result=APIClient().get(f'/api/verification/passport/{self.version.passport.public_reference}/').json()
+        self.assertEqual(result['status'],'INVALID')
+        self.assertFalse(result['blockchain']['blockchain_verified'])
 
     def test_independent_pdf_and_snapshot_recomputation_matches_actual_contract(self):
         self.assertEqual(self.process(),'CONFIRMED')
@@ -405,7 +421,7 @@ class BlockchainTests(ChainDataMixin,TransactionTestCase):
         self.assertEqual(data['document_integrity'],'CONFIRMED')
         self.assertEqual(data['environment'],'LOCAL_ANVIL')
         self.assertEqual(data['institutional_current_status'],'NOT_CHECKED')
-        self.assertFalse(data['institutional_identity_verified'])
+        self.assertNotIn('institutional_identity_verified',data)
 
     def test_migration_rollback_cannot_delete_confirmed_proof_history(self):
         self.assertEqual(self.process(),'CONFIRMED')

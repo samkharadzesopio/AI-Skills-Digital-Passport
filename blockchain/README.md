@@ -1,6 +1,6 @@
 # Mandatory Polygon Passport lifecycle
 
-This feature implements the local, testable backend lifecycle. It is **not an assertion that Polygon Amoy is deployed or that the MVP is complete**. No public transaction, funded wallet, live BTU identity publication, frontend browser acceptance or shared Neon migration has been performed by this work.
+This feature implements the local, testable backend lifecycle. It is **not an assertion that Polygon Amoy is deployed or that the MVP is complete**. No public transaction, funded wallet, frontend browser acceptance or shared Neon migration has been performed by this work.
 
 ## Architecture
 
@@ -34,6 +34,19 @@ States: PENDING, SIGNED, SUBMITTED, CONFIRMED, FAILED. Pending confirmations are
 
 The reconciliation worker checks confirmed receipts against the current canonical chain and keeps separate observations. It can rebroadcast an unchanged transaction lost in a reorganization. Public verification independently rereads the chain each time; the original database CONFIRMED receipt is not accepted as live proof. Provider outages/reorganizations cannot produce a positive result from stale database state.
 
+The Amoy provider injects Polygon PoA header normalization at middleware layer zero. Provider selection validates the complete deployment policy; the independent checker uses the same factory. Verification has a shared six-second RPC budget across replacement dependencies, bounded streaming bodies and no HTTP redirects/retries. Register `apps.blockchain.middleware.BlockchainRPCBudgetMiddleware` during integration to extend that budget across multiple proofs in one HTTP request; the current shared settings have deliberately not been overwritten.
+
+Signing records a SIGNED observation in the existing observation table, in the nonce-reservation transaction. Pending transactions known to the node are not repeatedly broadcast. After fifteen minutes from signing, submissions remain SUBMITTED with `STUCK_TRANSACTION_REVIEW_REQUIRED`; the exact signed bytes and nonce are retained. Legacy signed operations without that observation conservatively use the original operation creation time. Confirmation still recovers automatically if the transaction is mined. If an absent transaction's nonce was consumed elsewhere, the operation fails with `NONCE_CONSUMED_REVIEW_REQUIRED`, retaining all evidence for operator review. A later genuine receipt can still be recovered by reconciliation.
+
+Inspect without reading any signing key or sending any transaction:
+
+```text
+python backend/manage.py inspect_blockchain_operation OPERATION_UUID
+python backend/manage.py inspect_blockchain_operation OPERATION_UUID --check-chain
+```
+
+Check the RPC, signer balance, mempool/receipt, fee conditions and other operations sharing that signer before intervening. Restore connectivity/funding and let the worker retry the original transaction. Never delete signed operations, reset reserved nonces, change immutable signed bytes or make an ad-hoc replacement transaction from the dedicated signer. A fee-bump/cancellation/consumed-nonce repair requires a separately reviewed forward recovery design; it is intentionally not automated by this MVP.
+
 Use an independently supervised signing worker:
 
 ```text
@@ -65,19 +78,11 @@ C = SHA256(N || "PDF\0" || P || V || D || pdf_sha256_32_bytes || snapshot_sha256
 
 The public proof packet contains P/V/D, C, the commitment salt and both hashes for independent recomputation with the uploaded PDF. It never reveals the private Passport salt or former legal name. Each renderer generation has its own document key and proof; an old PDF hash cannot inherit a new PDF's confirmation. The immutable historical PDF bytes are never overwritten.
 
-## Institutional identity root
+## Configured issuer trust
 
-A role-authorized transaction proves control of the registry issuer role. It does not, by itself, prove that an arbitrary registry belongs to BTU.
+The server deployment policy identifies the approved chain, registry and signing address. Verification requires that exact registry's pinned runtime code, an authorized issuance transaction, matching PDF/snapshot commitments, canonical confirmations, the existing trusted fixed BTU database issuer and current Passport/credential validity. Request input cannot select a different deployment or issuer.
 
-For a public VALID result, the backend additionally validates a live declaration at a configured BTU-controlled HTTPS URL ending in `/.well-known/btu-passport-issuer.json`. Only `btu.edu.ge` and its subdomains, port 443, that exact path, no userinfo/query/fragment and no redirects are allowed. The bounded request has a five-second timeout and 64 KiB maximum. Chain ID, registry address, pinned runtime code hash, fixed issuer reference and publication/expiry times must match. Any failure leaves institutional identity unverified.
-
-Prepare a candidate public declaration **after an actual deployment address exists**:
-
-```text
-python blockchain/scripts/issuer_declaration.py --registry-address ACTUAL_ADDRESS --expires-at FUTURE_ISO_TIMESTAMP --output PATH_OUTSIDE_REPOSITORY
-```
-
-This generates no signature or authority. BTU must independently approve the registry/admin/issuer keys and publish the statement on its actual HTTPS domain. No such access or approval is fabricated. Tests use synthetic approval data and mocked authority HTTP responses, separately from real local Anvil transactions.
+No BTU website publication or external identity-declaration request is required. Institutional trust comes from the configured deployment and existing issuer-provisioning controls. The standalone checker reports independently observed chain integrity; the public institutional lifecycle API remains necessary for current off-chain status. Tests use synthetic institutional records and actual local Anvil transactions.
 
 ## API and frontend/extension contract
 
@@ -88,9 +93,9 @@ Existing endpoints remain authoritative. See `API_CONTRACT.md` for response rule
 - GET `/api/admin/students/<Student UUID>/passport-lifecycle/`
 - GET `/api/verification/blockchain/document/<public document UUID>/`
 
-Existing private current Passport/PDF endpoints now return only the active identity. Existing public Passport/version/PDF-upload verifiers return chain/identity facts separately from historical authenticity and present-day validity. Registry-only test behavior is confined to the legacy isolated test settings; production sets `PASSPORT_BLOCKCHAIN_ENFORCE=True` unconditionally. Missing RPC/authority must not return VALID or a BLOCKCHAIN_VERIFIED Passport status.
+Existing private current Passport/PDF endpoints now return only the active identity. Existing public Passport/version/PDF-upload verifiers return chain/issuer facts separately from historical authenticity and present-day validity. Registry-only test behavior is confined to the legacy isolated test settings; production sets `PASSPORT_BLOCKCHAIN_ENFORCE=True` unconditionally. Missing chain proof or configured issuer trust must not return VALID or a BLOCKCHAIN_VERIFIED Passport status.
 
-The frontend/Chrome viewer should display BLOCKCHAIN VERIFIED only when the server status and both chain/institutional flags support it. REPLACED/REVOKED identities must disappear from current views; clear private queries on identity change/logout and refetch current data, never reuse a cached former Passport. Browser UI integration/deployment acceptance is separate from the backend API tests; no Chrome extension is claimed built by this feature.
+The frontend/Chrome viewer should display BLOCKCHAIN VERIFIED only when root status is BLOCKCHAIN_VERIFIED and `blockchain.blockchain_verified` is true. REPLACED/REVOKED identities must disappear from current views; clear private queries on identity change/logout and refetch current data, never reuse a cached former Passport. Browser UI integration/deployment acceptance is separate from the backend API tests; no Chrome extension is claimed built by this feature.
 
 ## Migration plan for Developer 1 review
 
@@ -108,6 +113,8 @@ Review a staging schema snapshot and migration plan before any shared apply. Bac
 
 See `TEST_REPORT.md` for the recorded local acceptance scope, exact results and remaining public-network blockers.
 
+The October 27 stabilization review, exact shared-code dependencies, integration conflicts and readiness classification are in `STABILIZATION_HANDOFF_2026-10-27.md`. Complete illustrative response bodies are in `API_EXAMPLES.json`.
+
 Install Python requirements and pinned contract tools:
 
 ```text
@@ -124,7 +131,7 @@ Run `ops/test_backend.sh` using the documented disposable loopback PostgreSQL ha
 
 ## Polygon Amoy deployment: prepared, not executed
 
-Required external inputs: explicit authorization, an approved BTU administrator/issuer key policy, an Amoy RPC endpoint, a deployer funded with test POL, a separately controlled issuer funded for its transactions, and BTU publication authority. Students never need wallets. No mainnet deployment is permitted.
+Required external inputs: explicit authorization, an approved administrator/issuer key policy, an Amoy RPC endpoint, a deployer funded with test POL and a separately controlled issuer funded for its transactions. Students never need wallets. No mainnet deployment is permitted.
 
 Use a standard Foundry installation and encrypted deployer keystore (`cast wallet import NAME --interactive`). Set public addresses `BTU_REGISTRY_ADMIN` and `BTU_REGISTRY_ISSUER`; keep the administrator key off the Django signing worker. Simulate and review first:
 
@@ -134,7 +141,7 @@ forge script script/Deploy.s.sol:Deploy --rpc-url AMOY_RPC --chain 80002 --accou
 
 Run from `blockchain/`. The script rejects every chain except Amoy/local Anvil. **Do not add `--broadcast` until the exact deployment is reviewed and explicitly authorized.** Once authorized, the same command with `--broadcast` submits real testnet transactions. Record and independently check the receipt's status, canonical block, deployed code hash, default administrator and ISSUER_ROLE. Pending output is not deployment success.
 
-After deployment and BTU publication, configure the server securely:
+After deployment, configure the server securely:
 
 ```dotenv
 PASSPORT_BLOCKCHAIN_ENABLED=true
@@ -143,7 +150,6 @@ PASSPORT_BLOCKCHAIN_RPC_URL=APPROVED_HTTPS_AMOY_RPC
 PASSPORT_BLOCKCHAIN_CONTRACT_ADDRESS=ACTUAL_DEPLOYED_REGISTRY
 PASSPORT_BLOCKCHAIN_ISSUER_ADDRESS=APPROVED_ISSUER_ADDRESS
 PASSPORT_BLOCKCHAIN_SIGNING_KEY_FILE=RESTRICTED_FILE_OUTSIDE_REPOSITORY
-PASSPORT_BLOCKCHAIN_ISSUER_IDENTITY_URL=ACTUAL_BTU_HTTPS_WELL_KNOWN_URL
 PASSPORT_BLOCKCHAIN_CONFIRMATIONS=3
 PASSPORT_BLOCKCHAIN_MAX_GAS_PRICE_WEI=50000000000
 PASSPORT_IDENTITY_EVIDENCE_SOURCES=BTU_REGISTRAR
@@ -151,4 +157,4 @@ PASSPORT_IDENTITY_EVIDENCE_SOURCES=BTU_REGISTRAR
 
 Provision the fixed BTU database issuer through the existing authorized service. Use TLS/private storage, restrictive Unix key-file mode 0600 or equivalent Windows ACLs, supervised workers and a dedicated issuer account. The RPC endpoint must report 80002; do not use an Anvil result as evidence of Amoy success. Keep old signing keys authorized until their queued work is safely drained or explicitly resolved. Retain historic deployment artifacts and trust records when planning future deployments; this MVP currently permits one reviewed registry deployment per environment.
 
-Acceptance on Amoy must reproduce: approved completion → PDF → confirmed proof → anonymous upload/reference check; legal replacement → old REPLACED + new independent proof; revocation; failed RPC/restart recovery; changed bytes; unauthorized key; current/historical distinction. Confirm receipt and events via an independent Amoy RPC or explorer, and test the real website/extension consumers. Until that succeeds, report the MVP as awaiting public-network/institutional acceptance.
+Acceptance on Amoy must reproduce: approved completion → PDF → confirmed proof → anonymous upload/reference check; legal replacement → old REPLACED + new independent proof; revocation; failed RPC/restart recovery; changed bytes; unauthorized key; current/historical distinction. Confirm receipt and events via an independent Amoy RPC or explorer, and test the real website/extension consumers. Until that succeeds, report the MVP as awaiting public-network and client acceptance.

@@ -22,11 +22,30 @@ class ChainPolicy:
     max_gas_price_wei: int = 50_000_000_000
     gas_limit: int = 250_000
     signing_key_file: str = ''
-    issuer_identity_url: str = ''
 
     @property
     def environment(self):
         return 'LOCAL_ANVIL' if self.chain_id in LOCAL_CHAINS else 'POLYGON_AMOY'
+
+
+def validate_policy(policy):
+    """Shared by settings, provider selection and the independent CLI."""
+    try:
+        parsed = urlsplit(policy.rpc_url)
+        local = policy.chain_id in LOCAL_CHAINS
+        parsed.port  # Reject malformed/out-of-range ports before transport.
+        if (type(policy.chain_id) is not int or policy.chain_id not in LOCAL_CHAINS | {AMOY}
+            or parsed.username or parsed.password or parsed.fragment or not parsed.hostname
+            or (local and (parsed.hostname not in {'127.0.0.1', 'localhost', '::1'} or parsed.scheme not in {'http', 'https'}))
+            or (not local and parsed.scheme != 'https')
+            or type(policy.confirmations) is not int or not 1 <= policy.confirmations <= 64
+            or type(policy.max_gas_price_wei) is not int or not 1 <= policy.max_gas_price_wei <= 500_000_000_000
+            or type(policy.gas_limit) is not int or not 150_000 <= policy.gas_limit <= 1_000_000
+            or any(not Web3.is_address(address) or int(address, 16) == 0 for address in (policy.contract_address, policy.issuer_address))):
+            raise ValueError
+        return policy
+    except (AttributeError, TypeError, ValueError):
+        raise ImproperlyConfigured('Invalid Passport blockchain deployment policy.') from None
 
 
 def load_policy():
@@ -41,20 +60,8 @@ def load_policy():
             confirmations=int(getattr(settings, 'PASSPORT_BLOCKCHAIN_CONFIRMATIONS', 3)),
             max_gas_price_wei=int(getattr(settings, 'PASSPORT_BLOCKCHAIN_MAX_GAS_PRICE_WEI', 50_000_000_000)),
             signing_key_file=getattr(settings, 'PASSPORT_BLOCKCHAIN_SIGNING_KEY_FILE', ''),
-            issuer_identity_url=getattr(settings, 'PASSPORT_BLOCKCHAIN_ISSUER_IDENTITY_URL', ''),
         )
-        parsed = urlsplit(policy.rpc_url)
-        local = policy.chain_id in LOCAL_CHAINS
-        if (policy.chain_id not in LOCAL_CHAINS | {AMOY}
-            or parsed.username or parsed.password or parsed.fragment
-            or not parsed.hostname
-            or (local and (parsed.hostname not in {'127.0.0.1', 'localhost', '::1'} or parsed.scheme not in {'http', 'https'}))
-            or (not local and parsed.scheme != 'https')
-            or not 1 <= policy.confirmations <= 64
-            or not 1 <= policy.max_gas_price_wei <= 500_000_000_000
-            or any(not Web3.is_address(address) or int(address, 16) == 0 for address in (policy.contract_address, policy.issuer_address))):
-            raise ValueError
-        return policy
+        return validate_policy(policy)
     except (AttributeError, TypeError, ValueError):
         raise ImproperlyConfigured('Invalid Passport blockchain deployment policy.') from None
 

@@ -9,7 +9,7 @@ This backend feature does not copy the website or create an alternative Passport
 - `{"passport": null}` means no active identity. Never fall back to a cancelled Passport cached by the client.
 - `lifecycle_status` is ACTIVE, REPLACED or REVOKED. This student endpoint only returns ACTIVE identities; cancellation history is admin-only.
 - Root `status` is NOT_ISSUED, PENDING_BLOCKCHAIN, UNVERIFIABLE or BLOCKCHAIN_VERIFIED in the production enforcement policy, with REVOKED/EXPIRED/INVALID taking precedence when represented credentials lose validity. Database snapshot `latest_version.status=ISSUED` by itself is **not** a blockchain verification result.
-- Only show the BLOCKCHAIN VERIFIED label if root status is BLOCKCHAIN_VERIFIED and both `blockchain.blockchain_verified` and `blockchain.institutional_identity_verified` are true.
+- Only show the BLOCKCHAIN VERIFIED label if root status is BLOCKCHAIN_VERIFIED, nested status is CONFIRMED and `blockchain_verified`, `issuer_key_authorized` and `institutional_issuer_approved` are all true in the same fresh response.
 - `public_reference` is the permanent public Passport identity. `latest_version.public_reference` is a separate public version identity. The internal UUID `id` and Student UUID are not verification codes.
 
 Legal replacement changes both public identities, the PDF and its proof. The Student UUID and academic records remain stable. Discard the old Passport cache on replacement/focus/reconnect and refetch the current endpoint. Do not choose a Passport by a client-supplied Student ID or keep an old identity as current during a retry.
@@ -23,7 +23,7 @@ Existing routes are unchanged:
 - GET `/api/student/passport/pdf/download/`: exact private generated PDF bytes.
 - Version-specific routes under `/api/student/passport/versions/<internal version UUID>/pdf/...`: only versions of the current ACTIVE identity are available to Students.
 
-Metadata adds `blockchain`, separate from the PDF artifact's own status/availability. A downloadable issued PDF can still be pending blockchain or issuer approval. Show that pending/error state explicitly. Never call it blockchain-verified based on `available_for_download=true` or document status ISSUED.
+Metadata adds `blockchain`, separate from the PDF artifact's own status/availability. A downloadable issued PDF can still be pending blockchain confirmation or have an issuer configuration error. Show that pending/error state explicitly. Never call it blockchain-verified based on `available_for_download=true` or document status ISSUED.
 
 Loading/empty/expired-session/error states remain necessary. Treat 401/403 as an access/session failure, 404 as missing/unavailable authorized content, 409 as generation in progress, 422 as an unsupported template payload and 503 as generation/storage failure. The viewer must not rewrite, watermark, reconstruct or re-stamp the official bytes; that changes their hash. Display status outside the original PDF.
 
@@ -42,13 +42,13 @@ The first three preserve existing fields: status, authentic, is_latest, passport
 
 | Public status | Meaning |
 |---|---|
-| VALID | Current identity/version, currently valid credentials (when present), actual independently validated chain commitment and approved BTU HTTPS registry declaration |
+| VALID | Current identity/version, currently valid credentials (when present), trusted configured issuer and an independently validated confirmed commitment on the configured registry |
 | OUTDATED | Authentic earlier version of an active identity; do not present as the latest Passport |
 | REPLACED | Identity cancelled for approved replacement; never current/valid, even if its old chain record remains authentic |
 | REVOKED | Institution or registry explicitly invalidated the identity/represented credential |
 | EXPIRED / INVALID | Existing credential-related invalidity, or integrity/trust invalidity |
 | PENDING_BLOCKCHAIN | No trustworthy confirmed commitment yet; includes explicit nested operation failure needing recovery |
-| UNVERIFIABLE | Chain/authority/integrity cannot be established; never render a positive badge |
+| UNVERIFIABLE | Chain/issuer trust/integrity cannot be established; never render a positive badge |
 | NOT_FOUND | Unknown public reference |
 
 `authentic=true` is historical registered-document authenticity, not a current-validity badge. `is_latest` describes version currency. A replaced identity always has `is_latest=false` even though its immutable internal last-version pointer remains for audit.
@@ -59,14 +59,19 @@ The chain object uses:
 - `blockchain_verified`: live-confirmed, currently ACTIVE identity and latest-version commitment with currently valid represented credentials. It is false for cancelled identities and revoked/expired/invalid credentials, including while snapshot refresh is pending.
 - `registry_status` and `credential_status`: current institutional checks, when available after independent chain verification. A historical confirmation does not override credential revocation.
 - `historical_blockchain_authentic`: independent proof of the original on-chain commitment; can remain true after replacement/revocation.
-- `institutional_identity_verified`: validates BTU's live HTTPS declaration for this chain, registry and runtime code hash. A database issuer boolean is insufficient.
 - `issuer_key_authorized`: the pinned access-controlled registry accepted this signer at issuance; later issuer-key rotation does not rewrite that history.
+- `institutional_issuer_approved`: the fixed BTU database issuer exists, is trusted and is on the server verification allowlist. False means approval has not been established in this assessment. It is separate from on-chain signer authorization and requires no university website publication.
+- `assessed_at`: timezone-aware ISO-8601 time when this request's assessment finished; null when transport is disabled or deployment configuration is invalid and no assessment occurred. A timestamp alone is not evidence of successful verification.
+- `operation_state`: durable worker state (PENDING, SIGNED, SUBMITTED, CONFIRMED or FAILED), when an operation exists. This can remain CONFIRMED during a reorganization/RPC outage; use live `status` and flags for badges.
+- `operator_review_required`: true for exhausted/terminal failures, a stuck submission or an externally consumed nonce. It never grants permission to re-sign or reset a nonce.
 - `environment`: LOCAL_ANVIL or POLYGON_AMOY. Never display Anvil data as a public Amoy deployment.
-- When available: chain_id, contract_address, issuer_address, transaction_hash, block_number, block_hash, confirmations, onchain_status, opaque keys, commitment, commitment_salt, pdf_sha256 and snapshot_sha256.
+- When available: chain_id, contract_address, issuer_address, transaction_hash (null before signing), block_number, block_hash, confirmations, onchain_status, opaque keys, commitment, commitment_salt, pdf_sha256 and snapshot_sha256. A known signed hash remains available during pending confirmation or RPC outage; block fields come from live validated evidence.
 - `replacement_transaction_hash`: confirmed old-key cancellation dependency for a replacement PDF.
 - `error` and `retryable`: bounded classifications; no raw provider errors, signing data, storage paths or private keys.
 
 REPLACED/REVOKED are authoritative immediately after institutional cancellation, even while its on-chain cancellation is pending. `onchain_status` honestly reports the separately observed contract state. No former legal name or successor's public reference is disclosed by the old public lookup.
+
+Verification uses the server's configured registry, on-chain issuer authorization and existing trusted database issuer. There is no BTU website declaration gate. The former `institutional_identity_verified` and `issuer_identity_url` fields have been removed; clients should use the root status and `blockchain_verified` flag above.
 
 ## Registrar mutation
 
@@ -97,9 +102,40 @@ GET `/api/admin/students/<Student UUID>/passport-lifecycle/` is paginated, requi
 Save the public document proof object as JSON, obtain the actual PDF and choose an independent RPC reporting the expected chain. Run:
 
 ```text
-python blockchain/scripts/verify_transaction.py --rpc-url APPROVED_HTTPS_AMOY_RPC --chain-id 80002 --registry-address ACTUAL_REGISTRY --proof-json proof.json --pdf passport.pdf --confirmations 3 --issuer-identity-url ACTUAL_BTU_HTTPS_DECLARATION
+python blockchain/scripts/verify_transaction.py --rpc-url APPROVED_HTTPS_AMOY_RPC --chain-id 80002 --registry-address ACTUAL_REGISTRY --proof-json proof.json --pdf passport.pdf --confirmations 3
 ```
 
-The tool has no PostgreSQL access or signing key. It recomputes the salted PDF/snapshot commitment and checks the pinned contract, signer, exact input, event, canonical receipt, confirmations, current contract lifecycle and any replacement dependency. It validates institutional root publication separately. A transaction hash alone proves neither the contents of an arbitrary PDF nor current institutional status.
+The tool has no PostgreSQL access or signing key. It recomputes the salted PDF/snapshot commitment and checks the pinned contract, signer, exact input, event, canonical receipt, confirmations, current contract lifecycle and any replacement dependency. It needs no university website access. A transaction hash alone proves neither the contents of an arbitrary PDF nor current institutional status.
 
 The tool intentionally reports `institutional_current_status=NOT_CHECKED`: on-chain integrity alone cannot establish a still-pending institutional cancellation. Combine the independent chain check with the authoritative public BTU lifecycle API. It never emits a blanket VALID/MVP-complete result.
+
+## October 27 stabilization and response examples
+
+`API_EXAMPLES.json` contains complete illustrative response objects for no Passport, a current verified Student Passport, public pending/verified/unavailable/failed verification, replacement, revocation, expired/revoked credentials and historical versions. Identifiers and hashes are synthetic examples, not evidence of a deployment. Existing response fields remain; the `blockchain` DTO is additive except for the explicitly removed website-declaration fields.
+
+| Situation | Public root status | Live blockchain status | UI action |
+|---|---|---|---|
+| No current Student Passport | Student endpoint returns exactly `{"passport":null}` | Absent | Empty state |
+| Issued, not yet anchored / insufficient confirmations | PENDING_BLOCKCHAIN | PENDING_BLOCKCHAIN | Pending; no positive badge |
+| Current, valid, independently confirmed | VALID | CONFIRMED, all three approval/current flags true | Verified; show actual network |
+| RPC timeout/outage | UNVERIFIABLE | UNAVAILABLE | Verification unavailable; discard any cached positive badge |
+| Invalid deployment configuration | UNVERIFIABLE | NOT_CONFIGURED | Configuration unavailable |
+| Exhausted or terminal operation failure | UNVERIFIABLE | FAILED | Failure/recovery state; not an endless pending spinner |
+| Replaced / revoked identity | REPLACED / REVOKED | Any | Never current; historical proof can still be authentic |
+| Revoked / expired represented credential | REVOKED / EXPIRED | May be CONFIRMED | No current verification badge |
+| Authentic previous version | OUTDATED | May be CONFIRMED; current flag false | Historical authenticity only |
+| Unknown public reference | NOT_FOUND | Absent or NOT_FOUND | Not found; absence of proof means not assessed |
+
+Public verification endpoints return HTTP 200 for these business outcomes. Bad selectors are HTTP 400; throttling is 429. Private endpoints continue to return 401/403 for authentication/permissions and 404 for unavailable authorized historical content. PDF generation status and blockchain status are separate.
+
+An issued empty snapshot can have a valid confirmed document proof while credential_status remains UNVERIFIABLE and credential_counts is empty; it makes no earned-credential claim. Exceeding the credential validation limit remains UNVERIFIABLE and never counts as an empty snapshot.
+
+The verification RPC budget is six seconds across an issuance proof and its replacement dependency. Each transport call also has a five-second budget, one-second socket inactivity limits, an 8 MiB response limit and no redirects or transparent retries. These budgets apply between transport reads; DNS/OS scheduling can extend wall-clock time. The owned `BlockchainRPCBudgetMiddleware` also shares one budget across multiple proofs in a request, once Developer 1 registers it in integration settings.
+
+**Shared-code integration dependency:** this branch's existing private Passport serializer still maps FAILED/NOT_CONFIGURED to its legacy PENDING_BLOCKCHAIN root value. Developer 1 must align that branch to return UNVERIFIABLE unless nested status is PENDING_BLOCKCHAIN, keeping the terminal credential/lifecycle branches above it. Until that narrow shared change lands, clients must use the nested status to distinguish failure/configuration from pending. This stabilization deliberately does not overwrite the shared serializer further.
+
+The upload verifier has a second narrow shared dependency: after `PassportDocumentRepository.find_by_hash` has already found the issued document, call `document_proof(document['document_id'], known_document=True)`. This server-only hint skips a duplicate existence lookup when transport is disabled; it never bypasses enabled-chain validation and must not come from request parameters. The existing three-query upload assertion currently fails at four until that caller is wired. The blockchain fast path is separately tested at zero queries. No assertion was relaxed.
+
+The target frontend at cc74833 discards unknown blockchain fields and does not accept the new pending/replaced public statuses. Its owners must update the explicit DTO allowlists, adapters and HTTP acceptance fixtures. Build explorer links only from validated chain ID 80002 and a 32-byte transaction hash using the fixed Amoy explorer origin. Label LOCAL_ANVIL as local test evidence. No private keys, provider URLs or arbitrary explorer URLs are sent to clients.
+
+Student current/PDF reads require the existing verified linked Student session. Registrar corrections require `accounts.manage_legal_identity`; Passport revocation requires `accounts.manage_passport_lifecycle`; historical registrar reads require the registrar permission and are audited. Existing admin PDF reads retain `accounts.view_student_records` plus their existing audit rules. Session-authenticated mutations require CSRF. The public endpoints need no session or keys.

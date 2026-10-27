@@ -16,8 +16,10 @@ from .chain import configured_gateway as ChainGateway, ProofError, ProofPending,
 from .models import PassportAnchor, SignerNonce, ProofObservation
 from .commitments import passport_key, document_material
 from .policy import load_policy, load_signer
+from .rpc import rpc_budget, VERIFICATION_SECONDS, WORKER_SECONDS, RPCUnavailable, RPCDeadlineExceeded
 
 MAX_FAILURES = 10
+STUCK_AFTER_SECONDS = 900
 
 
 def _issuer():
@@ -131,6 +133,7 @@ def _sign(anchor, gateway, signer):
         row.save(update_fields=['signed_transaction', 'transaction_hash', 'nonce', 'state', 'updated_at'])
         counter.next_nonce = nonce + 1
         counter.save(update_fields=['next_nonce'])
+        ProofObservation.objects.create(operation=row,status='SIGNED')
         return row
 
 
@@ -144,6 +147,9 @@ def _record(anchor_id, *, proof=None, error=None, pending=False):
             row.error_code, row.next_attempt_at = '', None
         elif pending:
             row.state, row.error_code = 'SUBMITTED', 'AWAITING_CONFIRMATIONS'
+            signed_at=row.observations.filter(status='SIGNED').order_by('created_at').values_list('created_at',flat=True).first() or row.created_at
+            if (timezone.now()-signed_at).total_seconds() >= STUCK_AFTER_SECONDS:
+                row.error_code='STUCK_TRANSACTION_REVIEW_REQUIRED'
             row.next_attempt_at = timezone.now() + timedelta(seconds=15)
         else:
             row.attempts += 1
@@ -155,6 +161,11 @@ def _record(anchor_id, *, proof=None, error=None, pending=False):
 
 
 def process_anchor(anchor_id, *, gateway=None, signer=None):
+    with rpc_budget(WORKER_SECONDS):
+        return _process_anchor(anchor_id,gateway=gateway,signer=signer)
+
+
+def _process_anchor(anchor_id, *, gateway=None, signer=None):
     if connection.vendor != 'postgresql' or connection.in_atomic_block:
         raise ImproperlyConfigured('Proof processing requires PostgreSQL and no enclosing transaction.')
     policy = load_policy()
@@ -189,17 +200,16 @@ def process_anchor(anchor_id, *, gateway=None, signer=None):
         try:
             proof = gateway.verify(anchor)
         except ProofPending:
-            gateway.validate_target()
-            try:
-                tx_hash = gateway.broadcast(anchor.signed_transaction)
-                if tx_hash != anchor.transaction_hash:
-                    raise ProofError('TRANSACTION_HASH_MISMATCH')
-            except ProofError:
-                raise
-            except Exception:
-                # Already-known/nonce-too-low and uncertain submissions are resolved
-                # by querying the previously persisted transaction, never signing anew.
-                pass
+            if gateway.submission_state(anchor)=='ABSENT':
+                try:
+                    tx_hash = gateway.broadcast(anchor.signed_transaction)
+                    if tx_hash != anchor.transaction_hash:
+                        raise ProofError('TRANSACTION_HASH_MISMATCH')
+                except (ProofError,RPCUnavailable):
+                    raise
+                except Exception:
+                    # Resolve an uncertain send using the durable hash, never a new signature.
+                    pass
             proof = gateway.verify(anchor)
         return _record(anchor.pk, proof=proof)
     except ProofPending:
@@ -208,6 +218,10 @@ def process_anchor(anchor_id, *, gateway=None, signer=None):
         return _record(anchor.pk, error=error)
     except ImproperlyConfigured:
         return _record(anchor.pk, error=ProofError('SIGNING_CONFIGURATION', retryable=True))
+    except RPCDeadlineExceeded:
+        return _record(anchor.pk,error=ProofError('RPC_TIMEOUT',retryable=True))
+    except RPCUnavailable:
+        return _record(anchor.pk,error=ProofError('RPC_UNAVAILABLE',retryable=True))
     except Exception:
         return _record(anchor.pk, error=ProofError('CHAIN_OR_STORAGE_UNAVAILABLE', retryable=True))
 
@@ -239,13 +253,20 @@ def process_batch(*, batch_size=20):
     return counts
 
 
-def document_proof(document_reference,*,gateway=None):
+def document_proof(document_reference,*,gateway=None,known_document=False):
+    with rpc_budget(VERIFICATION_SECONDS):
+        result=_document_proof(document_reference,gateway=gateway,known_document=known_document)
+    result['assessed_at']=None if result['status']=='NOT_CONFIGURED' else timezone.now().isoformat()
+    return result
+
+
+def _document_proof(document_reference,*,gateway=None,known_document=False):
     result={'status':'PENDING_BLOCKCHAIN','blockchain_verified':False,'historical_blockchain_authentic':False,
-            'issuer_key_authorized':False,'institutional_identity_verified':False,'source':'POLYGON_PDF_COMMITMENT_V1'}
+            'issuer_key_authorized':False,'institutional_issuer_approved':False,'source':'POLYGON_PDF_COMMITMENT_V1'}
     try:
         policy=load_policy()
         if policy is None:
-            if document_reference is not None and not PassportDocument.objects.filter(public_reference=document_reference).exists():
+            if not known_document and document_reference is not None and not PassportDocument.objects.filter(public_reference=document_reference).exists():
                 return {**result,'status':'NOT_FOUND'}
             return {**result,'status':'NOT_CONFIGURED'}
         if document_reference is None:
@@ -255,10 +276,13 @@ def document_proof(document_reference,*,gateway=None):
             exists=PassportDocument.objects.filter(public_reference=document_reference).exists()
             return result if exists else {**result,'status':'NOT_FOUND'}
         _matches_policy(anchor,policy)
+        result['institutional_issuer_approved']=True
         result.update(environment=policy.environment,chain_id=anchor.chain_id,
                       contract_address=anchor.contract_address,issuer_address=anchor.issuer_address,
                       passport_status=anchor.passport.status,pdf_sha256=anchor.pdf_sha256,
-                      snapshot_sha256=anchor.snapshot_sha256,retryable=anchor.retryable,
+                      snapshot_sha256=anchor.snapshot_sha256,retryable=anchor.retryable,operation_state=anchor.state,
+                      transaction_hash=anchor.transaction_hash or None,
+                      operator_review_required=anchor.state=='FAILED' or anchor.error_code in ('STUCK_TRANSACTION_REVIEW_REQUIRED','NONCE_CONSUMED_REVIEW_REQUIRED'),
                       passport_key=anchor.passport_key,version_key=anchor.version_key,
                       document_key=anchor.document_key,commitment=anchor.commitment,
                       commitment_salt=anchor.commitment_salt)
@@ -274,12 +298,7 @@ def document_proof(document_reference,*,gateway=None):
                 raise ProofPending()
             gateway.verify(dependency)
             result['replacement_transaction_hash']=dependency.transaction_hash
-        from .authority import institution_approves_registry
-        approved=institution_approves_registry(policy)
-        result['institutional_identity_verified']=approved
-        if approved:
-            result['issuer_identity_url']=policy.issuer_identity_url
-        # RPC/root publication can be slow; do not use lifecycle data read before it.
+        # RPC can be slow; do not use lifecycle data read before it.
         latest=DigitalPassport.objects.values('status','latest_version_id','latest_version__version_number').get(pk=anchor.passport_id)
         result['passport_status']=latest['status']
         result['latest_version']=latest['latest_version__version_number']
@@ -295,9 +314,17 @@ def document_proof(document_reference,*,gateway=None):
                 'blockchain_verified':current,'historical_blockchain_authentic':True,'issuer_key_authorized':True}
     except ProofPending:
         failed=anchor.state=='FAILED'
-        return {**result,'status':'FAILED' if failed else 'PENDING_BLOCKCHAIN','error':anchor.error_code if failed else None}
+        return {**result,'status':'FAILED' if failed else 'PENDING_BLOCKCHAIN','error':anchor.error_code or None}
     except ProofError as error:
+        if error.code=='BTU_ISSUER_NOT_APPROVED':
+            result['institutional_issuer_approved']=False
         return {**result,'status':'UNVERIFIABLE','error':error.code}
+    except RPCDeadlineExceeded:
+        return {**result,'status':'UNAVAILABLE','error':'RPC_TIMEOUT'}
+    except RPCUnavailable:
+        return {**result,'status':'UNAVAILABLE','error':'RPC_UNAVAILABLE'}
+    except ImproperlyConfigured:
+        return {**result,'status':'NOT_CONFIGURED','error':'INVALID_DEPLOYMENT_POLICY'}
     except Exception:
         return {**result,'status':'UNAVAILABLE'}
 
@@ -308,8 +335,11 @@ def version_proof(version_id):
             return document_proof(None)
         document=PassportDocument.objects.filter(passport_version_id=version_id,status='ISSUED').order_by('-generation_number').first()
         return document_proof(document.public_reference if document else None)
+    except ImproperlyConfigured:
+        return document_proof(None)
     except Exception:
-        return {'status':'UNAVAILABLE','blockchain_verified':False,'historical_blockchain_authentic':False,'institutional_identity_verified':False}
+        return {'status':'UNAVAILABLE','blockchain_verified':False,'historical_blockchain_authentic':False,
+                'issuer_key_authorized':False,'institutional_issuer_approved':False,'assessed_at':timezone.now().isoformat()}
 
 
 def reconcile_confirmed(batch_size=20):
@@ -323,10 +353,11 @@ def reconcile_confirmed(batch_size=20):
     for row in rows:
         status,block_hash,error='CONFIRMED','',''
         try:
-            _matches_policy(row,policy)
-            proof=gateway.verify(row); block_hash=proof['block_hash']
-            if row.state=='FAILED':
-                _record(row.pk,proof=proof)
+            with rpc_budget(VERIFICATION_SECONDS):
+                _matches_policy(row,policy)
+                proof=gateway.verify(row); block_hash=proof['block_hash']
+                if row.state=='FAILED':
+                    _record(row.pk,proof=proof)
         except ProofPending:
             status='PENDING_BLOCKCHAIN'
             if row.state=='CONFIRMED':
