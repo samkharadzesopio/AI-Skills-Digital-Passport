@@ -1,5 +1,7 @@
 # Blockchain pre-integration stabilization — 27 October 2026
 
+Historical report for c8cc9fd and its predecessor. The subsequent correction branch is described in `FINAL_STABILIZATION_2026-10-27.md`; the previously outstanding private mapping, request middleware and document-caller changes are implemented there. Keep the historical test failures below as prior evidence, not the final result.
+
 Branch HEAD: `044264f893dbbfd0d0d44cc2a2af562a1e8df5ea` (`feature/passport-blockchain-proof`). Target inspected read-only: `cc74833d792f64a9c37764e25cff7108aa524eea` (`integration`). No branch/worktree creation or switching, merge, commit, push, shared migration or public transaction was performed in this stabilization session.
 
 Publication follow-up: the user subsequently authorized committing and pushing this prepared changeset for review. The baseline and test evidence below describe the stabilization review; its NOT READY classification remains in force. No merge, shared migration or public deployment was authorized by that publication request.

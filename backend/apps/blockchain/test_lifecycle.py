@@ -1,3 +1,4 @@
+import secrets
 import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
@@ -24,7 +25,8 @@ from .services import process_anchor, process_batch
 class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
     def setUp(self):
         super().setUp()
-        self.admin=User.objects.create_admin_user(email='registrar.chain@btu.edu.ge',password='Synthetic-Local-Registrar-2026!',
+        self.admin_password=secrets.token_urlsafe(32)
+        self.admin=User.objects.create_admin_user(email='registrar.chain@btu.edu.ge',password=self.admin_password,
             permission_codenames={'manage_legal_identity','manage_passport_lifecycle','view_student_records'})
         self.student.email='chain.student@btu.edu.ge'; self.student.save(update_fields=['email'])
         self.user=User.objects.create_user(email=self.student.email,student=self.student,is_email_verified=True)
@@ -145,7 +147,7 @@ class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
         self.assertEqual(DigitalPassport.objects.filter(student=self.student).count(),2)
 
     def test_student_and_unpermissioned_admin_and_unapproved_evidence_are_denied(self):
-        unprivileged=User.objects.create_admin_user(email='unprivileged.chain@btu.edu.ge',password='Synthetic-Local-2026!',permission_codenames={'view_student_records'})
+        unprivileged=User.objects.create_admin_user(email='unprivileged.chain@btu.edu.ge',password=secrets.token_urlsafe(32),permission_codenames={'view_student_records'})
         for actor in [self.user,unprivileged]:
             with self.assertRaises(PermissionDenied):
                 change_legal_name(actor=actor,**self.data)
@@ -230,7 +232,7 @@ class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
         body={key:str(value) if key in ('expected_passport_reference',) else value for key,value in self.data.items() if key!='student_id'}
         self.assertIn(client.post(url,body,format='json').status_code,[401,403])
         csrf=client.get('/api/accounts/csrf/').json()['csrfToken']
-        login=client.post('/api/accounts/login/',{'email':self.admin.email,'password':'Synthetic-Local-Registrar-2026!'},format='json',HTTP_X_CSRFTOKEN=csrf)
+        login=client.post('/api/accounts/login/',{'email':self.admin.email,'password':self.admin_password},format='json',HTTP_X_CSRFTOKEN=csrf)
         self.assertEqual(login.status_code,200)
         self.assertEqual(client.post(url,body,format='json').status_code,403)
         csrf=client.get('/api/accounts/csrf/').json()['csrfToken']
@@ -359,7 +361,10 @@ class PassportReplacementTests(ChainDataMixin,TransactionTestCase):
             self.assertEqual(DigitalPassport.objects.get(pk=event.previous_id).status,'REPLACED')
             self.assertFalse(PassportAnchor.objects.filter(replacement=event.replacement).exists())
             client=APIClient(); client.force_authenticate(self.user)
-            self.assertEqual(client.get('/api/student/passport/').json()['status'],'PENDING_BLOCKCHAIN')
+            unavailable=client.get('/api/student/passport/').json()
+            self.assertEqual(unavailable['status'],'UNVERIFIABLE')
+            self.assertEqual(unavailable['blockchain']['status'],'NOT_CONFIGURED')
+            self.assertFalse(unavailable['blockchain']['blockchain_verified'])
             old=APIClient().get(f'/api/verification/passport/{event.previous.public_reference}/').json()
             self.assertEqual(old['status'],'REPLACED')
             process_publications(20)

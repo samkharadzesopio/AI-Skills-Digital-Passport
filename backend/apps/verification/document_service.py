@@ -93,7 +93,10 @@ class DocumentVerificationService:
             result['is_latest'] = current['is_latest']
             from apps.blockchain.services import document_proof
             from .blockchain_policy import apply_passport_proof
-            proof=document_proof(document['document_id'])
+            # The issued document was resolved by the hash registry above. This
+            # server-only hint avoids a duplicate existence query when disabled;
+            # enabled-chain target, receipt and commitment checks are unchanged.
+            proof=document_proof(document['document_id'], known_document=True)
             if proof.get('version_reference'):
                 fresh=PassportVerificationService().verify(proof['version_reference'],kind='version',include_blockchain=False)
                 for field in ('status','is_latest','passport_version','latest_version','credential_status','credential_counts','credential_membership_empty'):

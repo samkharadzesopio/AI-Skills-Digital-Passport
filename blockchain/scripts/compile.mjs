@@ -17,7 +17,9 @@ const output=JSON.stringify({compiler:a.metadata.compiler.version,contract:'Pass
   abi:a.abi,bytecode:a.bytecode.object,runtime_bytecode:a.deployedBytecode.object},null,2)+'\n';
 const destination=path.join(root,'../backend/apps/blockchain/contract.json');
 if (process.argv.includes('--check')) {
-  if (fs.readFileSync(destination,'utf8')!==output) throw new Error('Committed registry bytecode differs from Foundry output');
+  // Git autocrlf changes JSON line endings, not ABI or bytecode. Keep the
+  // complete artifact comparison while normalizing checkout-only newlines.
+  if (fs.readFileSync(destination,'utf8').replace(/\r\n/g,'\n')!==output) throw new Error('Committed registry bytecode differs from Foundry output');
   process.stdout.write('Foundry source and committed contract artifact match.\n');
 } else {
   fs.writeFileSync(destination,output);

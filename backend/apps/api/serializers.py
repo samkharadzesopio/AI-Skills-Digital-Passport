@@ -113,11 +113,15 @@ class PassportSerializer(serializers.ModelSerializer):
             proof=self.get_blockchain(obj)
             if proof.get('passport_status') in ('REPLACED','REVOKED'):
                 return proof['passport_status']
+            if proof.get('onchain_status') in ('REPLACED','REVOKED'):
+                return proof['onchain_status']
             if proof.get('registry_status') in ('REVOKED','EXPIRED','INVALID'):
                 return proof['registry_status']
-            if proof.get('blockchain_verified'):
+            if (proof.get('status') == 'CONFIRMED' and proof.get('blockchain_verified') is True
+                    and proof.get('institutional_issuer_approved') is True
+                    and proof.get('issuer_key_authorized') is True):
                 return 'BLOCKCHAIN_VERIFIED'
-            return 'PENDING_BLOCKCHAIN' if proof.get('status') in ('PENDING_BLOCKCHAIN','FAILED','NOT_CONFIGURED') else 'UNVERIFIABLE'
+            return 'PENDING_BLOCKCHAIN' if proof.get('status') == 'PENDING_BLOCKCHAIN' else 'UNVERIFIABLE'
         return obj.latest_version.status if obj.latest_version else 'NOT_ISSUED'
 
     def get_blockchain(self,obj):

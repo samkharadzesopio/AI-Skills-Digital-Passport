@@ -1,5 +1,7 @@
 # Local blockchain integration acceptance
 
+Final correction follow-up: `fix/blockchain-premerge-stabilization` at the subsequently published commit is documented in `FINAL_STABILIZATION_2026-10-27.md`. Its final release run passed 551 tests in 525.681 seconds, with the same two explicit legacy reference-SQL exclusions; Foundry passed 11 tests and artifact comparison matched. The required three-query regression remains unchanged and passes. The older NOT READY classification and partial/failing runs below describe prior revisions; they are retained as historical evidence.
+
 Updated: 2026-10-27. Reviewed baseline: `044264f`, `feature/passport-blockchain-proof`. Publication of the reviewed stabilization changes was subsequently authorized; see Git history for the resulting commit. The NOT READY classification and recorded test results are unchanged.
 
 This report records local implementation evidence. The initial implementation was pushed as `044264f`; no shared Neon migration, public contract deployment or merge was performed. Results below that predate the website-gate removal are historical runs, not a claim that the revised suite was rerun in full.

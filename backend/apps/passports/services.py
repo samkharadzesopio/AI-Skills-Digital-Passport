@@ -194,6 +194,12 @@ def publish_passport_version(
                 return prior_event.version, False
 
             credentials = _current_credential_rows(student.pk, effective_at)
+            if not passport.latest_version_id and not credentials:
+                from apps.skills.models import VerifiedAchievement
+                if not VerifiedAchievement.objects.filter(
+                    student_id=student.pk, verification_status='VERIFIED',
+                ).exists():
+                    raise ValidationError('An initial Passport requires approved learning evidence.')
             student_snapshot = _student_snapshot(student)
             if passport.legal_name_snapshot:
                 student_snapshot.update(passport.legal_name_snapshot)

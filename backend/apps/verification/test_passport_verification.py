@@ -83,6 +83,12 @@ class PassportPublicTests(DocumentDataMixin, TransactionTestCase):
     def test_empty_issued_snapshot_is_unverifiable(self):
         from apps.students.models import Student
         empty = Student.objects.create(external_student_id='EMPTY-SYNTHETIC', first_name='Empty', last_name='Test', email='empty@example.org', program='AI', education_level='Bachelor', student_status='Active')
+        # Approved learning, but no issued credential: the snapshot is still
+        # empty and must remain UNVERIFIABLE. Initial evidence is now required.
+        from apps.skills.models import AchievementSourceEvent, VerifiedAchievement
+        source = AchievementSourceEvent.objects.create(source='PDF_TEST', source_event_id='EMPTY-APPROVED', payload_sha256='e'*64)
+        VerifiedAchievement.objects.create(student=empty, skill=self.skill, source_event=source,
+            earned_on=self.now.date(), verification_status='VERIFIED')
         version, _ = publish_passport_version(student_id=empty.pk, event_key='EMPTY')
         self.assertEqual(PassportVerificationService().verify(version.public_reference, kind='version')['status'], 'UNVERIFIABLE')
 

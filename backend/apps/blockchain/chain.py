@@ -38,6 +38,7 @@ class BlockchainProvider(Protocol):
     def signing_context(self): ...
     def unsigned_transaction(self,operation,nonce,gas_price): ...
     def broadcast(self,raw): ...
+    def validate_signed(self,operation): ...
     def verify(self,operation): ...
 
 
@@ -86,6 +87,37 @@ class ChainGateway:
     def broadcast(self,raw):
         return hex_value(self.web3.eth.send_raw_transaction(bytes(raw)))
 
+    def validate_signed(self, op):
+        """Validate the unchanged legacy payload before operator rebroadcast.
+
+        Never decode a key or construct a replacement. Fee/target policy may
+        have changed since signing, so recheck the actual saved transaction.
+        """
+        import rlp
+        from eth_account import Account
+        try:
+            raw = bytes(op.signed_transaction)
+            if len(raw) > 8192 or hex_value(Web3.keccak(raw)) != op.transaction_hash:
+                raise ValueError
+            fields = rlp.decode(raw, strict=True)
+            if len(fields) != 9:
+                raise ValueError
+            nonce, price, gas, recipient, value, data, v, _, _ = fields
+            integer = lambda item: int.from_bytes(item, 'big')
+            if (integer(v) < 35 or (integer(v) - 35) // 2 != self.policy.chain_id
+                    or integer(nonce) != op.nonce or integer(gas) != self.policy.gas_limit
+                    or integer(price) <= 0
+                    or '0x' + recipient.hex() != op.contract_address or integer(value) != 0
+                    or data != bytes(HexBytes(self.calldata(op)))
+                    or Account.recover_transaction(raw).lower() != op.issuer_address):
+                raise ValueError
+            if integer(price) > self.policy.max_gas_price_wei:
+                raise ProofError('GAS_PRICE_LIMIT', retryable=True)
+        except ProofError:
+            raise
+        except Exception:
+            raise ProofError('SIGNED_TRANSACTION_REVIEW_REQUIRED') from None
+
     def submission_state(self,op):
         """Read only: avoid rebroadcasting mined/pool-known transactions."""
         self.validate_target()
@@ -95,6 +127,9 @@ class ChainGateway:
             latest=self.web3.eth.get_transaction_count(Web3.to_checksum_address(op.issuer_address),'latest')
             if latest > op.nonce:
                 raise ProofError('NONCE_CONSUMED_REVIEW_REQUIRED')
+            pending = self.web3.eth.get_transaction_count(Web3.to_checksum_address(op.issuer_address),'pending')
+            if pending > op.nonce:
+                raise ProofError('NONCE_CONFLICT_REVIEW_REQUIRED')
             return 'ABSENT'
         if hex_value(tx['hash']) != op.transaction_hash or tx['from'].lower() != op.issuer_address or tx['nonce'] != op.nonce:
             raise ProofError('TRANSACTION_OR_NONCE_MISMATCH')

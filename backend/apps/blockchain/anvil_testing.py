@@ -29,7 +29,8 @@ class AnvilChain:
             sock.bind(('127.0.0.1',0)); port=sock.getsockname()[1]
         self.rpc_url=f'http://127.0.0.1:{port}'
         self.process=subprocess.Popen([binary,'--host','127.0.0.1','--port',str(port),'--chain-id','31337',
-                                       '--mnemonic',mnemonic,'--silent'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                                       '--mnemonic',mnemonic,'--silent'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                                      **({'creationflags':subprocess.CREATE_NO_WINDOW} if os.name=='nt' else {}))
         self.web3=Web3(Web3.HTTPProvider(self.rpc_url,request_kwargs={'timeout':2},exception_retry_configuration=None))
         for _ in range(100):
             try:

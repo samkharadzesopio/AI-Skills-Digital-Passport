@@ -22,7 +22,7 @@ class Command(BaseCommand):
         data={'operation_id':str(row.pk),'operation_type':row.operation_type,'state':row.state,
               'chain_id':row.chain_id,'transaction_hash':row.transaction_hash or None,'nonce':row.nonce,
               'error':row.error_code or None,'retryable':row.retryable,
-              'operator_review_required':row.state=='FAILED' or row.error_code in ('STUCK_TRANSACTION_REVIEW_REQUIRED','NONCE_CONSUMED_REVIEW_REQUIRED')}
+              'operator_review_required':row.state=='FAILED' or row.error_code in ('STUCK_TRANSACTION_REVIEW_REQUIRED','NONCE_CONSUMED_REVIEW_REQUIRED','NONCE_CONFLICT_REVIEW_REQUIRED')}
         if options['check_chain']:
             try:
                 with rpc_budget(VERIFICATION_SECONDS):

@@ -127,7 +127,23 @@ npm --prefix blockchain run check
 
 Foundry 1.7.1, OpenZeppelin 5.4.0 and Solidity 0.8.30/Cancun are pinned. `run check` recompiles with Foundry and compares the committed ABI/creation/runtime bytecode. For a restricted compiler cache, set `SOLC_PATH` to a verified native Solidity 0.8.30 binary. A normal Foundry install can manage the compiler itself. Node wrapper scripts propagate actual native exit codes. Generated artifacts/broadcast/keystore folders are ignored.
 
-Run `ops/test_backend.sh` using the documented disposable loopback PostgreSQL harness, never a production DATABASE_URL. The chain tests start their own Anvil subprocess with an ephemeral mnemonic generated at runtime, deploy the actual contract, send real signed local transactions and exercise Django/PostgreSQL/PDF/public endpoints. They do not use eth-tester or a database-only EVM simulator. `PASSPORT_ANVIL_BIN` can select an installed native binary. No public wallet or RPC credentials are needed for local tests.
+Run `python blockchain/scripts/test_backend.py` from repository root. It always initializes a new owned loopback PostgreSQL cluster and random test database, uses generated isolated settings and removes its owned cluster/media on exit. It never imports production settings or adopts a database. Set `PASSPORT_PG_BIN` to installed PostgreSQL binaries when needed. Optional positional test labels select a supported subset; the default includes all nine backend applications, including apps.blockchain. Preserve integration's newer disposable launcher when merging later and add apps.blockchain to its discovery list.
+
+On Windows use `npm.cmd ci --ignore-scripts` in blockchain: the pinned generic Foundry package postinstall uses POSIX environment-assignment syntax. Platform-native optional binaries are already locked; the project wrappers invoke those binaries directly. `npm.cmd test` and `npm.cmd run check` exercise the same pinned tools. Artifact checks normalize Git checkout line endings while retaining the complete ABI/bytecode comparison.
+
+The chain tests start their own Anvil subprocess with an ephemeral mnemonic generated at runtime, deploy the actual contract, send real signed local transactions and exercise Django/PostgreSQL/PDF/public endpoints. They do not use eth-tester or a database-only EVM simulator. `PASSPORT_ANVIL_BIN` can select an installed native binary. No public wallet or RPC credentials are needed for local tests.
+
+## Controlled transaction recovery
+
+Inspect one operation first, using `inspect_blockchain_operation OPERATION_UUID --check-chain`. A stuck transaction is not verified. After reviewing its saved hash and chain state, an operator can run:
+
+```text
+python backend/manage.py recover_blockchain_operation OPERATION_UUID --expected-transaction-hash REVIEWED_HASH --rebroadcast
+```
+
+This command uses no signing key. It validates the original signature, chain, target, calldata, gas, fee cap and reserved nonce; it persists operator intent before rebroadcasting exactly the saved bytes. Already known/mined transactions are not broadcast again. A nonce consumed or occupied by another transaction, terminal failure, changed bytes, or cancelled identity stops recovery. Crash/retry uses the same hash and nonce. Historical signed evidence and frozen receipts are retained.
+
+No automatic or manual fee increase is implemented. A temporarily underpriced transaction must wait until its original fee is acceptable, then the dropped original may be rebroadcast. If that cannot resolve an incident, a reviewed forward transaction-attempt design is required. Do not reset nonces, edit signed rows, send unrelated transactions from the issuer, or discard history. This explicit limitation is preferable to an untested replacement mechanism. Public-network recovery is an operator action requiring its normal authorization; this stabilization executed local Anvil transactions only.
 
 ## Polygon Amoy deployment: prepared, not executed
 

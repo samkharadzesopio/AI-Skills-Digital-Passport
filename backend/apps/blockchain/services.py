@@ -201,6 +201,7 @@ def _process_anchor(anchor_id, *, gateway=None, signer=None):
             proof = gateway.verify(anchor)
         except ProofPending:
             if gateway.submission_state(anchor)=='ABSENT':
+                gateway.validate_signed(anchor)
                 try:
                     tx_hash = gateway.broadcast(anchor.signed_transaction)
                     if tx_hash != anchor.transaction_hash:
@@ -282,7 +283,7 @@ def _document_proof(document_reference,*,gateway=None,known_document=False):
                       passport_status=anchor.passport.status,pdf_sha256=anchor.pdf_sha256,
                       snapshot_sha256=anchor.snapshot_sha256,retryable=anchor.retryable,operation_state=anchor.state,
                       transaction_hash=anchor.transaction_hash or None,
-                      operator_review_required=anchor.state=='FAILED' or anchor.error_code in ('STUCK_TRANSACTION_REVIEW_REQUIRED','NONCE_CONSUMED_REVIEW_REQUIRED'),
+                      operator_review_required=anchor.state=='FAILED' or anchor.error_code in ('STUCK_TRANSACTION_REVIEW_REQUIRED','NONCE_CONSUMED_REVIEW_REQUIRED','NONCE_CONFLICT_REVIEW_REQUIRED'),
                       passport_key=anchor.passport_key,version_key=anchor.version_key,
                       document_key=anchor.document_key,commitment=anchor.commitment,
                       commitment_salt=anchor.commitment_salt)
@@ -307,7 +308,9 @@ def _document_proof(document_reference,*,gateway=None,known_document=False):
         registry=PassportVerificationService().verify(result['version_reference'],kind='version',include_blockchain=False)
         result['registry_status']=registry['status']
         result['credential_status']=registry['credential_status']
-        valid_credentials=registry['authentic'] and (registry['credential_status']=='VALID' or registry['credential_membership_empty'])
+        # An empty update after revocation/expiry retains historical issuance,
+        # but cannot establish current certification through an empty-set rule.
+        valid_credentials=registry['authentic'] and registry['credential_status']=='VALID'
         current=(latest['status']=='ACTIVE' and proof['onchain_status']=='ACTIVE'
                  and latest['latest_version_id']==anchor.document.passport_version_id and valid_credentials)
         return {**result,**proof,'transaction_hash':anchor.transaction_hash,'status':'CONFIRMED',
@@ -362,7 +365,10 @@ def reconcile_confirmed(batch_size=20):
             status='PENDING_BLOCKCHAIN'
             if row.state=='CONFIRMED':
                 try:
-                    gateway.broadcast(row.signed_transaction)
+                    with rpc_budget(VERIFICATION_SECONDS):
+                        if gateway.submission_state(row) == 'ABSENT':
+                            gateway.validate_signed(row)
+                            gateway.broadcast(row.signed_transaction)
                 except Exception:
                     pass
         except ProofError as exc:
@@ -385,3 +391,67 @@ def retry_failed():
             row.save(update_fields=['state','attempts','next_attempt_at','error_code','updated_at'])
             count+=1
     return count
+
+
+def recover_signed_operation(anchor_id, *, expected_transaction_hash):
+    """Explicit operator recovery: rebroadcast the original signed bytes only.
+
+    Cannot change a fee, nonce, target, commitment or a frozen receipt. A nonce
+    consumed by another transaction and terminal failures need forward review.
+    No signer/key is loaded. Public endpoints never call this function.
+    """
+    if connection.vendor != 'postgresql' or connection.in_atomic_block:
+        raise ImproperlyConfigured('Recovery requires PostgreSQL outside a transaction.')
+    with rpc_budget(WORKER_SECONDS):
+        policy = load_policy()
+        if policy is None:
+            raise ProofError('NOT_CONFIGURED')
+        row = _rows().get(pk=anchor_id)
+        if not row.signed_transaction or row.transaction_hash != expected_transaction_hash:
+            raise ProofError('REVIEWED_TRANSACTION_REQUIRED')
+        _matches_policy(row, policy)
+        gateway = ChainGateway(policy)
+        gateway.validate_signed(row)
+        try:
+            proof = gateway.verify(row)
+        except ProofPending:
+            pass
+        else:
+            return _record(row.pk, proof=proof)
+        if row.state == 'FAILED' and not row.retryable:
+            raise ProofError('TERMINAL_OPERATION_REQUIRES_REVIEW')
+        if row.operation_type == 'ISSUE' and row.passport.status != 'ACTIVE':
+            raise ProofError('CANCELLED_BEFORE_ANCHORING')
+        if row.operation_type == 'ISSUE':
+            _assert_stored_pdf(row)
+        if row.depends_on_id:
+            dependency = _rows().get(pk=row.depends_on_id)
+            if not dependency.transaction_hash:
+                raise ProofPending()
+            gateway.verify(dependency)
+        state = gateway.submission_state(row)
+        if state == 'ABSENT':
+            if not gateway.contract.functions.hasRole(
+                gateway.contract.functions.ISSUER_ROLE().call(),
+                gateway.web3.to_checksum_address(row.issuer_address),
+            ).call():
+                raise ProofError('UNAPPROVED_ISSUER_KEY')
+            # Persist operator intent before the uncertain network boundary.
+            ProofObservation.objects.create(operation=row, status='OPERATOR_REBROADCAST')
+            if gateway.broadcast(row.signed_transaction) != row.transaction_hash:
+                raise ProofError('TRANSACTION_HASH_MISMATCH')
+        if row.state == 'FAILED':
+            with transaction.atomic():
+                locked = PassportAnchor.objects.select_for_update().get(pk=row.pk)
+                if locked.state == 'FAILED' and locked.retryable:
+                    locked.state, locked.attempts = 'SIGNED', 0
+                    locked.error_code, locked.next_attempt_at = '', None
+                    locked.save()
+        # Crash after send is safe: the next run uses the same hash and bytes.
+        if row.state == 'CONFIRMED':
+            try:
+                gateway.verify(row)
+            except ProofPending:
+                return 'PENDING_BLOCKCHAIN'
+            return 'CONFIRMED'
+        return process_anchor(row.pk)
