@@ -53,9 +53,11 @@ class WorkerAndRetentionTests(TestCase):
         call_command('run_backend_workers', once=True, stdout=StringIO())
         self.assertEqual([c.args[0] for c in command.call_args_list],
                          ['retry_classroom_events', 'reconcile_import_runs', 'process_passport_refreshes',
+                          'process_passport_publications',
                           'refresh_expired_credentials', 'purge_expired_auth_state', 'clearsessions'])
         self.assertEqual(command.call_args_list[2].kwargs['batch_size'], 500)
-        self.assertEqual(command.call_args_list[3].kwargs['batch_size'], 500)
+        self.assertEqual(command.call_args_list[3].kwargs['batch_size'], 20)
+        self.assertEqual(command.call_args_list[4].kwargs['batch_size'], 500)
         deliver.assert_called_once()
 
     @patch('apps.accounts.management.commands.run_backend_workers.deliver_one', side_effect=RuntimeError('private provider detail'))

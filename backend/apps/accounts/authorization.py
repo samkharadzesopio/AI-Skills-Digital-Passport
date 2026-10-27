@@ -10,6 +10,7 @@ from .models import User
 ADMIN_CAPABILITIES = (
     'view_student_records', 'manage_student_accounts', 'manage_credentials',
     'revoke_credentials', 'sync_classroom', 'import_completions',
+    'manage_legal_identity', 'manage_passport_lifecycle',
 )
 
 

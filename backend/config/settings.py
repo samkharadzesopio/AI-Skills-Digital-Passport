@@ -74,10 +74,12 @@ INSTALLED_APPS = [
     'apps.passports.apps.PassportsConfig',
     'apps.integrations',
     'apps.verification.apps.VerificationConfig',
+    'apps.blockchain.apps.BlockchainConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'apps.blockchain.middleware.BlockchainRPCBudgetMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -285,3 +287,17 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 30
 DATA_UPLOAD_MAX_NUMBER_FILES = 1
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+
+# Disabled until a reviewed registry deployment and issuer key are configured.
+# RPC/signing are never enabled by request parameters or client configuration.
+PASSPORT_BLOCKCHAIN_ENABLED = _env_bool('PASSPORT_BLOCKCHAIN_ENABLED', default=False)
+PASSPORT_BLOCKCHAIN_RPC_URL = os.environ.get('PASSPORT_BLOCKCHAIN_RPC_URL', '')
+PASSPORT_BLOCKCHAIN_CHAIN_ID = os.environ.get('PASSPORT_BLOCKCHAIN_CHAIN_ID', '')
+PASSPORT_BLOCKCHAIN_CONTRACT_ADDRESS = os.environ.get('PASSPORT_BLOCKCHAIN_CONTRACT_ADDRESS', '')
+PASSPORT_BLOCKCHAIN_ISSUER_ADDRESS = os.environ.get('PASSPORT_BLOCKCHAIN_ISSUER_ADDRESS', '')
+PASSPORT_BLOCKCHAIN_SIGNING_KEY_FILE = os.environ.get('PASSPORT_BLOCKCHAIN_SIGNING_KEY_FILE', '')
+PASSPORT_BLOCKCHAIN_CONFIRMATIONS = os.environ.get('PASSPORT_BLOCKCHAIN_CONFIRMATIONS', '3')
+PASSPORT_BLOCKCHAIN_MAX_GAS_PRICE_WEI = os.environ.get('PASSPORT_BLOCKCHAIN_MAX_GAS_PRICE_WEI', '50000000000')
+# Verification is fail-closed even before RPC/key provisioning.
+PASSPORT_BLOCKCHAIN_ENFORCE = True
+PASSPORT_IDENTITY_EVIDENCE_SOURCES = [v.strip() for v in os.environ.get('PASSPORT_IDENTITY_EVIDENCE_SOURCES', '').split(',') if v.strip()]

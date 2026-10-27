@@ -1,4 +1,25 @@
-# Review and staging rollout
+# Combined backend integration, 27 October 2026
+
+The lifecycle/blockchain integration uses the existing disposable runner with all
+nine backend applications. Run `python -B ops/run_isolated_tests.py --full` with
+the pinned Python requirements, local PostgreSQL binaries, existing frontend
+test dependencies and pinned `blockchain` npm dependencies installed. The runner
+creates its own fresh cluster; no existing development database is adopted.
+
+Current handoff documents:
+
+- [Backend API contracts and remaining frontend work](BACKEND_API_HANDOFF.md)
+- [Captured synthetic HTTP/Anvil examples](BACKEND_CONTRACT_EXAMPLES.json)
+- [Persistent-data migration and worker runbook](BACKEND_MIGRATION_RUNBOOK.md)
+
+Public Polygon deployment, persistent database migration and live institutional
+service acceptance remain separate operator steps. No React implementation is
+changed by the backend integration.
+
+# Historical review and staging rollout
+
+The following notes describe the earlier pre-blockchain candidate. Use the
+current documents above for lifecycle schema, testing and worker sequencing.
 
 This is a locally validated integration candidate, not evidence of production
 deployment. Do not apply shared Neon migrations without institutional approval or

@@ -1,5 +1,5 @@
 
-from django.urls import path
+from django.urls import include, path
 
 from .views import (
     CredentialVerificationView,
@@ -10,6 +10,7 @@ from .views import (
 
 
 urlpatterns = [
+    path('', include('apps.blockchain.urls')),
     path('passport/<str:verification_reference>/', PassportVerificationView.as_view(), name='passport-verification'),
     path('passport-version/<str:verification_reference>/', PassportVersionVerificationView.as_view(), name='passport-version-verification'),
     path(

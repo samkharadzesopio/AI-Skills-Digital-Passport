@@ -81,16 +81,27 @@ class DocumentVerificationService:
 
         if isinstance(self.repository, PassportDocumentRepository):
             from .passport_service import PassportVerificationService
-            current = PassportVerificationService().verify(document['passport_id'], number=document["version_number"])
+            current = PassportVerificationService().verify(document['passport_id'], number=document["version_number"], include_blockchain=False)
             status = current['status']
             if status == 'NOT_FOUND':
                 status = 'UNVERIFIABLE'
             result = self._result(status, 'Registered document integrity and current credential status checked.',
                                   authentic=True, version=current["passport_version"], latest_version=current["latest_version"])
             result.update(credential_status=current['credential_status'], credential_counts=current['credential_counts'])
+            result['credential_membership_empty'] = current['credential_membership_empty']
             # Version currency and credential validity are independent facts.
             result['is_latest'] = current['is_latest']
-            return result
+            from apps.blockchain.services import document_proof
+            from .blockchain_policy import apply_passport_proof
+            # The issued document was resolved by the hash registry above. This
+            # server-only hint avoids a duplicate existence query when disabled;
+            # enabled-chain target, receipt and commitment checks are unchanged.
+            proof=document_proof(document['document_id'], known_document=True)
+            if proof.get('version_reference'):
+                fresh=PassportVerificationService().verify(proof['version_reference'],kind='version',include_blockchain=False)
+                for field in ('status','is_latest','passport_version','latest_version','credential_status','credential_counts','credential_membership_empty'):
+                    result[field]=fresh[field]
+            return apply_passport_proof(result,proof)
 
         passport = self.repository.get_passport(
             document["passport_id"]

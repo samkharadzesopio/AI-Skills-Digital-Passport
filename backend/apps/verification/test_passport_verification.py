@@ -43,8 +43,26 @@ class PassportPublicTests(DocumentDataMixin, TransactionTestCase):
             result = PassportVerificationService().verify(reference)
         self.assertEqual(result['status'], 'VALID')
 
+    def test_known_identity_without_issuance_is_distinct_from_unknown_reference(self):
+        from uuid import uuid4
+        from apps.students.models import Student
+        from apps.passports.services import get_or_create_passport
+        student = Student.objects.create(external_student_id='UNISSUED-SYNTHETIC',
+            first_name='Unissued', last_name='Synthetic', email='unissued@example.org',
+            program='AI', education_level='Bachelor', student_status='Active')
+        passport, _ = get_or_create_passport(student_id=student.pk)
+        with patch('apps.blockchain.services.ChainGateway', side_effect=AssertionError('No proof exists')):
+            response = self.client.get(self.url(passport.public_reference))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'NOT_ISSUED')
+        self.assertFalse(response.json()['authentic'])
+        self.assertIsNone(response.json()['passport_version'])
+        self.assertNotIn(student.email, response.content.decode())
+        self.assertNotIn(str(student.pk), response.content.decode())
+        self.assertEqual(self.client.get(self.url(uuid4())).json()['status'], 'NOT_FOUND')
+
     def test_historical_version_is_outdated_but_credentials_current(self):
-        self.student.first_name = 'New profile'
+        self.student.program = 'New academic program'
         self.student.save()
         publish_passport_version(student_id=self.student.pk, event_key='PUBLIC-NEW-VERSION')
         result = PassportVerificationService().verify(self.version.public_reference, kind='version')
@@ -83,6 +101,12 @@ class PassportPublicTests(DocumentDataMixin, TransactionTestCase):
     def test_empty_issued_snapshot_is_unverifiable(self):
         from apps.students.models import Student
         empty = Student.objects.create(external_student_id='EMPTY-SYNTHETIC', first_name='Empty', last_name='Test', email='empty@example.org', program='AI', education_level='Bachelor', student_status='Active')
+        # Approved learning, but no issued credential: the snapshot is still
+        # empty and must remain UNVERIFIABLE. Initial evidence is now required.
+        from apps.skills.models import AchievementSourceEvent, VerifiedAchievement
+        source = AchievementSourceEvent.objects.create(source='PDF_TEST', source_event_id='EMPTY-APPROVED', payload_sha256='e'*64)
+        VerifiedAchievement.objects.create(student=empty, skill=self.skill, source_event=source,
+            earned_on=self.now.date(), verification_status='VERIFIED')
         version, _ = publish_passport_version(student_id=empty.pk, event_key='EMPTY')
         self.assertEqual(PassportVerificationService().verify(version.public_reference, kind='version')['status'], 'UNVERIFIABLE')
 

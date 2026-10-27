@@ -25,6 +25,7 @@ class Command(BaseCommand):
                     call_command('retry_classroom_events', stdout=self.stdout)
                     call_command('reconcile_import_runs', stdout=self.stdout)
                     call_command('process_passport_refreshes', batch_size=500, stdout=self.stdout)
+                    call_command('process_passport_publications', batch_size=20, stdout=self.stdout)
                     next_recovery = now + 60
                 if now >= next_expiry_scan:
                     call_command('refresh_expired_credentials', batch_size=500, stdout=self.stdout)

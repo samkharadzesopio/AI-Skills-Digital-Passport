@@ -30,6 +30,7 @@ AUTHENTICATION_BACKENDS = [
     "apps.accounts.authentication.AdminPasswordBackend",
 ]
 MIDDLEWARE = [
+    "apps.blockchain.middleware.BlockchainRPCBudgetMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

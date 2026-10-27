@@ -39,6 +39,7 @@ class LearningProfileRepository:
                 prefix+'issuer_reference': F(prefix+'issuer__reference'),
                 prefix+'passport_snapshots__version__status': 'ISSUED',
                 prefix+'passport_snapshots__version__latest_for_passports__student_id': student_id,
+                prefix+'passport_snapshots__version__latest_for_passports__status': 'ACTIVE',
             }
             rows = list(VerifiedAchievement.objects.filter(**filters).filter(
                 Q(**{prefix+'expires_at__isnull': True}) | Q(**{prefix+'expires_at__gt': now})

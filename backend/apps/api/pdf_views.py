@@ -105,6 +105,9 @@ class PDFView(PrivateView):
             logger.warning('Private passport PDF storage unavailable.')
             return Response({'detail': 'The stored PDF is unavailable.'}, status=503)
         try:
+            if not self.administrative and not DigitalPassport.objects.filter(pk=version.passport_id,status='ACTIVE').exists():
+                stored_file.close()
+                raise NotFound('The Passport identity has been cancelled.')
             response = FileResponse(
                 stored_file, as_attachment=True, content_type='application/pdf',
                 filename=f'btu-passport-{version.public_reference}.pdf',
@@ -123,12 +126,12 @@ class StudentPDFView(PDFView):
     def get_version(self, request, selector, id=None):
         student_id = get_authenticated_student_id(request.user)
         rows = PassportVersion.objects.select_related('passport').filter(
-            passport__student_id=student_id, status='ISSUED',
+            passport__student_id=student_id, passport__status='ACTIVE', status='ISSUED',
         )
         if id is not None:
             version = get_object_or_404(rows, pk=id)
         else:
-            passport = get_object_or_404(DigitalPassport, student_id=student_id)
+            passport = get_object_or_404(DigitalPassport, student_id=student_id, status='ACTIVE')
             version = get_object_or_404(rows, pk=passport.latest_version_id)
         self.check_object_permissions(request, version)
         return version

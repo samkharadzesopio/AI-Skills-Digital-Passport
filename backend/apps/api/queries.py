@@ -23,11 +23,12 @@ def credentials():
 
 
 def versions():
-    return PassportVersion.objects.filter(status='ISSUED').select_related('passport').prefetch_related('skill_snapshots', 'credential_snapshots').order_by('-version_number', 'pk')
+    return PassportVersion.objects.filter(status='ISSUED', passport__status='ACTIVE').select_related('passport').prefetch_related('skill_snapshots', 'credential_snapshots').order_by('-version_number', 'pk')
 
 
-def passports():
-    return DigitalPassport.objects.select_related('latest_version').prefetch_related('latest_version__skill_snapshots', 'latest_version__credential_snapshots').order_by('pk')
+def passports(include_inactive=False):
+    rows=DigitalPassport.objects.select_related('latest_version').prefetch_related('latest_version__skill_snapshots', 'latest_version__credential_snapshots').order_by('pk')
+    return rows if include_inactive else rows.filter(status='ACTIVE')
 
 
 def validity_filters(now):

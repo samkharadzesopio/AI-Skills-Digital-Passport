@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const platform={linux:'linux',darwin:'darwin',win32:'win32'}[process.platform];
+const arch={x64:'amd64',arm64:'arm64'}[process.arch];
+const local=path.join(root,`node_modules/@foundry-rs/forge-${platform}-${arch}/bin/forge${process.platform==='win32'?'.exe':''}`);
+const forge=process.env.PASSPORT_FORGE_BIN || (fs.existsSync(local)?local:'forge');
+const args=['test','-vv'];
+if(process.env.SOLC_PATH) args.push('--use',process.env.SOLC_PATH);
+const result=spawnSync(forge,args,{cwd:root,stdio:'inherit'});
+if(result.error || result.status!==0) process.exit(result.status || 1);
