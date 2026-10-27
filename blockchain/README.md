@@ -2,6 +2,12 @@
 
 This feature implements the local, testable backend lifecycle. It is **not an assertion that Polygon Amoy is deployed or that the MVP is complete**. No public transaction, funded wallet, frontend browser acceptance or shared Neon migration has been performed by this work.
 
+The current stabilization scope uses **Anvil as the MVP network**. Public Amoy
+is an optional later milestone, not a local acceptance gate. Fresh candidate
+results are in [the backend report](../ops/BACKEND_ANVIL_STABILIZATION.md), with
+[team startup instructions](../ops/BACKEND_ANVIL_LOCAL_RUNBOOK.md). Older reports
+below retain their historical public-network requirement and test evidence.
+
 ## Architecture
 
 The existing institutional path is retained:
@@ -201,4 +207,4 @@ PASSPORT_IDENTITY_EVIDENCE_SOURCES=BTU_REGISTRAR
 
 Provision the fixed BTU database issuer through the existing authorized service. Use TLS/private storage, restrictive Unix key-file mode 0600 or equivalent Windows ACLs, supervised workers and a dedicated issuer account. The RPC endpoint must report 80002; do not use an Anvil result as evidence of Amoy success. Keep old signing keys authorized until their queued work is safely drained or explicitly resolved. Retain historic deployment artifacts and trust records when planning future deployments; this MVP currently permits one reviewed registry deployment per environment.
 
-Acceptance on Amoy must reproduce: approved completion → PDF → confirmed proof → anonymous upload/reference check; legal replacement → old REPLACED + new independent proof; revocation; failed RPC/restart recovery; changed bytes; unauthorized key; current/historical distinction. Confirm receipt and events via an independent Amoy RPC or explorer, and test the real website/extension consumers. Until that succeeds, report the MVP as awaiting public-network and client acceptance.
+If optional Amoy deployment is later authorized, its acceptance must reproduce: approved completion → PDF → confirmed proof → anonymous upload/reference check; legal replacement → old REPLACED + new independent proof; revocation; failed RPC/restart recovery; changed bytes; unauthorized key; current/historical distinction. Confirm receipt and events via an independent Amoy RPC or explorer, and test the real website/extension consumers. Until then, public-network acceptance remains untested; it does not block the Anvil MVP. Actual client acceptance remains separate.

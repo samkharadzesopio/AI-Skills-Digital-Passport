@@ -7,6 +7,27 @@ cookies and CSRF; examples deliberately contain no passwords, OTPs, cookies,
 CSRF tokens or signing keys. Timings/RPC counts are local observations, not a
 deployment SLA. The earlier blockchain/API_EXAMPLES.json remains illustrative.
 
+The final Anvil candidate adds the reviewed `c87f801` correction. Every nested
+proof now includes `network` and `transaction_explorer_url` (both nullable).
+Validated configuration also supplies `chain_id`, `environment` and
+`required_confirmations`, even before signing. Other proof facts are conditional:
+missing `confirmations` means not established, never zero or the required minimum.
+`transaction_hash` is null before signing when an operation exists; a missing
+operation/configuration may omit it. Retain optional fields as unknown.
+
+`network` is derived from the validated server chain ID. Anvil has no public
+explorer URL. Only chain 80002 plus a valid 32-byte transaction hash produces the
+fixed HTTPS Amoy transaction link; a link never establishes confirmation.
+`blockchain_verified` also requires the final registry assessment to be `VALID`
+and `is_latest === true`, closing the concurrent-version update race. Tests also
+perform credential revocation, identity revocation and legal replacement during
+that assessment, retaining historical confirmation while refusing a current badge.
+No route, permission, model or migration changes accompany this correction.
+
+Anvil is the supported local MVP network; public Amoy deployment is optional and
+was not performed. See [local startup](BACKEND_ANVIL_LOCAL_RUNBOOK.md) and the
+candidate's [fresh validation report](BACKEND_ANVIL_STABILIZATION.md).
+
 ## Existing contracts retained
 
 | Purpose | Actual endpoint and important fields |
@@ -120,3 +141,9 @@ external dependencies. The supported spreadsheet pathway consumes approved
 course-completion columns, not an arbitrary university workbook layout. Source
 mapping must preserve the university's confirmation decision: pending/rejected
 records must never be submitted as approved completions.
+
+The separate `feature/flexible-spreadsheet-integration` branch is not part of
+this candidate. Its profile/preview/approval and skill-award contracts and new
+migrations must not be assumed to exist here. Integrating it requires a separate
+review and full regression run; the existing strict completion import remains
+available. Google adapter tests use synthetic provider responses, not live Google.

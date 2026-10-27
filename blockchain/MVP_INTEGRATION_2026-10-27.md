@@ -1,6 +1,11 @@
 # Blockchain MVP integration follow-up — 27 October 2026
 
-## Readiness: NOT READY for complete MVP acceptance
+This is the historical `c87f801` follow-up report. Its public-Amoy requirement
+is superseded by the current Anvil-first scope; its recorded results and initial
+unexplained HTTP failure remain historical evidence. See
+[fresh candidate validation](../ops/BACKEND_ANVIL_STABILIZATION.md).
+
+## Historical readiness: NOT READY for the former complete MVP acceptance
 
 The local backend corrections and normal HTTP acceptance pass. The mandatory
 MVP still needs actual authorized Amoy deployment/validation, the existing

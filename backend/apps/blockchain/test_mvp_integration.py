@@ -1,11 +1,14 @@
 """Current-proof races and the additive metadata used by all Passport viewers."""
 from unittest.mock import patch
+import secrets
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TransactionTestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
+from apps.credentials.services import revoke_credential
+from apps.passports.lifecycle import change_legal_name, revoke_passport
 from apps.passports.services import publish_passport_version
 from apps.verification.passport_service import PassportVerificationService
 from .services import document_proof
@@ -28,6 +31,58 @@ class NetworkMetadataTests(SimpleTestCase):
 
 
 class CurrentProofIntegrationTests(ChainDataMixin, TransactionTestCase):
+    def assess_after_mutation(self, mutate, expected_status):
+        """Inject an actual domain write after the earlier lifecycle read.
+
+        Only scheduling is controlled; chain and final registry responses are
+        real. The saved confirmed receipt must remain historical evidence.
+        """
+        self.assertEqual(self.process(), 'CONFIRMED')
+        verify = PassportVerificationService.verify
+        mutations = []
+
+        def mutate_before_registry_check(service, *args, **kwargs):
+            mutations.append(mutate())
+            return verify(service, *args, **kwargs)
+
+        with patch.object(PassportVerificationService, 'verify', mutate_before_registry_check):
+            proof = document_proof(self.document.public_reference)
+        self.assertEqual(len(mutations), 1)
+        self.assertEqual(proof['status'], 'CONFIRMED')
+        self.assertEqual(proof['registry_status'], expected_status)
+        self.assertTrue(proof['historical_blockchain_authentic'])
+        self.assertFalse(proof['blockchain_verified'])
+        self.anchor.refresh_from_db()
+        self.assertEqual(self.anchor.state, 'CONFIRMED')
+
+    def registrar(self, permission):
+        return User.objects.create_admin_user(
+            email='assessment.registrar@btu.edu.ge', password=secrets.token_urlsafe(32),
+            permission_codenames={permission})
+
+    @override_settings(CREDENTIAL_REVOCATION_AUTHORIZER='apps.accounts.authorization.authorize_credential_revocation')
+    def test_credential_revoked_during_assessment_cannot_keep_current_badge(self):
+        actor = self.registrar('revoke_credentials')
+        self.assess_after_mutation(lambda: revoke_credential(
+            public_reference=self.credential.public_reference, actor=actor,
+            reason='Synthetic concurrent credential revocation'), 'REVOKED')
+
+    def test_identity_revoked_during_assessment_cannot_keep_current_badge(self):
+        actor = self.registrar('manage_passport_lifecycle')
+        self.assess_after_mutation(lambda: revoke_passport(
+            actor=actor, passport_reference=self.version.passport.public_reference,
+            idempotency_key='assessment-revocation', reason='Synthetic concurrent revocation'), 'REVOKED')
+
+    def test_identity_replaced_during_assessment_cannot_keep_current_badge(self):
+        actor = self.registrar('manage_legal_identity')
+        self.assess_after_mutation(lambda: change_legal_name(
+            actor=actor, student_id=self.student.pk,
+            expected_passport_reference=self.version.passport.public_reference,
+            first_name='Synthetic', last_name='Corrected',
+            idempotency_key='assessment-replacement', evidence_source='BTU_REGISTRAR',
+            evidence_reference='SYNTHETIC-CONCURRENT-APPROVAL',
+            reason='Synthetic concurrent legal replacement'), 'REPLACED')
+
     def test_version_updated_during_assessment_cannot_keep_current_badge(self):
         self.assertEqual(self.process(), 'CONFIRMED')
         verify = PassportVerificationService.verify

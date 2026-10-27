@@ -161,6 +161,17 @@ def main():
         def verify(reference, expected='VALID'):
             result = request(public, 'GET', f'/api/verification/passport/{reference}/', capture=True).json()
             assert result['status'] == expected, result['status']
+            proof = result.get('blockchain')
+            if proof:
+                assert proof['network'] == 'Anvil'
+                assert proof['environment'] == 'LOCAL_ANVIL' and proof['chain_id'] == 31337
+                assert proof['required_confirmations'] == 1
+                assert proof['transaction_explorer_url'] is None
+                if expected == 'VALID':
+                    assert proof['status'] == 'CONFIRMED' and proof['blockchain_verified'] is True
+                    assert proof['confirmations'] >= proof['required_confirmations']
+                else:
+                    assert proof['blockchain_verified'] is False
             assert not any(key in json.dumps(result) for key in
                 ('http.student@', 'Synthetic Student', 'first_name', 'last_name', 'evidence_reference', 'storage_key'))
             return result
@@ -236,10 +247,23 @@ def main():
         assert passport.pk == first_identity and passport.latest_version_id != first_version
         assert passport.versions.count() == 2
         request(learner, 'GET', '/api/student/dashboard/', capture=True)
+        request(learner, 'GET', '/api/student/skills/', capture=True)
+        request(learner, 'GET', '/api/student/achievements/', capture=True)
         request(learner, 'GET', '/api/student/credentials/', capture=True)
+        current = request(learner, 'GET', '/api/student/passport/', capture=True).json()
+        assert current['status'] == 'BLOCKCHAIN_VERIFIED'
+        assert current['blockchain']['blockchain_verified'] is True
         request(learner, 'GET', '/api/student/passport/versions/', capture=True)
-        request(learner, 'GET', '/api/student/passport/pdf/status/', capture=True)
+        metadata = request(learner, 'GET', '/api/student/passport/pdf/status/', capture=True).json()
+        proof = request(public, 'GET',
+            f"/api/verification/blockchain/document/{metadata['document_reference']}/", capture=True).json()
+        assert proof['blockchain_verified'] is True and proof['network'] == 'Anvil'
+        assert proof['transaction_hash'] == current['blockchain']['transaction_hash']
+        request(public, 'GET', f'/api/verification/passport-version/{passport.latest_version.public_reference}/', capture=True)
         request(learner, 'GET', '/api/integrations/course-recommendations/', capture=True)
+        request(registrar, 'GET', '/api/admin/statistics/', capture=True)
+        request(registrar, 'GET', '/api/admin/catalog/', capture=True)
+        request(registrar, 'GET', '/api/admin/course-mappings/', capture=True)
         request(registrar, 'GET', '/api/admin/students/', capture=True)
         request(registrar, 'GET', f'/api/admin/passports/?student_id={student.pk}', capture=True)
         mark(4, 'New approved completion appends immutable version under the same permanent identity')
@@ -269,7 +293,7 @@ def main():
             evidence_source='BTU_REGISTRAR', evidence_reference='SYNTHETIC-APPROVAL-1',
             reason='Approved synthetic legal correction')
         lifecycle = f'/api/admin/students/{student.pk}/legal-name-change/'
-        request(reader, 'POST', lifecycle, expected=403, json=payload)
+        request(reader, 'POST', lifecycle, expected=403, json=payload, capture=True)
         request(registrar, 'POST', lifecycle, expected=403, csrf=False, json=payload)
         changed = request(registrar, 'POST', lifecycle, json=payload, capture=True).json()
         replay = request(registrar, 'POST', lifecycle, json=payload).json()

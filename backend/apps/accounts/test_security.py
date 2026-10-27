@@ -216,6 +216,17 @@ class SessionTests(TestCase):
         attacker.cookies['sessionid'] = old_cookie
         self.assertEqual(attacker.get('/private/').status_code, 403)
 
+    def test_expired_database_session_cannot_restore_student_context(self):
+        from django.contrib.sessions.models import Session
+        self.authenticate()
+        self.assertEqual(self.client.get('/accounts/me/').status_code, 200)
+        cookie = self.client.cookies['sessionid'].value
+        Session.objects.filter(session_key=cookie).update(expire_date=timezone.now() - timedelta(seconds=1))
+        restored = Client()
+        restored.cookies['sessionid'] = cookie
+        self.assertEqual(restored.get('/accounts/me/').status_code, 403)
+        self.assertEqual(restored.get('/private/').status_code, 403)
+
     def test_anonymous_private_access_denied(self):
         self.assertEqual(self.client.get('/private/').status_code, 403)
 

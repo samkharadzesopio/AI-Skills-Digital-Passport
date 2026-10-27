@@ -375,6 +375,21 @@ class AuthCSRFApiTests(TestCase):
         )
         self.assertEqual(allowed.status_code, 200)
 
+    def test_expired_admin_session_does_not_restore_capabilities(self):
+        from datetime import timedelta
+        from django.contrib.sessions.models import Session
+        from django.utils import timezone
+        response = self.client.post(reverse('accounts:login'),
+            {'email': self.admin.email, 'password': PASSWORD}, format='json',
+            HTTP_X_CSRFTOKEN=self.token())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get(reverse('accounts:current-user')).status_code, 200)
+        cookie = self.client.cookies['sessionid'].value
+        Session.objects.filter(session_key=cookie).update(expire_date=timezone.now() - timedelta(seconds=1))
+        restored = APIClient(enforce_csrf_checks=True)
+        restored.cookies['sessionid'] = cookie
+        self.assertEqual(restored.get(reverse('accounts:current-user')).status_code, 403)
+
     def test_logout_flushes_session_and_password_endpoints_require_csrf(self):
         request_token = self.token()
         self.assertEqual(

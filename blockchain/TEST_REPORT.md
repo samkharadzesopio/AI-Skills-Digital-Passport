@@ -1,5 +1,11 @@
 # Local blockchain integration acceptance
 
+The entries below are historical. The current Anvil-first candidate's fresh
+results and remaining client work are recorded in
+[BACKEND_ANVIL_STABILIZATION.md](../ops/BACKEND_ANVIL_STABILIZATION.md).
+Public Amoy deployment is optional for that scope; earlier public-network gates
+are retained below as history and do not redefine the current task.
+
 Current integrated follow-up: `feature/blockchain-mvp-completion` starts from
 `integration` commit `bec0d83`, preserving the already integrated Developer 1
 corrections. See `MVP_INTEGRATION_2026-10-27.md` for the exact changes, local
