@@ -4,13 +4,14 @@ import os from 'node:os'
 import { pathToFileURL } from 'node:url'
 import assert from 'node:assert/strict'
 import { createServer } from 'vite'
-const { chromium } = await import(pathToFileURL(path.join(os.tmpdir(),'btu-passport-browser-tests/node_modules/playwright/index.mjs')).href)
-const phase=process.argv[2] || 'after', output=path.resolve('restoration-review',phase)
+const toolsRoot = process.env.BTU_BROWSER_TOOLS || path.join(os.tmpdir(),'btu-passport-browser-tests')
+const { chromium } = await import(pathToFileURL(path.join(toolsRoot,'node_modules/playwright/index.mjs')).href)
+const phase=process.argv[2] || 'after', output=path.resolve(process.env.BTU_VISUAL_OUTPUT || 'restoration-review',phase)
 await fs.mkdir(output,{recursive:true})
-const browser=await chromium.launch({headless:true}), results=[], errors=[]
+const browser=await chromium.launch({headless:true,executablePath:process.env.BTU_BROWSER_EXECUTABLE || undefined}), results=[], errors=[]
 try {
   for(const demo of [true,false]) {
-    const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':JSON.stringify(String(demo))},cacheDir:path.join(os.tmpdir(),'btu-redesign-cache-'+demo),server:{host:'127.0.0.1',port:0,hmr:false,watch:null}})
+    const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':JSON.stringify(String(demo))},cacheDir:path.join(output,'vite-cache-'+demo),server:{host:'127.0.0.1',port:0,hmr:false,watch:null}})
     await server.listen()
     try {
       const base=`http://127.0.0.1:${server.httpServer.address().port}`
@@ -25,7 +26,10 @@ try {
           await page.evaluate(()=>document.fonts.ready)
           const key=route.slice(1).replaceAll('/','-')+`-${width}`
           const measure=await page.evaluate(()=>{const box=s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom}};return {passport:box('.passport-viewport'),actions:box('.dashboard-passport-actions'),scrollHeight:document.documentElement.scrollHeight,horizontalOverflow:document.documentElement.scrollWidth>innerWidth+2}})
+          if(demo)measure.passportObscured=await page.locator('.passport-viewport').evaluate(e=>{const r=e.getBoundingClientRect();return !!document.elementFromPoint(r.left+4,Math.min(innerHeight-2,r.top+r.height/2))?.closest('.sidebar')})
           console.log(key,JSON.stringify(measure)); await page.screenshot({path:path.join(output,key+'.png'),fullPage:true}); assert.equal(measure.horizontalOverflow,false,key)
+          if(demo)assert.equal(measure.passportObscured,false,key+' Passport must not be covered by the closed sidebar')
+          if(demo&&width<=900){await page.getByRole('button',{name:'Toggle navigation',exact:true}).click();assert.equal(await page.locator('.sidebar.open').count(),1);await page.getByRole('navigation',{name:'Student navigation'}).getByRole('link',{name:'My Passport',exact:true}).click();assert.equal(await page.locator('.sidebar.open').count(),0)}
           if(phase==='after'&&demo&&width>=1366){assert.ok(measure.actions.bottom<=height+2,key+' actions must fit');assert.ok(measure.passport.width>=749,key+' enlarged passport');assert.ok(measure.scrollHeight<=height+2,key+' desktop should fit')}
           await page.screenshot({path:path.join(output,key+'.png'),fullPage:true})
           if(phase==='after'&&demo){for(const label of ['About the Passport','Verified AI Skillset','AI Skill Supplement','Cover'])await page.getByRole('button',{name:label,exact:true}).click();await page.locator('.passport-carousel').focus();await page.keyboard.press('ArrowRight');assert.match(await page.locator('.passport-slide[aria-hidden=false]').getAttribute('aria-label'),/^2 of/)}
