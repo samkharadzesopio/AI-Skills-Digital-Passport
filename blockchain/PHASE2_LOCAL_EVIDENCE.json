@@ -1,0 +1,98 @@
+{
+  "deployment": {
+    "admin_address": "0xAAa6958EF017eE665d7360d66583678046aaa1c1",
+    "block_number": 1,
+    "chain_id": 31337,
+    "contract_address": "0x5B05Cf572Bacaf8dc28bAF9Ef777A65aFe444017",
+    "gas_used": 1169166,
+    "issuer_address": "0xE4D45A9F431452a21460F40795B8203a01eF3c7F",
+    "runtime_sha256": "b087a2e4458e18cb92f52488bc1a22b19490fd101a20d062c581d3a435d16d10",
+    "transaction_hash": "0xe58625cc4cef706ced92f6f19d5d211da91d191694993934681886a1675388b9"
+  },
+  "environment": "LOCAL_ANVIL",
+  "independent_checks": [
+    {
+      "commitment_matches": true,
+      "onchain_state": 1,
+      "pdf_bytes_checked": false,
+      "public_current_verified": true,
+      "transaction_hash": "0xb5777f38b5f43a948225eed745345554c5b66a7553882540b842899578c3b14c"
+    },
+    {
+      "commitment_matches": true,
+      "onchain_state": 1,
+      "pdf_bytes_checked": true,
+      "public_current_verified": true,
+      "transaction_hash": "0xa2ccc4e7514fc4e16e7059752ec4b78b5fbac58d0b2a0c24dc9d6be7b10d6d7f"
+    },
+    {
+      "commitment_matches": true,
+      "onchain_state": 1,
+      "pdf_bytes_checked": true,
+      "public_current_verified": true,
+      "transaction_hash": "0xc821237580640ab209e1947c56b5ec0014f0f94b241617f599a9348decf45fc4"
+    },
+    {
+      "commitment_matches": true,
+      "onchain_state": 2,
+      "pdf_bytes_checked": false,
+      "public_current_verified": false,
+      "transaction_hash": "0x1f382df9ba180d27bb19a2f61eca8fdeebd217e893fa8dd8c3bd9274a55da2be"
+    },
+    {
+      "commitment_matches": true,
+      "onchain_state": 3,
+      "pdf_bytes_checked": true,
+      "public_current_verified": false,
+      "transaction_hash": "0xc821237580640ab209e1947c56b5ec0014f0f94b241617f599a9348decf45fc4"
+    }
+  ],
+  "operations": [
+    {
+      "block_number": 3,
+      "nonce": 1,
+      "operation_type": "ISSUE",
+      "state": "CONFIRMED",
+      "transaction_hash": "0xb5777f38b5f43a948225eed745345554c5b66a7553882540b842899578c3b14c"
+    },
+    {
+      "block_number": 6,
+      "nonce": 2,
+      "operation_type": "ISSUE",
+      "state": "CONFIRMED",
+      "transaction_hash": "0xa2ccc4e7514fc4e16e7059752ec4b78b5fbac58d0b2a0c24dc9d6be7b10d6d7f"
+    },
+    {
+      "block_number": 9,
+      "nonce": 3,
+      "operation_type": "ISSUE",
+      "state": "CONFIRMED",
+      "transaction_hash": "0x1f382df9ba180d27bb19a2f61eca8fdeebd217e893fa8dd8c3bd9274a55da2be"
+    },
+    {
+      "block_number": 12,
+      "nonce": 4,
+      "operation_type": "REPLACE",
+      "state": "CONFIRMED",
+      "transaction_hash": "0x1edbc71de649307cc39078a88c852a34c1c6021c9e332a77842a8384d7772e3b"
+    },
+    {
+      "block_number": 15,
+      "nonce": 5,
+      "operation_type": "ISSUE",
+      "state": "CONFIRMED",
+      "transaction_hash": "0xc821237580640ab209e1947c56b5ec0014f0f94b241617f599a9348decf45fc4"
+    },
+    {
+      "block_number": 18,
+      "nonce": 6,
+      "operation_type": "REVOKE",
+      "state": "CONFIRMED",
+      "transaction_hash": "0xca3bc4dab378d6c8b95d8d532ff0fc635372be491bea9dda88601b1fa822700f"
+    }
+  ],
+  "synthetic_data": true,
+  "required_confirmations": 3,
+  "node_disposed": true,
+  "source_commit": "71be42d3fea153649de7de494cc720e0955a3314"
+}

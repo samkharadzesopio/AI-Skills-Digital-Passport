@@ -1,5 +1,8 @@
 # BTU Passport blockchain lifecycle — Anvil MVP
 
+For the disposable deployment, real HTTP lifecycle rehearsal and separate-client
+chain checks, see [PHASE2_REHEARSAL_2026-10-28.md](PHASE2_REHEARSAL_2026-10-28.md).
+
 The October 28 Phase 1 audit and contract correction are recorded in
 [PHASE1_AUDIT_2026-10-28.md](PHASE1_AUDIT_2026-10-28.md). Its runtime-pin
 compatibility warning supersedes the earlier deployment instructions when
