@@ -219,7 +219,7 @@ def main():
             if proof:
                 assert proof['network'] == 'Anvil'
                 assert proof['environment'] == 'LOCAL_ANVIL' and proof['chain_id'] == 31337
-                assert proof['required_confirmations'] == 1
+                assert proof['required_confirmations'] == 3
                 assert proof['transaction_explorer_url'] is None
                 if expected == 'VALID':
                     assert proof['status'] == 'CONFIRMED' and proof['blockchain_verified'] is True
