@@ -1,0 +1,21 @@
+{
+  "key": "synthetic-google",
+  "version": 1,
+  "source": "BTU_GOOGLE_SHEETS",
+  "kind": "SKILL_AWARD",
+  "approval_reference": "SYNTHETIC-TEST-ONLY-REQUIRES-OPERATOR-APPROVAL",
+  "definition": {
+    "worksheet": "Passport Skill Records",
+    "google_source": "approved",
+    "evidence_namespace": "synthetic-approved-awards",
+    "columns": {
+      "external_student_id": ["Student ID"],
+      "source_event_id": ["Record ID"],
+      "skill_code": ["Skill ID"],
+      "earned_on": ["Date Earned"],
+      "approval_status": ["Institutional Approval"]
+    },
+    "allowed_skill_codes": ["SYNTHETIC-SKILL"],
+    "eligible_student_statuses": ["ACTIVE"]
+  }
+}

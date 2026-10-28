@@ -1,7 +1,10 @@
 """Synthetic workbook shape and real PostgreSQL domain/authorization regressions."""
 import copy
 import io
+import json
 import secrets
+import tempfile
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from threading import Barrier
@@ -9,8 +12,11 @@ from unittest.mock import MagicMock, patch
 
 import requests
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import DatabaseError, close_old_connections, transaction
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.db import DatabaseError, close_old_connections, connection, transaction
 from django.test import SimpleTestCase, TransactionTestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from openpyxl import Workbook
 from rest_framework.test import APIClient
@@ -409,7 +415,39 @@ class SpreadsheetDomainTests(TransactionTestCase):
         profile = self.make_profile(key='google-approved', source='BTU_GOOGLE_SHEETS', definition=d)
         provider = MagicMock()
         provider.open_by_key.return_value.worksheet.return_value.get.return_value = grid(ROW)
-        with override_settings(GOOGLE_SERVICE_ACCOUNT_FILE='synthetic-file-not-read', BTU_SPREADSHEET_GOOGLE_SOURCES={
+        with tempfile.TemporaryDirectory(prefix='synthetic-google-key-') as directory:
+            path = Path(directory) / 'not-a-real-key.json'
+            path.write_text('{}')
+            self._google_provider_workflow(profile, provider, path)
+        self.assertEqual(Credential.objects.count(), 1)
+
+    def test_operator_google_diagnostic_is_read_only_and_honors_profile_approval(self):
+        profile = self.make_profile(key='google-diagnostic', source='BTU_GOOGLE_SHEETS',
+                                    definition={**definition(), 'google_source': 'approved'})
+        output = io.StringIO()
+        reader = 'apps.integrations.management.commands.check_google_sheet.read_profile_sheet'
+        with patch(reader, return_value=(grid(ROW), 'a' * 64)) as read:
+            with CaptureQueriesContext(connection) as queries:
+                call_command('check_google_sheet', profile_id=str(profile.pk),
+                    approval_reference=profile.approval_reference, allow_google_read=True, stdout=output)
+            read.assert_called_once()
+        self.assertEqual(json.loads(output.getvalue())['google_read'], 'PASS')
+        self.assertFalse(json.loads(output.getvalue())['imported'])
+        self.assertFalse(any(q['sql'].lstrip().upper().startswith(('INSERT', 'UPDATE', 'DELETE', 'ALTER', 'CREATE', 'DROP')) for q in queries))
+        self.assertEqual(Credential.objects.count(), 0)
+        with patch(reader) as read:
+            with self.assertRaises(CommandError):
+                call_command('check_google_sheet', profile_id=str(profile.pk),
+                    approval_reference='NOT-APPROVED', allow_google_read=True, stdout=io.StringIO())
+            read.assert_not_called()
+        with patch(reader, side_effect=RuntimeError('PRIVATE_GOOGLE_DETAIL')):
+            with self.assertRaises(CommandError) as result:
+                call_command('check_google_sheet', profile_id=str(profile.pk),
+                    approval_reference=profile.approval_reference, allow_google_read=True, stdout=io.StringIO())
+            self.assertNotIn('PRIVATE_GOOGLE_DETAIL', str(result.exception))
+
+    def _google_provider_workflow(self, profile, provider, path):
+        with override_settings(GOOGLE_SERVICE_ACCOUNT_FILE=str(path), BTU_SPREADSHEET_GOOGLE_SOURCES={
             'approved-sheet': {'spreadsheet_id': 'SYNTHETIC_SHEET_ID', 'worksheet': 'Passport Skill Records'}}):
             with patch('gspread.service_account', return_value=provider) as factory:
                 response = self.client.post('/api/integrations/import/google-sheets/preview/', {'profile_id': str(profile.pk)}, format='json')
@@ -422,7 +460,6 @@ class SpreadsheetDomainTests(TransactionTestCase):
                 self.assertEqual(response.json()['result']['issued'], 1)
                 self.assertEqual(factory.call_args.kwargs['scopes'], ['https://www.googleapis.com/auth/spreadsheets.readonly'])
                 self.assertEqual(provider.open_by_key.call_count, 2)
-        self.assertEqual(Credential.objects.count(), 1)
 
 
 @override_settings(BTU_SPREADSHEET_GOOGLE_SOURCES={'approved': {'spreadsheet_id': 'SYNTHETIC_SHEET_ID', 'worksheet': 'Passport Skill Records'}})

@@ -1,5 +1,7 @@
 from datetime import timedelta
 from io import StringIO
+from pathlib import Path
+import tempfile
 from unittest.mock import patch
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -37,6 +39,20 @@ class PreflightTests(TestCase):
     def test_missing_google_credentials_deny_readiness(self):
         with self.assertRaises(CommandError):
             call_command('deployment_preflight', stdout=StringIO())
+
+    @override_settings(BTU_AUTHORIZED_COMPLETION_SOURCES=['BTU_GOOGLE_SHEETS'], BTU_GOOGLE_SHEET_ID='')
+    def test_flexible_google_configuration_needs_no_legacy_sheet_id_or_network(self):
+        with tempfile.TemporaryDirectory(prefix='synthetic-google-preflight-') as directory:
+            path = Path(directory) / 'synthetic.json'
+            path.write_text('{}')
+            target = {'spreadsheet_id': 'SYNTHETIC_APPROVED_ID', 'worksheet': 'Approved', 'range': 'A1:F20'}
+            with override_settings(GOOGLE_SERVICE_ACCOUNT_FILE=str(path), BTU_SPREADSHEET_GOOGLE_SOURCES={'approved': target}):
+                with patch('gspread.service_account') as factory:
+                    call_command('deployment_preflight', stdout=StringIO())
+                    factory.assert_not_called()
+            with override_settings(GOOGLE_SERVICE_ACCOUNT_FILE=str(path), BTU_SPREADSHEET_GOOGLE_SOURCES={}):
+                with self.assertRaises(CommandError):
+                    call_command('deployment_preflight', stdout=StringIO())
 
     def test_missing_or_untrusted_issuer_does_not_auto_provision(self):
         with patch('apps.integrations.management.commands.deployment_preflight.CredentialIssuer.objects.filter') as issuer_filter:

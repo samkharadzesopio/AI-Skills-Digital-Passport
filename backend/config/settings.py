@@ -16,6 +16,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import dj_database_url
+from config.spreadsheet_sources import validate_sources
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -287,13 +288,7 @@ try:
     _spreadsheet_sources_json = os.environ.get('BTU_SPREADSHEET_GOOGLE_SOURCES_JSON', '{}')
     if len(_spreadsheet_sources_json) > 50_000:
         raise ValueError()
-    BTU_SPREADSHEET_GOOGLE_SOURCES = json.loads(_spreadsheet_sources_json)
-    if not isinstance(BTU_SPREADSHEET_GOOGLE_SOURCES, dict) or len(BTU_SPREADSHEET_GOOGLE_SOURCES) > 100:
-        raise ValueError()
-    if any(not isinstance(v, dict) or set(v) != {'spreadsheet_id', 'worksheet'}
-           or any(not isinstance(x, str) or not x.strip() or len(x) > 200 for x in v.values())
-           for v in BTU_SPREADSHEET_GOOGLE_SOURCES.values()):
-        raise ValueError()
+    BTU_SPREADSHEET_GOOGLE_SOURCES = validate_sources(json.loads(_spreadsheet_sources_json))
 except (ValueError, TypeError):
     raise ImproperlyConfigured('Invalid server-side spreadsheet source configuration.') from None
 EMAIL_TIMEOUT = 10
