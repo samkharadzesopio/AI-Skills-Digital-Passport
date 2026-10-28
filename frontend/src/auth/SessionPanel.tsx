@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { LogOut } from 'lucide-react'
 import { demoMode } from '../demo/mode'
@@ -9,6 +9,7 @@ import { useSession } from './hooks'
 import { logoutAccount } from './service'
 import type { AccessDecision } from './contracts'
 import './auth.css'
+import { StudentShell } from '../layouts/StudentShell'
 export function LogoutButton({role}:{role:'student'|'administrator'}) {
   const [pending,setPending]=useState(false),[error,setError]=useState(false),client=useQueryClient(),navigate=useNavigate(),t=useAuthText()
   async function logout(){
@@ -30,8 +31,13 @@ export function AccessBlocked({decision,role}:{decision:Exclude<AccessDecision,'
   return <div className="auth-status-page"><Card><h1>{t('signedIn')}</h1><p className="muted">{session.data?.status==='authenticated'?session.data.user.email:''}</p><p className="notice" role="status">{t(key)}</p><p className="muted">{t('switchAccount')}</p><LogoutButton role={role}/><Link className="button" to="/verify">{t('publicVerification')}</Link></Card></div>
 }
 export function LiveAccountLayout() {
-  const t=useAuthText()
-  return <div className="auth-live-layout"><header><Link className="auth-wordmark" to="/student/dashboard">BTU <small>AI SKILLS DIGITAL PASSPORT</small></Link><span>{t('live')}</span><LogoutButton role="student"/></header><main><nav className="live-student-nav" aria-label="Student navigation">{[['dashboard','Dashboard'],['profile','Profile'],['skills','Skills'],['achievements','Achievements'],['credentials','Credentials'],['passport','Digital Passport']].map(([path,label]) => <NavLink end key={path} to={`/student/${path}`}>{label}</NavLink>)}</nav><Outlet/></main></div>
+  const session = useSession(), client = useQueryClient(), [refreshing, setRefreshing] = useState(false)
+  async function refresh() {
+    setRefreshing(true)
+    try { await client.invalidateQueries({ queryKey: ['session'] }); await client.invalidateQueries({ queryKey: ['student'] }) }
+    finally { setRefreshing(false) }
+  }
+  return <StudentShell identity={session.data?.status === 'authenticated' ? session.data.user.email : undefined} logout={<LogoutButton role="student"/>} refresh={<button className="button" disabled={refreshing} onClick={() => void refresh()}>Refresh records</button>}/>
 }
 export function LiveStudentWorkspace() {
   return <Outlet/>

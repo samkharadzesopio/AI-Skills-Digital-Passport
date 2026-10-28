@@ -1,5 +1,5 @@
 /** Exact public account summary returned by Django accounts/views.py::_user_summary. */
-export const adminCapabilities = ['view_student_records', 'manage_student_accounts', 'manage_credentials', 'revoke_credentials', 'sync_classroom', 'import_completions'] as const
+export const adminCapabilities = ['view_student_records', 'manage_student_accounts', 'manage_credentials', 'revoke_credentials', 'sync_classroom', 'import_completions', 'manage_legal_identity', 'manage_passport_lifecycle'] as const
 export type AdminCapability = typeof adminCapabilities[number]
 export interface AccountSummary {
   email: string

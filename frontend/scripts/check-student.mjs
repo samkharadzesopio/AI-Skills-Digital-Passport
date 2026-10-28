@@ -85,7 +85,7 @@ try {
   async function until(check){const end=Date.now()+5000;while(!check()){if(Date.now()>end)throw new Error('Timed out: '+document.body.textContent);await act(async()=>new Promise(r=>setTimeout(r,20)))}}
   async function click(text){const b=[...document.querySelectorAll('button')].find(b=>b.textContent===text);assert.ok(b,text);await act(async()=>b.click())}
   hold=true;await mount(pages.LiveDashboard);assert.match(document.body.textContent,/Loading your passport/)
-  await until(()=>document.body.textContent.includes('Welcome, Authenticated'));hold=false
+  await until(()=>document.body.textContent.includes('Authenticated Student'));hold=false
   assert.doesNotMatch(document.body.textContent,/78%|Nino|Demo credential/)
   await mount(pages.LiveSkills);await until(()=>document.body.textContent.includes('Persisted reasoning'))
   await click('Next');await until(()=>calls.some(c=>c.url==='student/skills/?page=2')&&document.body.textContent.includes('Page 2'))

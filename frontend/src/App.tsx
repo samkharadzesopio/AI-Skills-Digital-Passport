@@ -1,12 +1,11 @@
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { Gamepad2 } from 'lucide-react'
 import { LocaleProvider } from './i18n'
 import { AccessBoundary } from './auth/AccessBoundary'
 import { StudentLayout } from './layouts/StudentLayout'
 import { AdminLayout } from './layouts/AdminLayout'
 import { VerificationLayout } from './layouts/VerificationLayout'
-import { Dashboard, Detail, Profile, Gap } from './pages'
+import { Dashboard, Detail, Gap } from './pages'
 import { VerificationLanding, ReferenceVerificationPage, PdfVerification, VerificationResults, QrVerification, VerificationNotFound } from './verification/pages'
 import { AdminWorkspace } from './admin/store'
 import { AdminDashboard, StudentsPage, StudentDetail, CredentialsPage, CredentialDetail, SynchronizationPage, AuditPage } from './admin/pages'
@@ -17,6 +16,7 @@ import { AdminPassportPage } from './admin/PassportPage'
 import { Card, EmptyState, Loading } from './components/ui'
 import { getDemoStudent } from './data/mock'
 import './App.css'
+import './artwork-theme.css'
 import { DemoBanner } from './demo/DemoBanner'
 import { demoMode } from './demo/mode'
 import { LoginPage } from './auth/LoginPages'
@@ -56,12 +56,13 @@ export function AppRoutes() {
           <Route path="achievements" element={demoMode ? <Card>Achievement records are available in the live student workspace.</Card> : <LiveAchievements/>}/>
           <Route path="credentials" element={demoMode ? <Detail page="Verified credentials"/> : <LiveCredentials/>}/>
           <Route path="credentials/:id" element={demoMode ? <NotFound/> : <LiveCredential/>}/>
-          <Route path="passport" element={demoMode ? <Detail page="Digital passport preview"/> : <LivePassport/>}/>
-          <Route path="passport/versions" element={demoMode ? <NotFound/> : <LiveVersions/>}/>
+          <Route path="passport" element={demoMode ? <LegacyRedirect to="/student/dashboard"/> : <LivePassport/>}/>
+          <Route path="passport/versions" element={demoMode ? <Card><h1>Passport History</h1><p>Demo Mode: no issued history is available.</p></Card> : <LiveVersions/>}/>
           <Route path="passport/versions/:id" element={demoMode ? <NotFound/> : <LiveVersion/>}/>
-          <Route path="profile" element={demoMode ? <Profile/> : <LiveProfile/>}/>
+          <Route path="history" element={<LegacyRedirect to="/student/passport/versions"/>}/>
+          <Route path="profile" element={demoMode ? <Card><h1>Read-only Student identity</h1><p>Demo Mode: identity is fictional and cannot be edited here.</p></Card> : <LiveProfile/>}/>
           <Route path="gap-analyzer" element={<Gap/>}/>
-          <Route path="game" element={<Card><EmptyState title="AI playground coming soon">A future Dino-style game is planned for online and offline play.</EmptyState><Gamepad2 className="game-icon" size={64}/></Card>}/>
+          <Route path="game" element={<LegacyRedirect to="/student/dashboard"/>}/>
           <Route path="*" element={<NotFound/>}/>
         </Route>
       </Route>
@@ -102,7 +103,7 @@ export function AppRoutes() {
       <Route path="qr/:reference" element={<QrVerification/>}/>
       <Route path="*" element={<VerificationNotFound/>}/>
     </Route>
-    <Route path="/" element={<LegacyRedirect to="/student/dashboard"/>}/>
+    <Route path="/" element={<LegacyRedirect to="/verify"/>}/>
     {['skills', 'credentials', 'passport', 'profile', 'gap-analyzer', 'game'].map(path => <Route key={path} path={path} element={<LegacyRedirect to={`/student/${path}`}/>}/>)}
     <Route path="*" element={<NotFound/>}/>
   </Routes>

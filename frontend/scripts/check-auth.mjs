@@ -37,6 +37,7 @@ try {
    if(sessionNetwork)throw new AxiosError('Synthetic network error','ERR_NETWORK',config)
    return current?response(200,current):response(403,{detail:'Authentication credentials were not provided.'})
   }
+  if(path==='student/passport/pdf/status/')return response(200,{status:'NOT_REQUESTED',available_for_download:false,document_reference:null,passport_reference:dashboard.passport.public_reference,passport_version_reference:dashboard.passport.latest_version.public_reference,generated_at:null,download_document_reference:null,error:null});
   if(path==='student/dashboard/')return current?response(200,dashboard):response(403,{})
   assert.equal(config.headers.get('X-CSRFToken'),csrf,'Mutation must send the latest server CSRF token')
   assert.ok(csrf,'Mutation must bootstrap CSRF first')
@@ -98,11 +99,11 @@ try {
  await until(()=>document.body.textContent.includes('invalid or expired'))
  assert.equal(document.getElementById('student-otp').value,'')
  await fill('student-otp','123456');await submit()
- await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes('Welcome, Authenticated'))
+ await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes('Authenticated Student'))
  assert.match(document.body.textContent,/unit.student@btu.edu.ge/);assert.doesNotMatch(document.body.textContent,/Nino|DEMO-PASSPORT/)
  const beforeRefresh=calls.filter(c=>c.path==='accounts/me/').length
  await mount('/student/dashboard')
- await until(()=>calls.filter(c=>c.path==='accounts/me/').length>beforeRefresh&&document.body.textContent.includes('Welcome, Authenticated'))
+ await until(()=>calls.filter(c=>c.path==='accounts/me/').length>beforeRefresh&&document.body.textContent.includes('Authenticated Student'))
  logoutFailure=true;await clickLogout()
  await until(()=>document.body.textContent.includes('Could not confirm server logout'))
  assert.ok(current,'Failed logout must not claim the server session ended')
@@ -132,12 +133,12 @@ try {
  assert.doesNotMatch(document.body.textContent,/Nino|Recent credentials/)
  sessionNetwork=false
  current={...student}
- await mount('/student/dashboard');await until(()=>document.body.textContent.includes('Welcome, Authenticated'))
+ await mount('/student/dashboard');await until(()=>document.body.textContent.includes('Authenticated Student'))
  current=null
  await mount('/student/dashboard');await until(()=>window.location.pathname==='/student/login')
  assert.doesNotMatch(document.body.textContent,/unit.student@btu.edu.ge|Nino/)
  for(const key of Object.keys(localStorage))assert.equal(key,'btu-locale','No credentials/tokens/identity persisted')
- assert.ok(calls.every(c=>c.path.startsWith('accounts/')||c.path==='student/dashboard/'),'Only the authenticated dashboard data route is expected here')
+ assert.ok(calls.every(c=>c.path.startsWith('accounts/')||['student/dashboard/','student/passport/pdf/status/'].includes(c.path)),'Only the authenticated dashboard data route is expected here')
  assert.equal(calls.filter(c=>c.path==='accounts/login/').at(-1).body.password,' unit-test password ')
  console.log('Mocked auth integration passed: exact payloads, CSRF bootstrap/rotation, OTP, invalid credentials, restoration, logout/failure, rate limits, guards, capability dependency and no persisted secrets. No real Django account was used.')
 } finally {

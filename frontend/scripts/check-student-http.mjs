@@ -72,12 +72,12 @@ try {
 
     for(let n=0;n<80;n++){try{code=await readFile(join(process.env.BTU_E2E_MAILBOX,email.replace('@','_')+'.otp'),'utf8');break}catch{await new Promise(r=>setTimeout(r,25))}}
     assert.match(code??'',/^[0-9]{6}$/)
-    await fill('student-otp',code);await submit();await until(()=>body().includes('Welcome, Synthetic'),'authenticated dashboard')
+    await fill('student-otp',code);await submit();await until(()=>!!document.querySelector('.dashboard-passport')||body().includes('No issued Passport yet'),'authenticated dashboard')
   }
   await mount('/student/dashboard',true)
   await until(()=>window.location.pathname==='/student/login','anonymous redirect')
   await login(fixture.email)
-  assert.match(body(),/AI Reasoning/);assert.match(body(),/Valid credentials/)
+  assert.ok(document.querySelector('.passport-carousel'));assert.match(body(),/My Passport/);assert.equal(document.querySelector('.stats'),null)
   assert.ok(cookies.has('sessionid'))
   assert.doesNotMatch(body(),/Nino|78%|Demo credential/)
   console.log('PASS real UI/HTTP: anonymous redirect, OTP sign-in, CSRF/session cookies and persisted dashboard')
@@ -106,7 +106,7 @@ try {
   assert.equal(verdict.status,'VALID')
   const publicReference=await(await fetch(`/api/verification/${fixture.credentialReference}/`,{credentials:'omit'})).json();assert.equal(publicReference.status,'VALID')
   console.log('PASS real UI/HTTP: records, credential states/details, Passport/history, registered current/historical PDFs and public byte verification')
-  await mount('/student/dashboard',true);await until(()=>body().includes('Welcome, Synthetic'),'session restoration after refresh')
+  await mount('/student/dashboard',true);await until(()=>body().includes('My Passport'),'session restoration after refresh')
   await click('Sign out');await until(()=>window.location.pathname==='/student/login','logout')
   assert.ok(!cookies.has('sessionid'))
   assert.ok(!client.getQueryCache().getAll().some(q=>q.queryKey[0]==='student'),'Private query data cleared')
