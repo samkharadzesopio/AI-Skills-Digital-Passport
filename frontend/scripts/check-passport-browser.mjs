@@ -137,7 +137,7 @@ try {
   await admin.waitForURL(base + '/admin/dashboard')
   for (const [route, content] of [
     ['/admin/dashboard', 'Administration dashboard'], ['/admin/students', 'University Student records'],
-    ['/admin/skills', 'Skill catalog'], ['/admin/course-mappings', 'Approved course mappings'],
+    ['/admin/skills', 'Skills Catalog'], ['/admin/course-mappings', 'Activity-to-Skill Mapping'],
     ['/admin/credentials', 'Credentials'], ['/admin/imports', 'Persisted import history'],
     ['/admin/classroom-sync', 'SIMULATED'], ['/admin/audit-logs', 'General security-audit reading'],
     ['/admin/students/' + runtime.studentId + '/passport', 'Issued Passport versions'],
