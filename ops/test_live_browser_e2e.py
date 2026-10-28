@@ -104,8 +104,9 @@ def main():
         admin = User.objects.create_admin_user(
             email='browser.admin@btu.edu.ge', password=password,
             permission_codenames={'view_student_records', 'manage_credentials', 'revoke_credentials',
-                                  'manage_student_accounts', 'import_completions', 'sync_classroom'} |
-                                 ({'manage_legal_identity', 'manage_passport_lifecycle'} if manual else set()),
+                                  'manage_student_accounts', 'import_completions', 'sync_classroom',
+                                  'manage_passport_lifecycle'} |
+                                 ({'manage_legal_identity'} if manual else set()),
         )
         if manual:
             # Consume the fixture credential's real durable refresh before

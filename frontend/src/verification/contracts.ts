@@ -7,7 +7,7 @@ export interface PublicResult {
   kind: 'result'; method: VerificationMethod; status: PublicStatus; source: string
   blockchain?: import('./blockchain').BlockchainAvailability
   // Explicit allowlist: no student details, arbitrary backend text or raw response objects.
-  publicInfo: { credentialId?: string; authentic?: boolean; passportVersion?: number | null; latestVersion?: number | null; isLatest?: boolean | null; credentialStatus?: CredentialStatus; credentialCounts?: Partial<Record<Exclude<CredentialStatus, 'unverifiable'>, number>> }
+  publicInfo: { credentialId?: string; authentic?: boolean; passportVersion?: number | null; latestVersion?: number | null; isLatest?: boolean | null; passportStatus?: 'active' | 'replaced' | 'revoked'; credentialStatus?: CredentialStatus; credentialCounts?: Partial<Record<Exclude<CredentialStatus, 'unverifiable'>, number>> }
 }
 export interface VerificationFailure { kind: 'failure'; reason: FailureReason; retryAt: number | null }
 export type VerificationOutcome = PublicResult | VerificationFailure

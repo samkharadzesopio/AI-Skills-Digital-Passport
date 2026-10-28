@@ -59,9 +59,14 @@ export function VerificationResultView({ outcome, retryPath, retryReady = true }
   const descriptions = { valid: 'validText', revoked: 'revokedText', expired: 'expiredText', invalid: 'invalidText', not_found: 'notFoundText', outdated: 'outdatedText', unverifiable: 'unverifiableText', pending: 'pendingText', replaced: 'replacedText', not_issued: 'notIssuedText' } as const
   const info = outcome.publicInfo, Icon = successful ? CheckCircle2 : uncertain ? Clock3 : ShieldX
   const credential = outcome.method === 'credential'
+  const revocation = info.passportStatus === 'revoked'
+    ? { title: 'passportRevoked', description: 'passportRevokedText' } as const
+    : info.credentialStatus === 'revoked'
+      ? { title: 'supportRevoked', description: 'supportRevokedText' } as const
+      : { title: 'recordRevoked', description: 'recordRevokedText' } as const
   const lifecycleText = { revoked: 'supportRevokedText', expired: 'supportExpiredText', invalid: 'supportInvalidText', unverifiable: 'validityUnavailableText', outdated: 'historicalText', pending: 'pendingText', replaced: 'replacedText', not_issued: 'notIssuedText' } as const
-  const description = !credential && info.authentic && outcome.status !== 'valid' && outcome.status !== 'not_found' ? t(lifecycleText[outcome.status]) : t(descriptions[outcome.status])
-  const title = credential ? t(outcome.status === 'valid' ? 'validCredential' : outcome.status) : ['pending','replaced','not_issued'].includes(outcome.status) ? t(outcome.status as 'pending'|'replaced'|'not_issued') : outcome.status === 'revoked' ? t('supportRevoked') : outcome.status === 'expired' ? t('supportExpired') : outcome.status === 'not_found' ? t('not_found') : t(outcome.method === 'document' ? 'documentResult' : 'passportResult')
+  const description = !credential && outcome.status === 'revoked' ? t(revocation.description) : !credential && info.authentic && outcome.status !== 'valid' && outcome.status !== 'not_found' ? t(lifecycleText[outcome.status]) : t(descriptions[outcome.status])
+  const title = credential ? t(outcome.status === 'valid' ? 'validCredential' : outcome.status) : ['pending','replaced','not_issued'].includes(outcome.status) ? t(outcome.status as 'pending'|'replaced'|'not_issued') : outcome.status === 'revoked' ? t(revocation.title) : outcome.status === 'expired' ? t('supportExpired') : outcome.status === 'not_found' ? t('not_found') : t(outcome.method === 'document' ? 'documentResult' : 'passportResult')
   return <div className={`verify-white-card verify-result ${successful ? 'verify-valid' : uncertain ? 'verify-uncertain' : 'verify-invalid'}`} role="status" data-verification-status={outcome.status}>
     <span className="verify-result-icon"><Icon size={44}/></span><span className="verify-kicker">{t('result')}</span><h1>{title}</h1><p>{description}</p>
     <dl aria-label="Verification result facts">
