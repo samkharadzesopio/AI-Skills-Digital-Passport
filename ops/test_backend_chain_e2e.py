@@ -4,6 +4,7 @@ Run through ops/run_isolated_tests.py --full. No .env, public RPC, real student
 data, persistent databases or frontend implementation is used or changed.
 """
 import contextvars
+import hashlib
 from io import BytesIO, StringIO
 import json
 import os
@@ -45,8 +46,10 @@ from apps.credentials.models import Credential
 from apps.integrations.importers.validators import REQUIRED_FIELDS
 from apps.passports.models import DigitalPassport, PassportDocument
 from apps.passports.services import get_or_create_passport
-from apps.skills.models import Skill
+from apps.skills.models import Skill, VerifiedAchievement
 from apps.students.models import Student
+from web3 import Web3
+from apps.blockchain.chain import artifact
 
 
 class Fixture(ChainDataMixin, TransactionTestCase):
@@ -69,8 +72,59 @@ def main():
         resources.fixture(fixture)
         fixture.setUp()
         resources.callback(fixture.tearDown)
+        # Separate RPC client: never infer success from a saved database row.
+        observer = Web3(Web3.HTTPProvider(fixture.local.rpc_url, request_kwargs={'timeout': 5},
+                                         exception_retry_configuration=None))
+        registry = observer.eth.contract(address=fixture.gateway.contract.address, abi=artifact()['abi'])
+        assert observer.eth.chain_id == 31337
+        assert bytes(observer.eth.get_code(registry.address)) == bytes.fromhex(artifact()['runtime_bytecode'][2:])
+        assert registry.functions.defaultAdmin().call() == observer.eth.accounts[1]
+        assert registry.functions.hasRole(registry.functions.ISSUER_ROLE().call(), fixture.signer.address).call()
+        deployments = []
+        for number in range(observer.eth.block_number + 1):
+            for tx in observer.eth.get_block(number, full_transactions=True)['transactions']:
+                if tx['to'] is None:
+                    receipt = observer.eth.get_transaction_receipt(tx['hash'])
+                    if receipt['contractAddress'] == registry.address:
+                        assert receipt['status'] == 1
+                        deployments.append(receipt)
+        assert len(deployments) == 1
+        evidence['deployment'] = {
+            'chain_id': 31337, 'contract_address': registry.address,
+            'transaction_hash': Web3.to_hex(deployments[0]['transactionHash']),
+            'block_number': deployments[0]['blockNumber'], 'gas_used': deployments[0]['gasUsed'],
+            'runtime_sha256': hashlib.sha256(bytes(observer.eth.get_code(registry.address))).hexdigest(),
+            'issuer_address': fixture.signer.address, 'admin_address': observer.eth.accounts[1],
+        }
+        evidence['independent_checks'] = []
+
+        def independently_check(proof, state, pdf=None):
+            key = lambda name: bytes.fromhex(proof[name])
+            receipt = observer.eth.get_transaction_receipt(proof['transaction_hash'])
+            assert receipt['status'] == 1
+            assert observer.eth.get_block(receipt['blockNumber'])['hash'] == receipt['blockHash']
+            assert observer.eth.block_number - receipt['blockNumber'] + 1 >= proof['required_confirmations']
+            stored = registry.functions.commitments(key('document_key')).call()
+            assert list(stored) == [key('passport_key'), key('version_key'), key('commitment'),
+                                    Web3.to_checksum_address(proof['issuer_address'])]
+            assert registry.functions.passportState(key('passport_key')).call() == state
+            if pdf is not None:
+                assert hashlib.sha256(pdf).hexdigest() == proof['pdf_sha256']
+            namespace = (b'BTU_PASSPORT_POLYGON_V1\x00' + proof['chain_id'].to_bytes(32, 'big')
+                         + bytes.fromhex(proof['contract_address'][2:]))
+            digest = hashlib.sha256(namespace + b'PDF\x00' + b''.join(key(name) for name in (
+                'passport_key', 'version_key', 'document_key', 'pdf_sha256', 'snapshot_sha256',
+                'commitment_salt'))).digest()
+            assert stored[2] == digest
+            assert proof['blockchain_verified'] is (state == 1)
+            evidence['independent_checks'].append({
+                'transaction_hash': proof['transaction_hash'], 'onchain_state': state,
+                'public_current_verified': proof['blockchain_verified'],
+                'commitment_matches': True, 'pdf_bytes_checked': pdf is not None,
+            })
         resources.enter_context(override_settings(
             ALLOWED_HOSTS=['127.0.0.1'],
+            PASSPORT_BLOCKCHAIN_CONFIRMATIONS=3,
             BTU_CLASSROOM_ISSUER_REFERENCE='BTU-UNIVERSITY',
             BTU_AUTHORIZED_COMPLETION_SOURCES=['BTU_EXCEL'],
             CREDENTIAL_REVOCATION_AUTHORIZER='apps.accounts.authorization.authorize_credential_revocation',
@@ -238,7 +292,9 @@ def main():
         pending = request(learner, 'GET', '/api/student/passport/', capture=True).json()
         assert pending['status'] == 'PENDING_BLOCKCHAIN'
         drain()
-        assert verify(passport.public_reference)['blockchain']['blockchain_verified'] is True
+        first_proof = verify(passport.public_reference)['blockchain']
+        assert first_proof['blockchain_verified'] is True
+        independently_check(first_proof, 1)
         mark(3, 'Authorized Excel import creates credential, identity, version, PDF and confirmed Anvil proof')
 
         assert import_course('AI-201', 'HTTP-COMPLETION-2')['result']['issued'] == 1
@@ -268,6 +324,7 @@ def main():
         request(registrar, 'GET', f'/api/admin/passports/?student_id={student.pk}', capture=True)
         mark(4, 'New approved completion appends immutable version under the same permanent identity')
         pdf = request(learner, 'GET', '/api/student/passport/pdf/download/').content
+        independently_check(verify(passport.public_reference)['blockchain'], 1, pdf)
         uploaded = request(public, 'POST', '/api/verification/document/', capture=True,
             files={'file': ('official.pdf', pdf, 'application/pdf')}).json()
         assert uploaded['status'] == 'VALID' and uploaded['authentic'] is True
@@ -288,6 +345,8 @@ def main():
         mark(6, 'Credential revocation invalidates its historical snapshot; refreshed current version uses surviving evidence')
 
         previous_reference = passport.public_reference
+        credential_ids = set(Credential.objects.filter(student=student).values_list('pk', flat=True))
+        achievement_ids = set(VerifiedAchievement.objects.filter(student=student).values_list('pk', flat=True))
         payload = dict(expected_passport_reference=str(previous_reference), first_name='Corrected',
             last_name='Legalname', idempotency_key='HTTP-NAME-CHANGE-1',
             evidence_source='BTU_REGISTRAR', evidence_reference='SYNTHETIC-APPROVAL-1',
@@ -303,7 +362,17 @@ def main():
         verify(previous_reference, 'REPLACED')
         assert request(learner, 'GET', '/api/student/passport/').json()['status'] == 'PENDING_BLOCKCHAIN'
         drain()
-        verify(replacement.public_reference)
+        replacement_proof = verify(replacement.public_reference)['blockchain']
+        replacement_pdf = request(learner, 'GET', '/api/student/passport/pdf/download/').content
+        import pymupdf
+        with pymupdf.open(stream=replacement_pdf, filetype='pdf') as document:
+            text = ' '.join(page.get_text() for page in document)
+        assert 'Corrected' in text and 'Legalname' in text
+        assert str(replacement.public_reference) in text
+        assert credential_ids == set(Credential.objects.filter(student=student).values_list('pk', flat=True))
+        assert achievement_ids == set(VerifiedAchievement.objects.filter(student=student).values_list('pk', flat=True))
+        independently_check(replacement_proof, 1, replacement_pdf)
+        independently_check(verify(previous_reference, 'REPLACED')['blockchain'], 2)
         request(registrar, 'GET', f'/api/admin/passports/?student_id={student.pk}', capture=True)
         request(registrar, 'GET', f'/api/admin/passports/{first_identity}/versions/', capture=True)
         history = request(registrar, 'GET', f'/api/admin/students/{student.pk}/passport-lifecycle/', capture=True).json()
@@ -333,6 +402,7 @@ def main():
         drain()
         result = verify(replacement.public_reference, 'REVOKED')
         assert result['blockchain']['blockchain_verified'] is False
+        independently_check(result['blockchain'], 3, replacement_pdf)
         mark(8, 'Authorized Passport revocation is terminal and retains historical cryptographic evidence')
         request(public, 'GET', '/api/admin/passports/', expected=403)
         request(learner, 'POST', lifecycle, expected=403, json=payload)
@@ -345,6 +415,8 @@ def main():
         mark(11, 'Repeated import is idempotent; no duplicate credentials or reactivation of revoked identity')
         assert set(evidence['journeys']) == set(map(str, range(1, 12)))
         assert PassportDocument.objects.filter(passport_version__passport__student=student, status='ISSUED').count() == 4
+        evidence['operations'] = list(PassportAnchor.objects.filter(passport__student=student)
+            .order_by('nonce').values('operation_type', 'transaction_hash', 'nonce', 'state', 'block_number'))
         connections.close_all()
 
     output = os.environ.get('BACKEND_CONTRACT_OUTPUT')
@@ -353,6 +425,11 @@ def main():
         if destination.parent != (ROOT / 'ops').resolve() or destination.name != 'BACKEND_CONTRACT_EXAMPLES.json':
             raise RuntimeError('Contract output must be the explicit repository handoff artifact.')
         destination.write_text(json.dumps(evidence, indent=2) + '\n', encoding='utf-8')
+    print('LOCAL_DEPLOYMENT_EVIDENCE ' + json.dumps({
+        'deployment': evidence['deployment'], 'independent_checks': evidence['independent_checks'],
+        'operations': evidence['operations'],
+        'environment': evidence['environment'], 'synthetic_data': True,
+    }, sort_keys=True), flush=True)
     print('PASS all 11 real HTTP/Anvil journeys; owned database, mail, media, server and signer removed.', flush=True)
 
 
