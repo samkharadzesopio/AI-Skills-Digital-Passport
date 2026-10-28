@@ -1,7 +1,7 @@
 import { useLocale } from '../i18n'
 const en = {
   passportPreview: 'Passport preview',
-  overview: 'Overview', students: 'Students', catalog: 'Skills catalog', mappings: 'Course-to-skill mapping', credentials: 'Credentials', sync: 'Classroom synchronization', imports: 'Imports & history', audit: 'Audit logs',
+  overview: 'Overview', students: 'Students', catalog: 'Skills catalog', mappings: 'Activity-to-Skill Mapping', credentials: 'Credentials', sync: 'Classroom synchronization', imports: 'Imports & history', audit: 'Audit logs',
   workspace: 'University administration', demo: 'DEMO WORKSPACE', demoNotice: 'Illustrative records only. Catalog and mapping edits stay in memory; no official records are changed.',
   search: 'Search records', all: 'All statuses', previous: 'Previous', next: 'Next', page: 'Page', of: 'of', records: 'records', noRecords: 'No matching records', noRecordsHint: 'Try another search or filter.',
   name: 'Name', status: 'Status', program: 'Program', email: 'Email', id: 'Record ID', actions: 'Actions', details: 'View details', back: 'Back to list', close: 'Close dialog', cancel: 'Cancel', save: 'Save demo draft', saved: 'Demo draft saved locally for this session.',

@@ -53,7 +53,7 @@ try {
     ['/student/passport','/student/dashboard','My Passport'],
     ['/student/gap-analyzer','/student/gap-analyzer','Coming Soon'],
     ['/student/profile','/student/profile','Read-only Student identity'],
-    ['/admin','/admin/dashboard','Credential issuance trends'],
+    ['/admin','/admin/dashboard','Import Activity Records'],
     ['/admin/dashboard','/admin/dashboard','Total students'],
     ['/admin/students','/admin/students','Demo student 01'],
     ['/admin/skills','/admin/skills','Data communication'],
@@ -79,7 +79,7 @@ try {
     await until(()=>window.location.pathname===target&&document.body.textContent.includes(content))
     assert.match(document.body.textContent,/Demo Mode/)
     assert.doesNotMatch(document.body.textContent,/Authentication integration pending/)
-    if(target==='/admin/dashboard') await until(()=>!!document.querySelector('.recharts-surface'))
+    if(target==='/admin/dashboard') { assert.equal(document.querySelector('.recharts-surface'),null); assert.ok(document.querySelector('a[href="/admin/imports"]')); assert.ok(document.querySelector('section[aria-label="Learning Data"]')); }
     if(path.includes('?from=legacy')){assert.equal(window.location.search,'?from=legacy');assert.equal(window.location.hash,'#mapping')}
     if(path==='/admin/credentials') assert.ok([...document.querySelectorAll('button')].find(b=>b.textContent==='Request issuance')?.disabled)
     if(path==='/admin/credentials/DEMO-CR-1')assert.ok([...document.querySelectorAll('button')].find(b=>b.textContent==='Request revocation')?.disabled)
