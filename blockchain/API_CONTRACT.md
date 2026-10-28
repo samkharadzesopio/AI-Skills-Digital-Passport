@@ -12,6 +12,12 @@ issuance, failure, historical and cancellation semantics below remain unchanged.
 The trusted database issuer and explicit permissions remain mandatory on Anvil.
 No authentication, confirmation or issuer-trust check is disabled for the demo.
 
+The mentor-approved video submission runs this same local configuration; no
+API field or verification verdict changes for recording. See
+[VIDEO_DEMO.md](VIDEO_DEMO.md). A recording, saved receipt or configured Amoy
+address is never a substitute for the fresh verification rules below. Amoy
+configuration/preflight support does not establish a public deployment.
+
 This backend feature does not copy the website or create an alternative Passport design. All clients use the same existing self-scoped Django APIs and exact stored PDF bytes. The Chrome implementation remains a separate, paused task; these are its server contracts, not a claim that an extension has been implemented.
 
 ## Current student Passport
@@ -168,7 +174,7 @@ Private and public root mappings are now aligned: only nested PENDING_BLOCKCHAIN
 
 The upload verifier now calls `document_proof(document['document_id'], known_document=True)` only after `PassportDocumentRepository.find_by_hash` found the issued document. This server-only hint removes a duplicate disabled-transport existence lookup; it never bypasses enabled-chain validation and is never sourced from request parameters. The existing three-query assertion is preserved unchanged.
 
-The integration frontend at bec0d83 still needs the explicit DTO allowlists, adapters and HTTP acceptance fixtures described in `ops/BACKEND_API_HANDOFF.md`. Retain the backend's additive `network`, `transaction_explorer_url` and `required_confirmations` fields. Use the server-provided explorer link; it is constrained to the fixed Amoy origin and a validated hash. Label LOCAL_ANVIL as local test evidence. No private keys, provider URLs or arbitrary explorer URLs are sent to clients.
+The earlier bec0d83 frontend required the explicit DTO allowlists, adapters and HTTP acceptance fixtures described in `ops/BACKEND_API_HANDOFF.md`. The current combined checkout includes those updates; actual Chrome/Django/Anvil acceptance is recorded in `ops/LOCAL_WEBSITE_ACCEPTANCE_2026-10-28.md`. Retain the backend's additive `network`, `transaction_explorer_url` and `required_confirmations` fields. Use the server-provided explorer link; it is constrained to the fixed Amoy origin and a validated hash. Label LOCAL_ANVIL as local test evidence. No private keys, provider URLs or arbitrary explorer URLs are sent to clients.
 
 A concurrent new version can make an otherwise confirmed document historical during assessment. A current badge therefore requires the final institutional registry assessment to be VALID and latest, in addition to the independent chain checks. Historical chain integrity remains separate.
 

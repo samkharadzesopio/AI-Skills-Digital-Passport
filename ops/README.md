@@ -8,6 +8,8 @@ creates its own fresh cluster; no existing development database is adopted.
 
 Current handoff documents:
 
+- [Mentor-approved local blockchain video demo](../blockchain/VIDEO_DEMO.md)
+- [Live Chrome / Django / Anvil acceptance](LOCAL_WEBSITE_ACCEPTANCE_2026-10-28.md)
 - [Backend API contracts and remaining frontend work](BACKEND_API_HANDOFF.md)
 - [Captured synthetic HTTP/Anvil examples](BACKEND_CONTRACT_EXAMPLES.json)
 - [Persistent-data migration and worker runbook](BACKEND_MIGRATION_RUNBOOK.md)
