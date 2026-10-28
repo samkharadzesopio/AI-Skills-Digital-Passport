@@ -2,6 +2,7 @@
 
 Usage: python ops/run_isolated_tests.py [--full]
 Use --spreadsheet --ui-http --browser-http for focused local website acceptance.
+Use --manual-demo for a fresh local recording session; quit to remove owned data.
 Requires PostgreSQL binaries on PATH or PASSPORT_PG_BIN. Never adopts a cluster.
 All logs, databases and uploads are under the newly allocated temporary directory.
 """
@@ -79,6 +80,13 @@ def main():
                     command([sys.executable, f'ops/test_{label}_e2e.py'], cwd=ROOT, env=env)
             if '--browser-http' in sys.argv:
                 command([sys.executable, 'ops/test_live_browser_e2e.py'], cwd=ROOT, env=env)
+            if '--manual-demo' in sys.argv or '--demo-smoke' in sys.argv:
+                mode = '--manual-demo' if '--manual-demo' in sys.argv else '--demo-smoke'
+                # Inherit the operator terminal so URLs/input are live. Only
+                # this explicit interactive mode has no test-command deadline.
+                command([sys.executable, '-u', 'ops/test_live_browser_e2e.py', mode],
+                        cwd=ROOT, env=env, stdout=None, stderr=None,
+                        timeout=None if mode == '--manual-demo' else 900)
         run.close()
         if directory.exists():
             raise RuntimeError('Owned temporary cluster directory remains')

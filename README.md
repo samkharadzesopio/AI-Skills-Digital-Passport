@@ -9,6 +9,7 @@ no public hosting or test POL is needed for this demonstration. The UI must
 identify verified local proofs as **Blockchain verified · Local Anvil**.
 
 - [Setup checks and video walkthrough](blockchain/VIDEO_DEMO.md)
+- [Fresh recording session if local chain state was lost](blockchain/VIDEO_DEMO.md#if-the-saved-anvil-state-is-empty-or-missing)
 - [Blockchain architecture and tests](blockchain/README.md)
 - [Website/extension API contract](blockchain/API_CONTRACT.md)
 - [Recorded local website acceptance](ops/LOCAL_WEBSITE_ACCEPTANCE_2026-10-28.md)

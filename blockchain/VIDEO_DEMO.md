@@ -12,6 +12,109 @@ issuer authorization, runtime pinning and independent live chain reads enabled.
 Use synthetic university records and explicitly simulated institutional approval.
 Do not represent this as real BTU endorsement or public Polygon execution.
 
+## If the saved Anvil state is empty or missing
+
+An empty `state.json` contains no recoverable blockchain history. PostgreSQL
+records, PDFs or a deployment receipt cannot recreate that chain's signed
+transaction history. Preserve the original database, backups and state file.
+Do not bind old proofs to a fresh node or weaken the runtime/receipt checks.
+
+For recording, use the existing disposable acceptance harness's **manual mode**.
+It creates a new owned PostgreSQL cluster/database, deploys the current pinned
+contract on a fresh Anvil chain, and uses existing domain services to prepare
+synthetic credentials, Passport versions, exact PDFs and confirmed commitments.
+The website calls the actual Django APIs; sample-data Demo Preview is off.
+It does not load your saved `.env`, access Neon, adopt the old database, reuse a
+wallet or read/write the old Anvil snapshot. PostgreSQL on port 55433 may remain
+running; this session chooses separate loopback ports.
+
+After installing the locked packages described below, run from the repository
+root in your Python virtual environment:
+
+```powershell
+$env:PASSPORT_PG_BIN = "D:\Program Files\PostgreSQL\bin"
+python -u -B ops/run_isolated_tests.py --manual-demo
+```
+
+No Playwright installation, faucet, Amoy RPC, private configuration file or
+manual migration is required. Migrations apply only to the newly owned empty
+database. Setup may take a few minutes. Wait for `LOCAL ANVIL RECORDING READY`
+and open the **actual printed Student login URL**; its random port is not 5173
+or 5174. The printed public verification URL contains the actual current code.
+
+The launcher prints the path of a private temporary login/OTP JSON file. Open
+that file privately in an editor to read `studentEmail` or Admin credentials.
+Request the Student OTP through the real login page, then reread `otp` from that
+same file. Never paste, record, commit or share its contents. Do not edit the
+file. Manual mode uses PBKDF2 password hashing and real OTP/session/CSRF and exact
+permissions; the fixture is local-only and not a production configuration.
+
+The console accepts:
+
+| Command | Action |
+| --- | --- |
+| `status` | Fetch the current public lifecycle/proof verdict through the real API |
+| `replace` | Submit the existing authorized name-change API with synthetic registrar evidence; old identity becomes REPLACED and a new identity/PDF/commitment is queued |
+| `revoke` | Submit the existing authorized Passport revocation API for the current demo identity |
+| `quit` | Stop owned Vite/Django/worker/Anvil/PostgreSQL resources and remove their temporary data |
+
+Background processing calls the existing durable backend and blockchain workers.
+Allow their normal retries and at least three real block confirmations. After
+`replace`, use `status` and refresh the website until live confirmation succeeds.
+No database job/receipt is edited to force green. The registrar/revocation
+commands use an actual least-privilege synthetic Admin login, session and CSRF;
+they add no application endpoints or registrar UI controls. Only these temporary
+fixtures receive the necessary lifecycle capabilities.
+
+This starts with preissued synthetic academic evidence; it is not a recording
+of initial Classroom synchronization or live institutional access. The separate
+11-journey HTTP driver exercises completion/import-to-credential automation.
+Do not present a fixture's prepared credentials as a live Classroom download.
+
+Keep the terminal open throughout one recording session. Use `quit` for a clean
+shutdown. A new run creates new identities and transactions; it does not resume
+this session. Previously copied/downloaded files and video remain wherever the
+operator saved them, but this temporary session's verification URLs stop working
+after quitting. Forced power loss/OS kill cannot guarantee cleanup; preserve
+unidentified leftovers for review rather than deleting unrelated resources.
+
+Automated rehearsal for this mode (uses its own temporary resources):
+
+```powershell
+python -u -B ops/run_isolated_tests.py --demo-smoke
+```
+
+It checks real OTP, current PDF/public verification, tampering, denied Student
+mutation/missing CSRF, name replacement and confirmed on-chain revocation. This
+mode does not require Playwright. The graphical browser check remains separate.
+
+### Fresh recording-mode validation, October 28
+
+- Final `--demo-smoke` passed: actual OTP, original PDF and anonymous verdict,
+  tampered-file rejection, denied Student mutation, missing-CSRF denial, legal
+  replacement and actual confirmed revocation. Both cancellation receipts were
+  independently reread with at least three confirmations. Non-loopback,
+  credential-bearing and path-containing console targets were rejected.
+- Actual `--manual-demo` launch with terminal input `status` then `quit` passed;
+  it reported VALID and removed the owned resources on exit.
+- The existing graphical browser regression passed unchanged: five journey
+  groups, seven viewport sizes and 94 real API responses, with no interception.
+- The selected runs also passed Django checks, migration-drift detection,
+  six resource guards, three local-profile tests and the real existing-database
+  refusal/cleanup checks. Source syntax, whitespace, links and focused secret
+  review passed. No new application model, migration or frontend change.
+
+Review logs: `/tmp/btu-fresh-demo-final-smoke.log`,
+`/tmp/btu-fresh-demo-interactive.log`, and
+`/tmp/btu-fresh-demo-browser-regression.log`. Sanitized graphical review artifacts:
+`/tmp/btu-live-browser-results-01szvhi8`. Owned cluster/private fixture cleanup was
+verified after the runs. These Linux cloud results do not certify native Windows
+execution, restore the user's lost snapshot, record a video, or establish Amoy
+deployment. No full backend regression rerun or persistent database change was
+performed. Validation preceded publication; the user subsequently explicitly
+approved committing and pushing this tested follow-up to
+`feature/passport-blockchain-proof`.
+
 ## First check the recording machine
 
 The cloud acceptance environment cannot inspect or change a Windows checkout.
@@ -190,7 +293,8 @@ security. Keep original chain/database/PDF history and private backups outside G
 
 ## Validation
 
-Fresh cloud checks on October 28, 2026, before this handoff was committed:
+Prior cloud checks on October 28, 2026, for the original `f70d2cb` handoff
+(the recording-mode follow-up results are above):
 
 | Check | Result |
 | --- | --- |

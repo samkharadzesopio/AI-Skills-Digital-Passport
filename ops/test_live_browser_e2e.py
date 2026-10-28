@@ -30,6 +30,7 @@ django.setup()
 import requests
 from django.conf import settings
 from django.core.mail.backends.locmem import EmailBackend
+from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
 from django.db import connections
 from django.test import TransactionTestCase, override_settings
@@ -70,9 +71,10 @@ class TestMailbox(EmailBackend):
 
 def main():
     global mailbox_path
-    if not os.environ.get('BTU_BROWSER_TOOLS'):
+    manual = '--manual-demo' in sys.argv or '--demo-smoke' in sys.argv
+    if not manual and not os.environ.get('BTU_BROWSER_TOOLS'):
         raise RuntimeError('Set BTU_BROWSER_TOOLS to isolated Playwright tools.')
-    output = Path(tempfile.mkdtemp(prefix='btu-live-browser-results-'))
+    output = None if manual else Path(tempfile.mkdtemp(prefix='btu-live-browser-results-'))
     with DisposableRun() as owned:
         owned.database()
         Fixture.setUpClass()
@@ -87,6 +89,7 @@ def main():
             ROOT_URLCONF='config.urls', ALLOWED_HOSTS=['127.0.0.1'],
             PASSPORT_BLOCKCHAIN_CONFIRMATIONS=3,
             EMAIL_BACKEND='__main__.TestMailbox',
+            **({'PASSWORD_HASHERS': ['django.contrib.auth.hashers.PBKDF2PasswordHasher']} if manual else {}),
         ))
         fixture.student.email = 'browser.student@btu.edu.ge'
         fixture.student.save(update_fields=['email'])
@@ -97,8 +100,13 @@ def main():
         admin = User.objects.create_admin_user(
             email='browser.admin@btu.edu.ge', password=password,
             permission_codenames={'view_student_records', 'manage_credentials', 'revoke_credentials',
-                                  'manage_student_accounts', 'import_completions', 'sync_classroom'},
+                                  'manage_student_accounts', 'import_completions', 'sync_classroom'} |
+                                 ({'manage_legal_identity', 'manage_passport_lifecycle'} if manual else set()),
         )
+        if manual:
+            # Consume the fixture credential's real durable refresh before
+            # publishing so startup has no hidden pending version update.
+            call_command('process_passport_refreshes', batch_size=20)
         version, _ = publish_passport_version(student_id=fixture.student.pk, event_key='SYNTHETIC-BROWSER-V2')
         process_publications(20)
         for _ in range(8):
@@ -173,6 +181,11 @@ def main():
             time.sleep(.25)
         else:
             raise RuntimeError('Owned Vite/Django proxy did not become ready.')
+        if manual:
+            from manual_demo import recording_session
+            recording_session(owned, fixture, base, mailbox_path, smoke='--demo-smoke' in sys.argv)
+            connections.close_all()
+            return
         try:
             result = owned.command(['node', 'scripts/check-passport-browser.mjs'], cwd=ROOT / 'frontend', env=env)
             if result.returncode:
