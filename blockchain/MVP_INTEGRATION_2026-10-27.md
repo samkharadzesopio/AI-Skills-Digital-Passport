@@ -5,6 +5,8 @@ is superseded by the current Anvil-first scope; its recorded results and initial
 unexplained HTTP failure remain historical evidence. See
 [fresh candidate validation](../ops/BACKEND_ANVIL_STABILIZATION.md).
 
+See also [Lizi's Anvil handoff](ANVIL_HANDOFF_2026-10-27.md) for the subsequent branch-local evidence.
+
 ## Historical readiness: NOT READY for the former complete MVP acceptance
 
 The local backend corrections and normal HTTP acceptance pass. The mandatory

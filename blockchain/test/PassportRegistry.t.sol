@@ -41,6 +41,12 @@ contract PassportRegistryTest {
         vm.prank(issuer); registry.replacePassport(p,replacement);
         vm.prank(issuer); vm.expectRevert(); registry.anchorPassport(p,v,keccak256("late"),h);
     }
+    function testZeroReplacementRejectedWithoutCancellingCurrentPassport() public {
+        issue();
+        vm.prank(issuer); vm.expectRevert(); registry.replacePassport(p,bytes32(0));
+        require(registry.passportState(p) == PassportRegistry.State.ACTIVE);
+        (,,bytes32 historic,) = registry.commitments(d); require(historic == h);
+    }
     function testRevocationIsTerminalAndKeepsCommitment() public {
         issue(); vm.prank(issuer); registry.revokePassport(p);
         require(registry.passportState(p) == PassportRegistry.State.REVOKED);

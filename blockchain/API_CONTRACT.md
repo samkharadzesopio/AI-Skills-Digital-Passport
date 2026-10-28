@@ -1,5 +1,17 @@
 # Passport lifecycle contract for React, Chrome and authorized Classroom viewers
 
+## Current environment: Anvil MVP
+
+The primary environment for this handoff is Anvil, chain 31337. Amoy deployment
+and funding are not prerequisites. Confirmed Anvil transactions are real local
+EVM evidence and may satisfy the existing verification rules, but every consumer
+must retain `environment: LOCAL_ANVIL`, `network: Anvil`, `chain_id: 31337` and
+`transaction_explorer_url: null`. A verified label must identify this local test
+network; it must never imply Polygon Amoy or public-network consensus. Local
+issuance, failure, historical and cancellation semantics below remain unchanged.
+The trusted database issuer and explicit permissions remain mandatory on Anvil.
+No authentication, confirmation or issuer-trust check is disabled for the demo.
+
 This backend feature does not copy the website or create an alternative Passport design. All clients use the same existing self-scoped Django APIs and exact stored PDF bytes. The Chrome implementation remains a separate, paused task; these are its server contracts, not a claim that an extension has been implemented.
 
 ## Current student Passport
@@ -28,6 +40,22 @@ Metadata adds `blockchain`, separate from the PDF artifact's own status/availabi
 Loading/empty/expired-session/error states remain necessary. Treat 401/403 as an access/session failure, 404 as missing/unavailable authorized content, 409 as generation in progress, 422 as an unsupported template payload and 503 as generation/storage failure. The viewer must not rewrite, watermark, reconstruct or re-stamp the official bytes; that changes their hash. Display status outside the original PDF.
 
 After legal cancellation, Student access to the old identity's PDF/version routes returns 404. Exact permissioned admin PDF routes retain historical access and audit the download. An already downloaded file cannot be erased from someone's computer; its public reference/PDF verification returns REPLACED/REVOKED.
+
+## October 28 contract compatibility
+
+Phase 1 rejects a zero replacement destination before cancelling the old key.
+The ABI, events, URLs, DTO fields and status semantics remain unchanged, but
+the compiled runtime and its pinned artifact change. An existing deployment
+does not acquire this fix. The adapter deliberately reports
+`UNAPPROVED_CONTRACT_CODE` / UNVERIFIABLE for the earlier runtime under the
+updated code; do not disable that check or relabel it as pending.
+
+For an isolated rehearsal, deploy the corrected registry with a fresh
+disposable database/node and use its actual address. Preserve existing
+databases, signed operations, PDFs and old deployments. Moving an existing
+institutional deployment requires a separately reviewed registry/history
+transition; changing its environment address alone cannot migrate immutable
+proofs. No schema migration is added. See `PHASE1_AUDIT_2026-10-28.md`.
 
 ## Public verification
 

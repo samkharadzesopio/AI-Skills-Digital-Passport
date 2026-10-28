@@ -28,7 +28,7 @@ contract PassportRegistry is AccessControlDefaultAdminRules {
     }
 
     function replacePassport(bytes32 previousKey, bytes32 passportKey) external onlyRole(ISSUER_ROLE) {
-        if (previousKey == bytes32(0) || previousKey == passportKey) revert InvalidCommitment();
+        if (previousKey == bytes32(0) || passportKey == bytes32(0) || previousKey == passportKey) revert InvalidCommitment();
         if (passportState[previousKey] == State.REPLACED || passportState[previousKey] == State.REVOKED
             || passportState[passportKey] != State.UNKNOWN) revert InactivePassport();
         // A tombstone also prevents a delayed issuance from activating the old key.
