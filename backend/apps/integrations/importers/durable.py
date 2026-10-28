@@ -7,7 +7,7 @@ from apps.integrations.models import ImportRun, ClassroomSyncEvent
 from .validators import validate_completion_record
 
 
-def process_import(records, *, source, actor=None, run=None):
+def process_import(records, *, source, actor=None, run=None, finalize=True):
     require_source(source)
     if connection.in_atomic_block:
         raise ImproperlyConfigured('Imports require independently committed replay stages.')
@@ -37,10 +37,11 @@ def process_import(records, *, source, actor=None, run=None):
         except Exception as exc:
             result['failed'] += 1
             result['errors'].append({'row': index, 'type': type(exc).__name__})
-    run.summary = result
-    run.state = 'PARTIAL' if result['failed'] and (result['issued'] or result['skipped']) else ('FAILED' if result['failed'] else 'COMPLETED')
-    run.finished_at = timezone.now()
-    run.save()
+    if finalize:
+        run.summary = result
+        run.state = 'PARTIAL' if result['failed'] and (result['issued'] or result['skipped']) else ('FAILED' if result['failed'] else 'COMPLETED')
+        run.finished_at = timezone.now()
+        run.save()
     return result
 
 

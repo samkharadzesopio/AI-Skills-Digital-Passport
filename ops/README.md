@@ -11,6 +11,9 @@ Current handoff documents:
 - [Backend API contracts and remaining frontend work](BACKEND_API_HANDOFF.md)
 - [Captured synthetic HTTP/Anvil examples](BACKEND_CONTRACT_EXAMPLES.json)
 - [Persistent-data migration and worker runbook](BACKEND_MIGRATION_RUNBOOK.md)
+- [Flexible spreadsheet implementation and local test evidence](FLEXIBLE_SPREADSHEET_INTEGRATION.md)
+- [Spreadsheet preview/confirmation API handoff](SPREADSHEET_API_HANDOFF.md)
+- [Additive spreadsheet migration and recovery plan](SPREADSHEET_MIGRATION_RUNBOOK.md)
 
 Public Polygon deployment, persistent database migration and live institutional
 service acceptance remain separate operator steps. No React implementation is

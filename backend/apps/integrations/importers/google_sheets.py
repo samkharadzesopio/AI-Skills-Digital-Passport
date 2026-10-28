@@ -46,7 +46,9 @@ def read_google_sheet(
                 "Google Sheets credentials not configured"
             )
 
-        client = gspread.service_account(filename=credentials_path)
+        client = gspread.service_account(filename=credentials_path, scopes=[
+            'https://www.googleapis.com/auth/spreadsheets.readonly',
+        ])
         client.set_timeout(10)
 
     spreadsheet = client.open_by_key(spreadsheet_id)

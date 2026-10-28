@@ -56,3 +56,12 @@ from .recommendations.api import CourseRecommendationsView
 urlpatterns += [
     path('course-recommendations/', CourseRecommendationsView.as_view(), name='course-recommendations'),
 ]
+
+from .spreadsheet_views import ProfileListView, ExcelPreviewView, GooglePreviewView, PreviewDetailView, PreviewConfirmView
+urlpatterns += [
+    path('import/profiles/', ProfileListView.as_view(), name='spreadsheet-profiles'),
+    path('import/excel/preview/', ExcelPreviewView.as_view(), name='spreadsheet-excel-preview'),
+    path('import/google-sheets/preview/', GooglePreviewView.as_view(), name='spreadsheet-google-preview'),
+    path('import/previews/<uuid:preview_id>/', PreviewDetailView.as_view(), name='spreadsheet-preview'),
+    path('import/previews/<uuid:preview_id>/confirm/', PreviewConfirmView.as_view(), name='spreadsheet-confirm'),
+]
