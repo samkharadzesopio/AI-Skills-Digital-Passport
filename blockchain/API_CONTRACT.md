@@ -41,6 +41,22 @@ Loading/empty/expired-session/error states remain necessary. Treat 401/403 as an
 
 After legal cancellation, Student access to the old identity's PDF/version routes returns 404. Exact permissioned admin PDF routes retain historical access and audit the download. An already downloaded file cannot be erased from someone's computer; its public reference/PDF verification returns REPLACED/REVOKED.
 
+## October 28 contract compatibility
+
+Phase 1 rejects a zero replacement destination before cancelling the old key.
+The ABI, events, URLs, DTO fields and status semantics remain unchanged, but
+the compiled runtime and its pinned artifact change. An existing deployment
+does not acquire this fix. The adapter deliberately reports
+`UNAPPROVED_CONTRACT_CODE` / UNVERIFIABLE for the earlier runtime under the
+updated code; do not disable that check or relabel it as pending.
+
+For an isolated rehearsal, deploy the corrected registry with a fresh
+disposable database/node and use its actual address. Preserve existing
+databases, signed operations, PDFs and old deployments. Moving an existing
+institutional deployment requires a separately reviewed registry/history
+transition; changing its environment address alone cannot migrate immutable
+proofs. No schema migration is added. See `PHASE1_AUDIT_2026-10-28.md`.
+
 ## Public verification
 
 No login/cookies are required for:

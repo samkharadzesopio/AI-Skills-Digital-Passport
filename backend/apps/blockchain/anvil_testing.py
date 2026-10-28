@@ -11,7 +11,9 @@ from web3 import Web3
 
 
 class AnvilChain:
-    def __init__(self):
+    def __init__(self, *, chain_id=31337):
+        if type(chain_id) is not int or chain_id not in {1337, 31337, 80002}:
+            raise ValueError('Unsupported isolated Anvil chain ID.')
         root=Path(__file__).resolve().parents[3]
         target={'Linux':'linux','Darwin':'darwin','Windows':'win32'}[platform.system()]
         arch='arm64' if platform.machine().lower() in ('arm64','aarch64') else 'amd64'
@@ -28,13 +30,13 @@ class AnvilChain:
         with socket.socket() as sock:
             sock.bind(('127.0.0.1',0)); port=sock.getsockname()[1]
         self.rpc_url=f'http://127.0.0.1:{port}'
-        self.process=subprocess.Popen([binary,'--host','127.0.0.1','--port',str(port),'--chain-id','31337',
+        self.process=subprocess.Popen([binary,'--host','127.0.0.1','--port',str(port),'--chain-id',str(chain_id),
                                        '--mnemonic',mnemonic,'--silent'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
                                       **({'creationflags':subprocess.CREATE_NO_WINDOW} if os.name=='nt' else {}))
         self.web3=Web3(Web3.HTTPProvider(self.rpc_url,request_kwargs={'timeout':2},exception_retry_configuration=None))
         for _ in range(100):
             try:
-                if self.web3.eth.chain_id==31337:
+                if self.web3.eth.chain_id==chain_id:
                     return
             except Exception:
                 pass

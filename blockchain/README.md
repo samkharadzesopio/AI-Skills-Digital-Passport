@@ -1,5 +1,10 @@
 # BTU Passport blockchain lifecycle — Anvil MVP
 
+The October 28 Phase 1 audit and contract correction are recorded in
+[PHASE1_AUDIT_2026-10-28.md](PHASE1_AUDIT_2026-10-28.md). Its runtime-pin
+compatibility warning supersedes the earlier deployment instructions when
+using the corrected artifact. Phase 1 does not authorize public deployment.
+
 **Anvil (chain 31337) is the primary MVP environment for this handoff.** It uses real local EVM transactions, PostgreSQL persistence and independently checked receipts. No Polygon Amoy deployment, faucet balance or real money is required for integration testing. The Amoy adapter remains available but has not been publicly deployed or validated by this work. Frontend/Chrome browser acceptance and shared database rollout remain separate from backend test results.
 
 Start with [ANVIL_HANDOFF_2026-10-27.md](ANVIL_HANDOFF_2026-10-27.md) for the assigned branch, fresh test results, security review, setup and integration requirements. Earlier reports retain their original Amoy-focused acceptance criteria as historical evidence; the user's current Anvil-first handoff instructions supersede those criteria.
