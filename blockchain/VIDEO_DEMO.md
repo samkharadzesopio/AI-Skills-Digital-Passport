@@ -58,6 +58,67 @@ The console accepts:
 | `revoke` | Submit the existing authorized Passport revocation API for the current demo identity |
 | `quit` | Stop owned Vite/Django/worker/Anvil/PostgreSQL resources and remove their temporary data |
 
+### Windows console and second-terminal control
+
+The first launcher incorrectly used Windows `CREATE_NO_WINDOW` for its manual
+Python child. The corrected launcher retains that flag for background tools,
+but lets the interactive child inherit the terminal. Progress messages identify
+database preparation, Anvil/fixtures and website startup. This console selection
+has a platform-policy regression test; native Windows behavior still requires
+confirmation on the recording machine.
+
+**Keep an already running session open.** An HTTP 200 from its frontend/backend
+does not prove the terminal prompt is usable. You can control that same session
+from a second terminal without restarting or losing its downloaded PDF/history:
+
+```powershell
+python -B ops/manual_demo.py --url http://127.0.0.1:64057 status
+python -B ops/manual_demo.py --url http://127.0.0.1:64057 replace
+```
+
+Port 64057 is the user's observed running website, not a general default. Use the
+actual Vite origin for any other session. After the new identity confirms and
+its original PDF is saved, the corresponding revocation command is:
+
+```powershell
+python -B ops/manual_demo.py --url http://127.0.0.1:64057 revoke
+```
+
+Run mutations once and inspect their returned public verdict/URL. A replacement
+may honestly return PENDING_BLOCKCHAIN while the existing worker confirms the
+cancellation and new commitment. Refresh the Student dashboard and public lookup;
+the old PDF should report REPLACED. Revocation immediately removes current
+validity; its actual on-chain confirmation still needs the worker. A failed
+controller reports an unknown outcome; check public/current status before retry.
+
+This controller does not start/stop servers, load Django/database settings,
+connect directly to RPC, grant permissions or create another demo. It uses the
+existing synthetic Admin password privately, real session/CSRF and existing
+authorized APIs. The host must be an explicit loopback HTTP origin with no
+userinfo/path, redirects are refused, and metadata must identify the synthetic
+Student and local chain 31337. Passwords, OTPs and raw server errors are never
+printed. No new control HTTP endpoint or authentication bypass is added.
+
+Automatic discovery requires exactly one private fixture. With multiple sessions
+or leftover files, select the intended existing `preview-private.json` via
+`--fixture` rather than guessing or deleting files. Its contents remain private.
+The API client checks the actual logged-in session's Student/email association
+before mutation and resolves the current Passport through the authoritative API.
+
+Validation of this console correction (October 29, team timezone): nine resource/
+console/controller guard tests passed, including the simulated Windows launch
+policy and pre-login rejection of nonsynthetic/ambiguous fixtures. An actual
+Linux terminal accepted `status`/`quit`, exposed the readiness/prompt output and
+cleaned up. The real PostgreSQL/Anvil smoke used separate CLI processes for status,
+replacement and revocation, retained the same running server, and independently
+checked both cancellation receipts at three confirmations. OTP/PDF/tampering,
+permission/CSRF checks, Django system/migration checks and cleanup also passed.
+No full backend or graphical rerun is claimed for this console-only correction;
+native Windows terminal behavior remains an operator check. Review log:
+`/tmp/btu-windows-console-fix-smoke.log`. Source/whitespace/link and focused secret
+review passed. No new application endpoint, schema, frontend behavior, public
+transaction or persistent database operation was introduced.
+
 Background processing calls the existing durable backend and blockchain workers.
 Allow their normal retries and at least three real block confirmations. After
 `replace`, use `status` and refresh the website until live confirmation succeeds.

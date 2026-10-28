@@ -76,7 +76,11 @@ def main():
         raise RuntimeError('Set BTU_BROWSER_TOOLS to isolated Playwright tools.')
     output = None if manual else Path(tempfile.mkdtemp(prefix='btu-live-browser-results-'))
     with DisposableRun() as owned:
+        if manual:
+            print('Preparing owned demo database and migrations...', flush=True)
         owned.database()
+        if manual:
+            print('Starting fresh local Anvil and preparing synthetic records...', flush=True)
         Fixture.setUpClass()
         owned.callback(Fixture.doClassCleanups)
         fixture = Fixture()
@@ -119,6 +123,8 @@ def main():
         assert not PassportAnchor.objects.exclude(state='CONFIRMED').exists()
         document = PassportDocument.objects.get(passport_version=version, status='ISSUED')
         assert document_proof(document.public_reference)['blockchain_verified'] is True
+        if manual:
+            print('Synthetic PDF proofs confirmed; starting Django/Vite...', flush=True)
         mailbox_path.write_text(json.dumps({
             'studentEmail': fixture.student.email, 'adminEmail': admin.email,
             'adminPassword': password, 'otp': None,

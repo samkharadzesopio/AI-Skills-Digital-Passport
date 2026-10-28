@@ -7,9 +7,38 @@ from pathlib import Path
 from unittest.mock import patch
 
 from disposable_tests import DisposableRun, test_database_name
+from run_isolated_tests import child_console_flags
+from manual_demo import control_session
 
 
 class CleanupTests(unittest.TestCase):
+    def test_windows_manual_child_inherits_console(self):
+        with patch('run_isolated_tests.os.name', 'nt'), patch.object(subprocess, 'CREATE_NO_WINDOW', 0x08000000, create=True):
+            self.assertEqual(child_console_flags(interactive=True), {})
+            self.assertEqual(child_console_flags(), {'creationflags': 0x08000000})
+
+    def test_demo_controller_refuses_nonsynthetic_fixture_before_login(self):
+        import json
+        with tempfile.TemporaryDirectory(prefix='btu-live-browser-private-') as directory:
+            path = Path(directory) / 'preview-private.json'
+            path.write_text(json.dumps({'adminEmail': 'browser.admin@btu.edu.ge',
+                                        'studentEmail': 'browser.student@btu.edu.ge'}))
+            path.with_name('preview-runtime.json').write_text('{"synthetic": false}')
+            with patch('manual_demo.DemoClient.request', side_effect=AssertionError('No HTTP')):
+                with self.assertRaisesRegex(ValueError, 'Synthetic fixture'):
+                    control_session('http://127.0.0.1:8000', 'replace', path)
+
+    def test_demo_controller_does_not_guess_between_multiple_sessions(self):
+        with tempfile.TemporaryDirectory() as root:
+            for name in ('one', 'two'):
+                path = Path(root) / ('btu-live-browser-private-' + name)
+                path.mkdir()
+                (path / 'preview-private.json').write_text('{}')
+            with patch('manual_demo.tempfile.gettempdir', return_value=root):
+                with patch('manual_demo.DemoClient.request', side_effect=AssertionError('No HTTP')):
+                    with self.assertRaisesRegex(ValueError, 'One private fixture'):
+                        control_session('http://127.0.0.1:8000', 'replace')
+
     def test_unique_owned_names(self):
         names = {test_database_name('regression') for _ in range(100)}
         self.assertEqual(len(names), 100)

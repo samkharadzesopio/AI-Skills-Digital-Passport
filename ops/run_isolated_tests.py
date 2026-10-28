@@ -18,6 +18,14 @@ from disposable_tests import DisposableRun
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def child_console_flags(*, interactive=False):
+    # CREATE_NO_WINDOW is suitable for owned background tools, but detaches
+    # the Windows console needed by the manual child's input()/live output.
+    if os.name == 'nt' and not interactive:
+        return {'creationflags': subprocess.CREATE_NO_WINDOW}
+    return {}
+
+
 def main():
     binary = Path(os.environ.get('PASSPORT_PG_BIN', 'C:/Program Files/PostgreSQL/18/bin'))
     def pg(name):
@@ -39,12 +47,12 @@ def main():
         with socket.socket() as probe:
             probe.bind(('127.0.0.1', 0))
             port = probe.getsockname()[1]
-        flags = {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
-        def command(args, **kwargs):
+        flags = child_console_flags()
+        def command(args, *, interactive=False, **kwargs):
             print('RUN ' + ' '.join(map(str, args)), flush=True)
             if 'stdout' not in kwargs:
                 kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            result = run.command(args, **flags, **kwargs)
+            result = run.command(args, **child_console_flags(interactive=interactive), **kwargs)
             if result.stdout:
                 print(result.stdout, flush=True)
             if result.returncode:
@@ -86,6 +94,7 @@ def main():
                 # this explicit interactive mode has no test-command deadline.
                 command([sys.executable, '-u', 'ops/test_live_browser_e2e.py', mode],
                         cwd=ROOT, env=env, stdout=None, stderr=None,
+                        interactive=mode == '--manual-demo',
                         timeout=None if mode == '--manual-demo' else 900)
         run.close()
         if directory.exists():
