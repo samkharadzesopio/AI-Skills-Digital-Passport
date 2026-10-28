@@ -1,8 +1,7 @@
+import { AdminWorkflow } from './Navigation'
 import { demoMode } from '../demo/mode'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Award, Fingerprint, RefreshCw, Users } from 'lucide-react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Card, EmptyState } from '../components/ui'
 import { useLocale } from '../i18n'
 import { useAdminData } from './store'
@@ -13,13 +12,7 @@ import type { SyncEvent } from './contracts'
 
 export function AdminDashboard() {
   const { data } = useAdminData(), t = useAdminText(), { locale } = useLocale()
-  const stats = [
-    { label: t('totalStudents'), value: data.students.length, icon: Users, color: 'pink' },
-    { label: t('verifiedCredentials'), value: data.credentials.filter(c => c.status === 'verified').length, icon: Award, color: 'purple' },
-    { label: t('activePassports'), value: data.students.filter(s => s.passportStatus === 'active').length, icon: Fingerprint, color: 'teal' },
-    { label: t('pendingSync'), value: data.syncEvents.filter(e => e.status === 'pending').length, icon: RefreshCw, color: 'orange' },
-  ]
-  return <><PageTitle title={t('overview')} description={t('overviewHint')}/><div className="stats">{stats.map(s => <Card className="stat" key={s.label}><div className="stat-top"><span>{s.label}</span><div className={`icon-box ${s.color}`}><s.icon size={20}/></div></div><strong>{s.value}</strong><p>{t('sampleTotals')}</p></Card>)}</div><div className="admin-overview-grid"><Card><div className="section-title"><h2>{t('issuanceTrend')}</h2><span className="admin-demo-chip">{t('demo')}</span></div><div className="admin-chart" role="img" aria-label={data.issuanceTrend.map(d => `${d.month}: ${d.count}`).join(', ')}><ResponsiveContainer width="100%" height="100%"><BarChart data={data.issuanceTrend} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}><CartesianGrid vertical={false} strokeDasharray="3 5" stroke="#eeeaf4"/><XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12 }}/><YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fontSize: 12 }}/><Tooltip/><Bar dataKey="count" name={t('credentials')} fill="#e5007d" radius={[5,5,0,0]} maxBarSize={35}/></BarChart></ResponsiveContainer></div></Card><Card><div className="section-title"><h2>{t('recentActivity')}</h2><Link to="/admin/audit-logs">{t('details')}</Link></div><ul className="admin-activity">{data.audit.toSorted((a,b) => b.timestamp.localeCompare(a.timestamp)).slice(0,5).map(entry => <li key={entry.id}><span className="admin-activity-dot"/><div><strong>{entry.action}</strong><p>{entry.actor} · {entry.record}</p><small>{formatAdminDate(entry.timestamp, locale)}</small></div></li>)}</ul></Card></div></>
+  return <><PageTitle title={t('overview')} description="Import activity records, review evidence, and follow the Digital Passport lifecycle."/><AdminWorkflow/><div className="admin-primary-actions"><Link className="button primary" to="/admin/imports">Import Activity Records</Link><Link className="button" to="/admin/credentials">Review Credentials</Link><Link className="button" to="/admin/students">View Students</Link></div><div className="stats">{[['Total students',data.students.length],['Issued credentials',data.credentials.filter(c => c.issuedAt !== null).length],['Credentials awaiting review',data.credentials.filter(c => c.status === 'pending').length],['Import errors',data.imports.reduce((sum,run) => sum + run.errors,0)]].map(([label,value]) => <Card className="stat" key={label}><h2>{label}</h2><strong>{value}</strong><p>{t('sampleTotals')}</p></Card>)}</div><Card><h2>{t('recentActivity')}</h2><ul className="admin-activity">{data.audit.toSorted((a,b) => b.timestamp.localeCompare(a.timestamp)).slice(0,5).map(entry => <li key={entry.id}><div><strong>{entry.action}</strong><p>{entry.actor} - {entry.record}</p><small>{formatAdminDate(entry.timestamp,locale)}</small></div></li>)}</ul><Link to="/admin/audit-logs">View Audit Logs</Link></Card></>
 }
 export function StudentsPage() {
   const { data } = useAdminData(), t = useAdminText(), [program, setProgram] = useState('')
