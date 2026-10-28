@@ -1,6 +1,7 @@
 """Provision and stop a fresh PostgreSQL cluster for automated tests.
 
 Usage: python ops/run_isolated_tests.py [--full]
+Use --spreadsheet --ui-http --browser-http for focused local website acceptance.
 Requires PostgreSQL binaries on PATH or PASSPORT_PG_BIN. Never adopts a cluster.
 All logs, databases and uploads are under the newly allocated temporary directory.
 """
@@ -97,9 +98,11 @@ def main():
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.api', 'apps.integrations', 'apps.skills', 'apps.credentials', 'apps.passports', 'apps.students', 'apps.accounts', 'apps.verification', 'apps.blockchain', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env, timeout=1800)
             if '--chain-http' in sys.argv:
                 command([sys.executable, 'ops/test_backend_chain_e2e.py'], cwd=ROOT, env=env)
-            if '--full' in sys.argv:
+            if '--full' in sys.argv or '--ui-http' in sys.argv:
                 for label in ('backend_chain', 'verification', 'student', 'admin'):
                     command([sys.executable, f'ops/test_{label}_e2e.py'], cwd=ROOT, env=env)
+            if '--browser-http' in sys.argv:
+                command([sys.executable, 'ops/test_live_browser_e2e.py'], cwd=ROOT, env=env)
         run.close()
         if directory.exists():
             raise RuntimeError('Owned temporary cluster directory remains')
