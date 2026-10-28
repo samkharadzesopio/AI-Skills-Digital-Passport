@@ -14,7 +14,7 @@ export function MappingsPage() {
     if (!course) return
     try { update(current => saveMapping(current, course.id, selected)); setNotice(t('saved')); setCourse(null) } catch { setError(t('mappingInvalid')) }
   }
-  return <><PageTitle title={t('mappings')} description={t('mappingHint')}/>{notice && <p role="status" className="notice">{notice}</p>}<Card><DataTable label={t('mappings')} rows={data.courses} status={c => c.mappingStatus} statuses={['approved','draft','unmapped']} columns={[
+  return <><PageTitle title={t('mappings')} description="Connect approved learning activities to recognized skills. The current backend mapping supports courses only; workshops, seminars and events need an approved extension."/>{notice && <p role="status" className="notice">{notice}</p>}<Card><DataTable label={t('mappings')} rows={data.courses} status={c => c.mappingStatus} statuses={['approved','draft','unmapped']} columns={[
     { key: 'title', label: t('course'), value: c => c.title, render: c => <div><strong>{c.title}</strong><small className="admin-cell-id">{c.id}</small></div> },
     { key: 'approved', label: t('approvedCourse'), value: c => c.approved ? t('yes') : t('no') },
     { key: 'skills', label: t('skills'), value: c => c.skillIds.map(id => skills(data).find(s => s.id === id)?.name ?? id).join(', ') },

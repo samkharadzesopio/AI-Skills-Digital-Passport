@@ -1,5 +1,8 @@
+import { OfficialBtuLogo } from '../components/PassportCard'
+import { AdminNavigation } from '../admin/Navigation'
+import '../admin/ux.css'
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { Award, Fingerprint, BookOpen, FileSpreadsheet, FolderTree, Globe2, LayoutDashboard, ListChecks, Menu, RefreshCw, ShieldCheck, Users, X } from 'lucide-react'
 import { useLocale } from '../i18n'
 import { useAdminText } from '../admin/i18n'
@@ -21,7 +24,7 @@ export function AdminLayout() {
     return () => document.removeEventListener('keydown', close)
   }, [open])
   return <div className="app admin-app"><a className="skip" href="#admin-main">{t('overview')}</a>{open && <button className="scrim" aria-label={t('close')} onClick={() => setOpen(false)}/>}
-    <aside id="admin-navigation" className={`sidebar admin-sidebar ${open ? 'open' : ''}`}><Link className="brand" to="/admin/dashboard" onClick={() => setOpen(false)}><b>BTU<span>✳</span></b><span>AI SKILLS<br/><strong>DIGITAL PASSPORT</strong></span></Link><div className="admin-workspace-label"><ShieldCheck size={22}/><span>{t('workspace')}<small>{t('demo')}</small></span></div><nav aria-label={t('workspace')}>{navigation.map(([path, key, Icon]) => <NavLink key={path} to={path} end={path === '/admin/dashboard'} onClick={() => setOpen(false)}><Icon size={18}/>{t(key)}</NavLink>)}</nav><div className="sidebar-bottom"><div className="support"><ShieldCheck size={23}/><h3>{t('demo')}</h3><p>{t('demoNotice')}</p></div><nav><Link to="/verify"><Globe2 size={18}/>{t('publicVerification')}</Link></nav></div></aside>
+    <aside id="admin-navigation" className={`sidebar admin-sidebar ${open ? 'open' : ''}`}><Link className="brand" to="/admin/dashboard" onClick={() => setOpen(false)}><OfficialBtuLogo/><span>AI SKILLS<br/><strong>DIGITAL PASSPORT</strong></span></Link><div className="admin-workspace-label"><ShieldCheck size={22}/><span>{t('workspace')}<small>{t('demo')}</small></span></div><AdminNavigation close={() => setOpen(false)}/><div className="sidebar-bottom"><p>{t('demo')} ? {t('localOnly')}</p></div></aside>
     <div className="main-shell"><header><button className="mobile-menu" aria-label={t('openNavigation')} aria-expanded={open} aria-controls="admin-navigation" onClick={() => setOpen(!open)}>{open ? <X/> : <Menu/>}</button><div className="admin-breadcrumb">{t('workspace')} <span>/</span> <b>{t(title)}</b></div><div className="header-actions"><span className="admin-demo-chip">{t('demo')}</span><button onClick={toggle} aria-label="English / ქართული"><Globe2 size={16}/>{locale.toUpperCase()}</button></div></header><main id="admin-main"><p className="admin-demo-notice">{t('demoNotice')}</p><Outlet/><footer><span>BTU · {t('workspace')}</span><button onClick={() => update(() => structuredClone(adminFixture))}>{t('reset')}</button></footer></main></div>
   </div>
 }

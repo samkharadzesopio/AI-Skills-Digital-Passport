@@ -66,6 +66,17 @@ def main():
             command([sys.executable, 'ops/test_disposable_postgres.py'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'check', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'makemigrations', '--check', '--dry-run', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
+            if '--frontend-django' in sys.argv:
+                # Frontend/API compatibility only: no blockchain suite, Anvil or
+                # external Google/production settings. Existing proof code stays intact.
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.accounts', 'apps.api',
+                         'apps.integrations.test_spreadsheet_mapping', 'apps.integrations.test_import_views',
+                         'apps.integrations.importers', '--settings=apps.integrations.postgres_test_settings',
+                         '--verbosity=1'], cwd=ROOT, env=env)
+                for label in ('spreadsheet', 'student', 'admin', 'verification'):
+                    command([sys.executable, f'ops/test_{label}_e2e.py'], cwd=ROOT, env=env)
+            if '--frontend-django' in sys.argv or '--frontend-browser' in sys.argv:
+                command([sys.executable, 'ops/test_frontend_django_e2e.py'], cwd=ROOT, env=env)
             if '--spreadsheet' in sys.argv:
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.integrations.test_spreadsheet_mapping', 'apps.integrations.test_spreadsheet_migrations', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env)
                 command([sys.executable, 'ops/test_spreadsheet_e2e.py'], cwd=ROOT, env=env)
