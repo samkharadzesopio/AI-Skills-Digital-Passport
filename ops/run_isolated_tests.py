@@ -17,6 +17,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
+    # Live Google is never selected by --full or any ordinary regression flag.
+    live_args = []
+    if '--google-sheet-live' in sys.argv:
+        index = sys.argv.index('--google-sheet-live')
+        if '--allow-google-read' not in sys.argv or index + 1 >= len(sys.argv) or sys.argv[index + 1].startswith('--'):
+            raise SystemExit('Live Google needs --google-sheet-live CONFIG and --allow-google-read after explicit approval.')
+        live_args = ['--live-config', sys.argv[index + 1], '--allow-google-read']
+    elif '--allow-google-read' in sys.argv:
+        raise SystemExit('--allow-google-read requires an approved --google-sheet-live CONFIG.')
     binary = Path(os.environ.get('PASSPORT_PG_BIN', 'C:/Program Files/PostgreSQL/18/bin'))
     def pg(name):
         return str(binary / (name + ('.exe' if os.name == 'nt' else '')))
@@ -62,6 +71,7 @@ def main():
             env = {key: value for key, value in os.environ.items()
                    if not key.upper().startswith(('PG', 'PASSPORT_BLOCKCHAIN_', 'DJANGO_'))}
             env.update(FOUNDATION_TEST_PG_HOST='127.0.0.1', FOUNDATION_TEST_PG_PORT=str(port), FOUNDATION_TEST_PG_PASSWORD='', AUTH_TEST_PG_PORT=str(port), PYTHONDONTWRITEBYTECODE='1')
+            command([sys.executable, 'ops/test_google_sheet_gate.py'], cwd=ROOT, env=env)
             command([sys.executable, 'ops/test_disposable_tests.py'], cwd=ROOT, env=env)
             command([sys.executable, 'ops/test_disposable_postgres.py'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'check', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
@@ -78,8 +88,11 @@ def main():
             if '--frontend-django' in sys.argv or '--frontend-browser' in sys.argv:
                 command([sys.executable, 'ops/test_frontend_django_e2e.py'], cwd=ROOT, env=env)
             if '--spreadsheet' in sys.argv:
-                command([sys.executable, 'backend/manage.py', 'test', 'apps.integrations.test_spreadsheet_mapping', 'apps.integrations.test_spreadsheet_migrations', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env)
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.integrations.test_spreadsheet_mapping', 'apps.integrations.test_spreadsheet_migrations', 'apps.integrations.test_google_configuration', 'apps.integrations.test_rollout.PreflightTests', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env)
                 command([sys.executable, 'ops/test_spreadsheet_e2e.py'], cwd=ROOT, env=env)
+            if '--google-sheet' in sys.argv or live_args:
+                console = {'stdout': None, 'stderr': None} if live_args else {}
+                command([sys.executable, 'ops/test_google_sheets_e2e.py', *live_args], cwd=ROOT, env=env, timeout=900, **console)
             if '--full' in sys.argv or '--backend' in sys.argv:
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.api', 'apps.integrations', 'apps.skills', 'apps.credentials', 'apps.passports', 'apps.students', 'apps.accounts', 'apps.verification', 'apps.blockchain', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env, timeout=1800)
             if '--chain-http' in sys.argv:

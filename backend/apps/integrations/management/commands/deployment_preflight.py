@@ -1,5 +1,5 @@
 """Read-only rollout gate. Never migrates, provisions issuers or sends mail."""
-from pathlib import Path
+from config.spreadsheet_sources import credential_path, validate_sources
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
@@ -38,7 +38,12 @@ class Command(BaseCommand):
             errors.append('Invalid institutional source policy.')
         if 'BTU_GOOGLE_SHEETS' in sources:
             path = getattr(settings, 'GOOGLE_SERVICE_ACCOUNT_FILE', '')
-            if not getattr(settings, 'BTU_GOOGLE_SHEET_ID', '') or not path or not Path(path).is_file():
+            try:
+                targets = validate_sources(getattr(settings, 'BTU_SPREADSHEET_GOOGLE_SOURCES', {}))
+                credential_path(path)
+                if not (getattr(settings, 'BTU_GOOGLE_SHEET_ID', '') or targets):
+                    raise ValueError()
+            except (ValueError, OSError):
                 errors.append('Google source settings or secure credential file are missing.')
         try:
             executor = MigrationExecutor(connection)
