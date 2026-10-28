@@ -13,12 +13,26 @@ export function validatePdf(file: Pick<File, 'name' | 'size' | 'type'>): 'pdfTyp
   return null
 }
 // UUID-based printed passport references come from backend/apps/passports/document_services.py.
-// No Django lookup route consumes these yet. Do not send them to the credential endpoint.
 const passportReference = /^passport(?:-version)?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export function normalizePassportReference(value: string): string | null {
+  let reference = value.trim()
+  if (/^https?:/i.test(reference)) {
+    try {
+      const url = new URL(reference)
+      if (typeof window === 'undefined' || url.origin !== window.location.origin || url.username || url.password || url.hash) return null
+      if (url.pathname === '/verify/qr') {
+        if (url.searchParams.getAll('reference').length !== 1 || [...url.searchParams.keys()].some(key => key !== 'reference')) return null
+        reference = url.searchParams.get('reference') ?? ''
+      } else return null
+    } catch { return null }
+  }
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference)) reference = `passport:${reference}`
+  return passportReference.test(reference) ? reference.toLowerCase() : null
+}
 export function validateReference(value: string, method: Exclude<VerificationMethod, 'document'>): 'referenceRequired' | 'passportFormat' | 'credentialFormat' | null {
   const reference = value.trim()
   if (!reference) return 'referenceRequired'
-  if (method === 'passport') return passportReference.test(reference) ? null : 'passportFormat'
+  if (method === 'passport') return normalizePassportReference(reference) ? null : 'passportFormat'
   // Django's <str:credential_id> defines a nonempty path segment, not a published ID regex.
   // The length bound is a UI transport limit, not an official identifier format.
   const unsafeCharacter = Array.from(reference).some(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 || c === '/' || c === '\\')

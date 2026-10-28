@@ -1,12 +1,11 @@
 ﻿import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { Gamepad2 } from 'lucide-react'
 import { LocaleProvider } from './i18n'
 import { AccessBoundary } from './auth/AccessBoundary'
 import { StudentLayout } from './layouts/StudentLayout'
 import { AdminLayout } from './layouts/AdminLayout'
 import { VerificationLayout } from './layouts/VerificationLayout'
-import { Dashboard, Detail, Profile, Gap } from './pages'
+import { Dashboard, Detail, Gap } from './pages'
 import { VerificationLanding, ReferenceVerification, PdfVerification, VerificationResults, QrVerification, VerificationNotFound } from './verification/pages'
 import { AdminWorkspace } from './admin/store'
 import { AdminDashboard, StudentsPage, StudentDetail, CredentialsPage, CredentialDetail, SynchronizationPage, AuditPage } from './admin/pages'
@@ -17,15 +16,12 @@ import { AdminPassportPage } from './admin/PassportPage'
 import { Card, EmptyState, Loading } from './components/ui'
 import { getDemoStudent } from './data/mock'
 import './App.css'
+import './artwork-theme.css'
 import { DemoBanner } from './demo/DemoBanner'
 import { demoMode } from './demo/mode'
 import { LoginPage } from './auth/LoginPages'
-import { LiveAccountLayout, LiveStudentWorkspace } from './auth/SessionPanel'
+import { ProductWorkspace } from './live/ProductWorkspace'
 const client = new QueryClient()
-function StudentDataBoundary() {
-  if (!demoMode) return <LiveStudentWorkspace/>
-  return <DemoStudentDataBoundary/>
-}
 function DemoStudentDataBoundary() {
   const student = useQuery({ queryKey: ['demo-student'], queryFn: getDemoStudent })
   if (student.isPending) return <Loading/>
@@ -43,25 +39,22 @@ export function AppRoutes() {
       <Route path="login" element={<LoginPage kind="student"/>}/>
       <Route element={<AccessBoundary role="student"/>}>
       <Route index element={<LegacyRedirect to="/student/dashboard"/>}/>
-      <Route element={demoMode ? <StudentLayout/> : <LiveAccountLayout/>}>
-        <Route element={<StudentDataBoundary/>}>
+      {!demoMode ? <Route path="*" element={<ProductWorkspace role="student"/>}/> : <Route element={<StudentLayout/>}>
+        <Route element={<DemoStudentDataBoundary/>}>
           <Route path="dashboard" element={<Dashboard/>}/>
           <Route path="skills" element={<Detail page="AI skills & competencies"/>}/>
-          <Route path="credentials" element={<Detail page="Verified credentials"/>}/>
-          <Route path="passport" element={<Detail page="Digital passport preview"/>}/>
-          <Route path="profile" element={<Profile/>}/>
+          <Route path="passport" element={<LegacyRedirect to="/student/dashboard"/>}/>
           <Route path="gap-analyzer" element={<Gap/>}/>
-          <Route path="game" element={<Card><EmptyState title="AI playground coming soon">A future Dino-style game is planned for online and offline play.</EmptyState><Gamepad2 className="game-icon" size={64}/></Card>}/>
           <Route path="*" element={<NotFound/>}/>
         </Route>
-      </Route>
+      </Route>}
       </Route>
     </Route>
     <Route path="admin">
       <Route path="login" element={<LoginPage kind="administrator"/>}/>
       <Route element={<AccessBoundary role="administrator"/>}>
       <Route index element={<LegacyRedirect to="/admin/dashboard"/>}/>
-      <Route element={<AdminWorkspace/>}>
+      {!demoMode ? <><Route path="students/:id/*" element={<ProductWorkspace role="administrator"/>}/><Route path="*" element={<ProductWorkspace role="administrator"/>}/></> : <Route element={<AdminWorkspace/>}>
         <Route element={<AdminLayout/>}>
           <Route path="dashboard" element={<AdminDashboard/>}/>
           <Route path="students" element={<StudentsPage/>}/>
@@ -80,7 +73,7 @@ export function AppRoutes() {
           <Route path="audit" element={<LegacyRedirect to="/admin/audit-logs"/>}/>
           <Route path="*" element={<NotFound/>}/>
         </Route>
-      </Route>
+      </Route>}
       </Route>
     </Route>
     <Route path="verify" element={<VerificationLayout/>}>
@@ -92,7 +85,7 @@ export function AppRoutes() {
       <Route path="qr/:reference" element={<QrVerification/>}/>
       <Route path="*" element={<VerificationNotFound/>}/>
     </Route>
-    <Route path="/" element={<LegacyRedirect to="/student/dashboard"/>}/>
+    <Route path="/" element={<LegacyRedirect to="/verify"/>}/>
     {['skills', 'credentials', 'passport', 'profile', 'gap-analyzer', 'game'].map(path => <Route key={path} path={path} element={<LegacyRedirect to={`/student/${path}`}/>}/>)}
     <Route path="*" element={<NotFound/>}/>
   </Routes>

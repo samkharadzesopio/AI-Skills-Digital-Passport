@@ -46,13 +46,13 @@ try {
     while(!check()) { if(Date.now()>deadline)throw new Error('Timed out waiting for rendered route'); await act(async()=>{await new Promise(resolve=>setTimeout(resolve,20))}) }
   }
   const cases=[
-    ['/student','/student/dashboard','AI competency overview'],
-    ['/student/dashboard','/student/dashboard','Recent credentials'],
+    ['/student','/student/dashboard','Demonstration only / Not issued'],
+    ['/student/dashboard','/student/dashboard','Demonstration only / Not issued'],
     ['/student/skills','/student/skills','AI skills & competencies'],
-    ['/student/credentials','/student/credentials','Sample credentials only'],
-    ['/student/passport','/student/passport','Inspect passport data and hierarchy'],
-    ['/student/gap-analyzer','/student/gap-analyzer','Your career goal'],
-    ['/student/profile','/student/profile','Display name'],
+    ['/student/credentials','/student/credentials','Page not found'],
+    ['/student/passport','/student/dashboard','Demonstration only / Not issued'],
+    ['/student/gap-analyzer','/student/gap-analyzer','Coming Soon'],
+    ['/student/profile','/student/profile','Page not found'],
     ['/admin','/admin/dashboard','Credential issuance trends'],
     ['/admin/dashboard','/admin/dashboard','Total students'],
     ['/admin/students','/admin/students','Demo student 01'],
@@ -68,7 +68,8 @@ try {
     ['/admin/courses?from=legacy#mapping','/admin/course-mappings','AI for business'],
     ['/admin/sync','/admin/classroom-sync','DEMO-SYNC-01'],
     ['/admin/audit','/admin/audit-logs','Affected record'],
-    ['/verify','/verify','Confidence in every credential.'],
+    ['/','/verify','Verify an AI Skills Passport.'],
+    ['/verify','/verify','Verify an AI Skills Passport.'],
     ['/verify/reference','/verify/reference','Verification reference'],
     ['/verify/upload','/verify/upload','Drop a PDF here'],
   ]
@@ -79,7 +80,7 @@ try {
     await until(()=>window.location.pathname===target&&document.body.textContent.includes(content))
     assert.match(document.body.textContent,/Demo Mode/)
     assert.doesNotMatch(document.body.textContent,/Authentication integration pending/)
-    if(target.endsWith('/dashboard')) await until(()=>!!document.querySelector('.recharts-surface'))
+    if(target==='/admin/dashboard') await until(()=>!!document.querySelector('.recharts-surface'))
     if(path.includes('?from=legacy')){assert.equal(window.location.search,'?from=legacy');assert.equal(window.location.hash,'#mapping')}
     if(path==='/admin/credentials') assert.ok([...document.querySelectorAll('button')].find(b=>b.textContent==='Request issuance')?.disabled)
     if(path==='/admin/credentials/DEMO-CR-1')assert.ok([...document.querySelectorAll('button')].find(b=>b.textContent==='Request revocation')?.disabled)

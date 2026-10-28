@@ -1,0 +1,16 @@
+.live-product main { display: grid; gap: 20px; }
+.live-product section, .live-product form { display: grid; gap: 12px; }
+.live-fields { display: flex; flex-wrap: wrap; gap: 16px 32px; margin: 12px 0; }
+.live-fields dt { text-transform: capitalize; color: var(--muted, #667085); font-size: 13px; }
+.live-fields dd { margin: 4px 0; overflow-wrap: anywhere; }
+.live-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0; }
+.live-product input:not([type=checkbox]), .live-product textarea { width: 100%; padding: 12px; border: 1px solid #d5d9e0; border-radius: 8px; }
+.live-product input[type=checkbox] { width: auto; margin-right: 8px; }
+@media (max-width: 900px) { .live-product { display: block; } .live-product .sidebar { position: static; transform: none; width: auto; height: auto; } .live-product .sidebar nav { display: flex; flex-wrap: wrap; } .live-product .main-shell { margin-left: 0; } }
+
+.student-passport-card { max-width:900px; margin:auto; width:100%; }
+.student-passport-card .passport-carousel { max-width:620px; margin:12px auto; }
+.student-passport-card > h2 { font-size:20px; }
+.student-passport-card details { margin:8px 0; }
+.student-passport-card > .muted { font-size:12px; }
+@media(min-width:901px) { .student-passport-card .passport-carousel { max-width:min(620px,calc((100svh - 390px) * 1.4142)); } }

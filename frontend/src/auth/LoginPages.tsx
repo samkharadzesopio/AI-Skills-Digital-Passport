@@ -1,3 +1,4 @@
+import { OfficialBtuLogo } from '../components/PassportCard'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -14,7 +15,7 @@ import { LogoutButton } from './SessionPanel'
 import './auth.css'
 function AuthLayout({kind,children}:{kind:'student'|'administrator';children:ReactNode}) {
   const t=useAuthText(),{locale,toggle}=useLocale()
-  return <div className="auth-page"><header><Link to="/verify" className="auth-wordmark">BTU <small>AI SKILLS DIGITAL PASSPORT</small></Link><button className="button" onClick={toggle} aria-label="English / ქართული"><Globe2 size={16}/>{locale.toUpperCase()}</button></header><main><section className="auth-brand-panel"><ShieldCheck size={34}/><span>BTU AI SKILLS DIGITAL PASSPORT</span><h1>{t(kind==='student'?'studentTitle':'adminTitle')}</h1><p>{t(kind==='student'?'studentIntro':'adminIntro')}</p><small>{t('university')}</small></section><section className="auth-form-panel"><nav className="auth-tabs" aria-label="Sign in"><Link className={kind==='student'?'selected':''} to="/student/login">{t('student')}</Link><Link className={kind==='administrator'?'selected':''} to="/admin/login">{t('administrator')}</Link></nav>{children}<p className="auth-privacy">{t('privacy')}</p><Link className="auth-public-link" to="/verify">{t('publicVerification')}<ArrowRight size={15}/></Link></section></main></div>
+  return <div className="auth-page"><header><Link to="/verify" className="auth-wordmark"><OfficialBtuLogo/> <small>AI SKILLS DIGITAL PASSPORT</small></Link><button className="button" onClick={toggle} aria-label="English / ქართული"><Globe2 size={16}/>{locale.toUpperCase()}</button></header><main><section className="auth-brand-panel"><ShieldCheck size={34}/><span>BTU AI SKILLS DIGITAL PASSPORT</span><h1>{t(kind==='student'?'studentTitle':'adminTitle')}</h1><p>{t(kind==='student'?'studentIntro':'adminIntro')}</p><small>{t('university')}</small></section><section className="auth-form-panel"><nav className="auth-tabs" aria-label="Sign in"><Link className={kind==='student'?'selected':''} to="/student/login">{t('student')}</Link><Link className={kind==='administrator'?'selected':''} to="/admin/login">{t('administrator')}</Link></nav>{children}<p className="auth-privacy">{t('privacy')}</p><Link className="auth-public-link" to="/verify">{t('publicVerification')}<ArrowRight size={15}/></Link></section></main></div>
 }
 export function LoginPage({kind}:{kind:'student'|'administrator'}) {
   const t=useAuthText()
