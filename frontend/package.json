@@ -21,7 +21,9 @@
     "check:integration": "node scripts/check-passport-integration.mjs",
     "check:browser": "node scripts/check-passport-browser.mjs",
     "check:spreadsheet": "node scripts/check-spreadsheet.mjs",
-    "check:production-routes": "node scripts/check-production-routes.mjs"
+    "check:production-routes": "node scripts/check-production-routes.mjs",
+    "check:routing": "node scripts/check-vercel-routing.mjs",
+    "check:verification-navigation": "node scripts/check-verification-navigation.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

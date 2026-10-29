@@ -19,3 +19,10 @@ Polygon Amoy configuration and a read-only deployment preflight are retained.
 handoff.** Amoy deployment remains pending funding, signing setup and separate
 transaction approval; it is not required to record the mentor-approved local
 demo. Institutional records and approval used in the demo are synthetic.
+
+# Production hosting
+
+Use [Render production setup](ops/RENDER_PRODUCTION.md) for the main-based release,
+exact build/start commands, environment settings and remaining live acceptance
+gates. Provider settings and shared database migrations remain explicit release
+operations; no automatic deployment is performed by these setup scripts.

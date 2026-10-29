@@ -1,5 +1,12 @@
 # Frontend stabilization, 29 October 2026
 
+Subsequent Render/main integration preserves this navigation and API-safe fallback,
+adds the full-suffix API proxy to the supplied Render origin, retains no-store
+headers, and disables demo in the Vite build configuration as well as npm's build
+override. The no-proxy/legacy-config notes below describe the earlier reviewed
+state. Current deployment instructions are in `../../ops/RENDER_PRODUCTION.md`;
+the destination's live readiness still needs verification before rollout.
+
 Integration worktree: `AI-Skills-Passport-Main-Stabilization`.
 Branch: `integrate/frontend-stabilization-main-20261029`.
 Main base: `daab29dc61eae22f0aa1c707cdc044ee3efa8b0c`.

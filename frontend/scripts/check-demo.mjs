@@ -33,13 +33,19 @@ try {
   assert.equal(parseVerification({status:'VALID',verified:true,source:'unit-registry',credential_id:'unit-reference'},'credential',['unit-registry'],'unit-reference').kind,'failure')
   await server.close()
   const oldNodeEnv=process.env.NODE_ENV
+  const oldDemoBuild=process.env.BTU_DEMO_BUILD
   try {
     process.env.NODE_ENV='development'
+    // A stale hosting variable must never enable synthetic workspaces in a build.
+    process.env.BTU_DEMO_BUILD='true'
     const output=await build({logLevel:'silent',define:{'import.meta.env.VITE_ENABLE_DEMO':'"true"'},build:{ssr:'src/demo/mode.ts',write:false,minify:false,emptyOutDir:false}})
     const chunk=output.output.find(item=>item.type==='chunk'&&item.isEntry)
     const production=await import('data:text/javascript;base64,'+Buffer.from(chunk.code).toString('base64'))
     assert.equal(production.demoMode,false)
-  } finally { if(oldNodeEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldNodeEnv }
+  } finally {
+    if(oldNodeEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldNodeEnv
+    if(oldDemoBuild===undefined)delete process.env.BTU_DEMO_BUILD;else process.env.BTU_DEMO_BUILD=oldDemoBuild
+  }
   console.log('Demo checks passed: workspaces, no session queries, redirects, blocked APIs/actions/verification, and forced-off builds with the flag enabled.')
 } finally {
   if(storageDescriptor)Object.defineProperty(globalThis,'localStorage',storageDescriptor);else delete globalThis.localStorage

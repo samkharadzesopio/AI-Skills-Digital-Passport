@@ -1,12 +1,32 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
+  "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/:path((?!api(?:/|$)).*)", "destination": "/index.html" }
+    {
+      "source": "/api:tail(/.*)?",
+      "destination": "https://ai-skills-digital-passport.onrender.com/api:tail"
+    },
+    {
+      "source": "/((?!api(?:/|$)).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
-    { "source": "/api/:path*", "headers": [{ "key": "Cache-Control", "value": "private, no-store" }] }
+    {
+      "source": "/api:tail(/.*)?",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store"
+        }
+      ]
+    }
   ]
 }

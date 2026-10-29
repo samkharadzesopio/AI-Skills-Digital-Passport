@@ -1,0 +1,27 @@
+name: Render production bootstrap
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'requirements.txt'
+      - '.python-version'
+      - 'ops/render_*.sh'
+      - 'ops/gunicorn.conf.py'
+      - 'ops/test_render_hosting.py'
+      - '.github/workflows/render-hosting.yml'
+permissions:
+  contents: read
+jobs:
+  gunicorn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: '.python-version'
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pip check
+      - run: python -B ops/test_render_hosting.py

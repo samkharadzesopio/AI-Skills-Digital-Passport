@@ -34,8 +34,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 .demo-mode-banner.demo-mode-banner nav a { color:var(--ui-ink); font-size:10px; padding:3px 7px; border:1px solid var(--ui-line); border-radius:4px; }
 .demo-mode-banner.demo-mode-banner nav a:hover { background:var(--ui-pink-soft); }
 .app.student-dashboard-layout { background:var(--ui-soft); }
-.student-dashboard-layout main { min-height:calc(100svh - 44px - var(--passport-banner-offset,0px)); padding:4px 24px; align-content:center; }
-.dashboard-passport,.live-product .dashboard-passport { width:min(100%,900px,calc((100svh - 238px) * 1.4142)); max-width:900px; }
+/* Reserve the 49px workspace navigation and 44px dashboard header. */
+.student-dashboard-layout main { min-height:calc(100svh - 93px - var(--passport-banner-offset,0px)); padding:4px 24px; align-content:center; }
+.dashboard-passport,.live-product .dashboard-passport { width:min(100%,900px,calc((100svh - 300px) * 1.4142)); max-width:900px; }
 .dashboard-passport .passport-context { padding:4px 0; font-size:9px; line-height:14px; }
 .dashboard-passport .passport-viewport { border-radius:10px; box-shadow:0 8px 24px #29292916; }
 .dashboard-passport .passport-navigation { padding-top:4px; gap:9px; }
@@ -71,6 +72,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 .auth-public-link { color:var(--ui-pink-hover); font-size:12px; margin-top:20px; }
 .auth-page .notice,.app .notice { background:var(--ui-pink-soft); color:var(--ui-ink); }
 .verification-layout > header { min-height:72px; height:auto; padding:14px max(24px,calc((100vw - 1160px)/2)); gap:16px; border-color:var(--ui-line); }
+.verification-layout .verify-header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; min-width:0; }
+.verification-layout .verify-sign-in-nav { display:flex; flex-direction:row; align-items:stretch; gap:10px; }
+.verification-layout .verify-sign-in-nav .button { min-height:44px; padding:10px 16px; font-size:12px; line-height:1.4; text-align:center; color:var(--ui-ink); }
+.verification-layout .verify-sign-in-nav .verify-student-sign-in { border-color:var(--ui-pink); color:var(--ui-pink-hover); }
+.verification-layout .verify-sign-in-nav .button:hover { background:var(--ui-pink-soft); }
+.verification-layout .verify-language { min-width:58px; min-height:44px; flex-shrink:0; }
 .verification-layout > main { max-width:1160px; padding:28px 24px 0; }
 .verification-introduction { max-width:760px; margin-bottom:20px; }
 .verification-introduction .eyebrow { color:var(--ui-pink-hover); font-size:10px; margin-bottom:8px; }
@@ -120,6 +127,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
   .auth-brand-panel > small { padding-top:18px; }
   .auth-form-panel { padding:24px; }
   .verification-layout > header { padding:12px 18px; flex-wrap:wrap; }
+  .verification-layout > header { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; }
+  .verification-layout .verify-brand { min-width:0; gap:10px; }
+  .verification-layout .verify-brand > span { padding-left:10px; overflow-wrap:anywhere; }
+  .verification-layout .verify-header-actions { display:contents; }
+  .verification-layout .verify-language { grid-column:2; grid-row:1; }
+  .verification-layout .verify-sign-in-nav { grid-column:1 / -1; grid-row:2; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .verification-layout .verify-sign-in-nav .button { min-width:0; padding:10px 8px; overflow-wrap:anywhere; }
   .verification-layout > main { padding:24px 16px 0; }
   .verification-forms { grid-template-columns:1fr; gap:28px; }
   .verification-introduction h1 { font-size:28px; }
