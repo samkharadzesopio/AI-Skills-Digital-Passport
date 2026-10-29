@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node --input-type=module -e \"import { build } from 'vite'; await build({ define: { __BTU_LOCAL_DEVELOPMENT__: 'false' } })\"",
     "lint": "oxlint",
     "preview": "vite preview",
     "check:architecture": "node scripts/check-architecture.mjs",
@@ -20,7 +20,8 @@
     "check:passport-layout": "node scripts/check-passport-layout.mjs",
     "check:integration": "node scripts/check-passport-integration.mjs",
     "check:browser": "node scripts/check-passport-browser.mjs",
-    "check:spreadsheet": "node scripts/check-spreadsheet.mjs"
+    "check:spreadsheet": "node scripts/check-spreadsheet.mjs",
+    "check:production-routes": "node scripts/check-production-routes.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

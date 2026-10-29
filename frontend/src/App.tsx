@@ -5,6 +5,7 @@ import { AccessBoundary } from './auth/AccessBoundary'
 import { StudentLayout } from './layouts/StudentLayout'
 import { AdminLayout } from './layouts/AdminLayout'
 import { VerificationLayout } from './layouts/VerificationLayout'
+import { WorkspaceNavigation } from './layouts/WorkspaceNavigation'
 import { Dashboard, Detail, Gap } from './pages'
 import { VerificationLanding, ReferenceVerificationPage, PdfVerification, VerificationResults, QrVerification, VerificationNotFound } from './verification/pages'
 import { AdminWorkspace } from './admin/store'
@@ -112,5 +113,5 @@ export function AppRoutes() {
   </Routes>
 }
 export default function App() {
-  return <QueryClientProvider client={client}><LocaleProvider><BrowserRouter><DemoBanner/><div className={demoMode ? 'demo-preview-content' : undefined}><AppRoutes/></div></BrowserRouter></LocaleProvider></QueryClientProvider>
+  return <QueryClientProvider client={client}><LocaleProvider><BrowserRouter><DemoBanner/><div className={demoMode ? 'demo-preview-content' : undefined}><WorkspaceNavigation/><AppRoutes/></div></BrowserRouter></LocaleProvider></QueryClientProvider>
 }
