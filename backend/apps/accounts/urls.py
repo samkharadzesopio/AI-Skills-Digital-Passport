@@ -18,9 +18,10 @@ from .views import (
 )
 
 app_name = "accounts"
-from .google_views import GoogleAuthenticateView, GoogleChallengeView
+from .google_views import GoogleAuthenticateView, GoogleChallengeView, PortalSummaryView
 
 urlpatterns = [
+    path('portal/', PortalSummaryView.as_view(), name='portal-summary'),
     path('google/challenge/', GoogleChallengeView.as_view(), name='google-challenge'),
     path('google/authenticate/', GoogleAuthenticateView.as_view(), name='google-authenticate'),
     path("csrf/", csrf_token, name="csrf"),

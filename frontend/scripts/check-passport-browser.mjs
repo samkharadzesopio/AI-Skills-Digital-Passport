@@ -31,9 +31,11 @@ async function submit(p) { await p.locator('form button:not([type="button"])').c
 async function result(p, status) { await p.locator(`[data-verification-status="${status}"]`).waitFor() }
 async function loginStudent(p) {
   await p.goto(base + '/student/login')
-  await p.locator('#auth-email-student').fill(privateFixture.studentEmail)
+  // Retained OTP API establishes a synthetic fixture session; the normal
+  // one-button Google UI is covered by check-google-auth-browser.mjs.
+  const csrf = (await (await p.request.get(base + '/api/accounts/csrf/')).json()).csrfToken
   const previousMailTime = (await fs.stat(path.join(artifacts, 'preview-private.json'))).mtimeMs
-  await submit(p); await p.locator('#student-otp').waitFor()
+  assert.equal((await p.request.post(base + '/api/accounts/otp/request/', {data:{email:privateFixture.studentEmail},headers:{'X-CSRFToken':csrf}})).status(),202)
   let code
   for (let i = 0; i < 100; i++) {
     code = JSON.parse(await fs.readFile(path.join(artifacts, 'preview-private.json'), 'utf8')).otp
@@ -42,7 +44,8 @@ async function loginStudent(p) {
     await new Promise(resolve => setTimeout(resolve, 25))
   }
   assert.match(code ?? '', /^[0-9]{6}$/)
-  await p.locator('#student-otp').fill(code); await submit(p)
+  assert.equal((await p.request.post(base + '/api/accounts/otp/verify/', {data:{email:privateFixture.studentEmail,code},headers:{'X-CSRFToken':csrf}})).status(),200)
+  await p.goto(base + '/student/dashboard')
   await p.waitForURL(base + '/student/dashboard')
   await p.locator('.dashboard-passport .passport-carousel').waitFor()
 }

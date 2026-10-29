@@ -135,14 +135,15 @@ try {
   const sc = await context(), student = await sc.newPage()
   page = student
   await route(student, '/student/login')
-  await student.locator('#auth-email-student').fill(fixture.studentEmail)
-  await submit(student); await student.locator('#student-otp').waitFor()
+  const studentCsrf = (await (await student.request.get(base + '/api/accounts/csrf/')).json()).csrfToken
+  assert.equal((await student.request.post(base + '/api/accounts/otp/request/', {data:{email:fixture.studentEmail},headers:{'X-CSRFToken':studentCsrf}})).status(),202)
   let code
   for (let i = 0; i < 80; i++) {
     try { code = await fs.readFile(fixture.mailbox, 'utf8'); break } catch { await new Promise(resolve => setTimeout(resolve, 50)) }
   }
   assert.match(code || '', /^[0-9]{6}$/)
-  await student.locator('#student-otp').fill(code); await submit(student)
+  assert.equal((await student.request.post(base + '/api/accounts/otp/verify/', {data:{email:fixture.studentEmail,code},headers:{'X-CSRFToken':studentCsrf}})).status(),200)
+  await student.goto(base + '/student/dashboard')
   await student.waitForURL(base + '/student/dashboard')
   await student.getByText('Read-only Student identity and record details', { exact: true }).click()
   await contains(student, fixture.studentName)

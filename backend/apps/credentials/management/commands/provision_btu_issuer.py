@@ -15,7 +15,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            actor = get_user_model().objects.get(email__iexact=options["actor_email"].strip())
+            actor = get_user_model().objects.get(email__iexact=options["actor_email"].strip(), portal_only=False)
         except get_user_model().DoesNotExist:
             raise CommandError("The specified administrator account does not exist.") from None
         try:

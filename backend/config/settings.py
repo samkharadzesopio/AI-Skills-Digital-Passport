@@ -121,6 +121,7 @@ DATABASES = {
 AUTH_USER_MODEL = "accounts.User"
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
 AUTHENTICATION_BACKENDS = [
+    "apps.accounts.authentication.GoogleWorkspaceBackend",
     "apps.accounts.authentication.StudentOTPBackend",
     "apps.accounts.authentication.AdminPasswordBackend",
 ]

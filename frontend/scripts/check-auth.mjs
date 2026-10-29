@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom'
 import { createServer } from 'vite'
 import { AxiosError, AxiosHeaders } from 'axios'
 import { dashboard } from './student-fixtures.mjs'
-const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':'false'},server:{middlewareMode:true},appType:'custom'})
+const server=await createServer({define:{'import.meta.env.VITE_ENABLE_DEMO':'false','import.meta.env.VITE_GOOGLE_CLIENT_ID':'""'},server:{middlewareMode:true},appType:'custom'})
 const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost:5173/',pretendToBeVisual:true})
 const descriptors=new Map(),timers=new Set()
 function expose(key,value){descriptors.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{configurable:true,writable:true,value})}
@@ -78,6 +78,8 @@ try {
  rateLimit=false
  for(const [user,role,decision] of [[student,'student','allow'],[{...student,student_association:'unlinked'},'student','unlinked'],[{...student,email_verified:false},'student','unverified'],[student,'administrator','wrong-role'],[admin,'administrator','permissions-missing']])assert.equal(accessDecision({status:'authenticated',user},role),decision)
  assert.equal(accessDecision({status:'anonymous'},'student'),'login')
+ assert.equal(accessDecision({status:'authenticated',user:{...student,student_association:'unlinked',portal_access:true}},'student'),'allow')
+ assert.throws(()=>parseAccountSummary({...admin,portal_access:true}))
  assert.deepEqual(Object.keys(parseAccountSummary({...admin,permissions:['fake'],userId:'fake-id'})).sort(),Object.keys(admin).sort())
  assert.throws(()=>parseAccountSummary({...student,role:'administrator'}))
  assert.deepEqual(parseAccountSummary({...student,capabilities:['manage_credentials']}).capabilities,[])
@@ -91,15 +93,13 @@ try {
  async function submit(){await act(async()=>document.querySelector('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})))}
  async function clickLogout(){const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Sign out');assert.ok(button);await act(async()=>button.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true})))}
  await mount('/student/dashboard')
- await until(()=>window.location.pathname==='/student/login'&&!!document.getElementById('auth-email-student'))
- await fill('auth-email-student',student.email);await submit()
- await until(()=>!!document.getElementById('student-otp'))
- assert.match(document.body.textContent,/If eligible/)
- await fill('student-otp','000000');await submit()
- await until(()=>document.body.textContent.includes('invalid or expired'))
- assert.equal(document.getElementById('student-otp').value,'')
- await fill('student-otp','123456');await submit()
- await until(()=>window.location.pathname==='/student/dashboard'&&document.body.textContent.includes('Authenticated Student'))
+ await until(()=>window.location.pathname==='/student/login'&&!!document.querySelector('.auth-submit'))
+ assert.equal(document.querySelectorAll('.auth-form-panel input').length,0)
+ assert.equal(document.querySelectorAll('.auth-form-panel button').length,1)
+ assert.equal(document.querySelector('.auth-submit').textContent,'Sign in')
+ assert.doesNotMatch(document.querySelector('.auth-form-panel').textContent,/Request a code|Continue with Google|one-time/)
+ current={...student}
+ await mount('/student/dashboard');await until(()=>document.body.textContent.includes('Authenticated Student'))
  assert.match(document.body.textContent,/unit.student@btu.edu.ge/);assert.doesNotMatch(document.body.textContent,/Nino|DEMO-PASSPORT/)
  const beforeRefresh=calls.filter(c=>c.path==='accounts/me/').length
  await mount('/student/dashboard')
@@ -119,12 +119,10 @@ try {
  await until(()=>window.location.pathname==='/admin/dashboard'&&document.body.textContent.includes('Administrator permissions are not available'))
  assert.doesNotMatch(document.body.textContent,/Total students|Demo student|Nino/)
  await clickLogout();await until(()=>window.location.pathname==='/admin/login')
- await mount('/student/login');await until(()=>!!document.getElementById('auth-email-student'))
- rateLimit=true;await fill('auth-email-student',student.email);await submit()
- await until(()=>document.body.textContent.includes('Too many requests')&&[...document.querySelectorAll('button')].some(b=>b.disabled&&b.textContent.includes('Request a code')))
- rateLimit=false
- assert.ok([...document.querySelectorAll('button')].some(b=>b.disabled&&b.textContent.includes('Request a code')))
- await until(()=>[...document.querySelectorAll('button')].some(b=>!b.disabled&&b.textContent.includes('Request a code')))
+ current={...student,student_association:'unlinked',portal_access:true}
+ await mount('/student/dashboard');await until(()=>document.body.textContent.includes('No Passport records are linked yet'))
+ assert.doesNotMatch(document.body.textContent,/Authenticated Student|Recent credentials/)
+ await clickLogout();await until(()=>window.location.pathname==='/student/login')
  await act(async()=>root.unmount());root=null
  await new Promise(resolve=>setTimeout(resolve,10))
  sessionNetwork=true
@@ -140,7 +138,7 @@ try {
  for(const key of Object.keys(localStorage))assert.equal(key,'btu-locale','No credentials/tokens/identity persisted')
  assert.ok(calls.every(c=>c.path.startsWith('accounts/')||['student/dashboard/','student/passport/pdf/status/'].includes(c.path)),'Only the authenticated dashboard data route is expected here')
  assert.equal(calls.filter(c=>c.path==='accounts/login/').at(-1).body.password,' unit-test password ')
- console.log('Mocked auth integration passed: exact payloads, CSRF bootstrap/rotation, OTP, invalid credentials, restoration, logout/failure, rate limits, guards, capability dependency and no persisted secrets. No real Django account was used.')
+ console.log('Mocked auth integration passed: retained OTP API, administrator passwords, CSRF, one-button Student screen, empty portal, guards, restoration, logout and no persisted secrets. No real Django account was used.')
 } finally {
  if(root)await (await import('react')).act(async()=>root.unmount())
  for(const timer of timers){clearTimeout(timer);clearInterval(timer)}

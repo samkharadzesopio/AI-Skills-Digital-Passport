@@ -74,12 +74,13 @@ try {
   step = 'student OTP and actual Passport PDF'
   const student = page = await tab()
   await student.goto(base + '/student/login')
-  await student.locator('#auth-email-student').fill(privateFixture.studentEmail)
+  const studentCsrf = (await (await student.request.get(base + '/api/accounts/csrf/')).json()).csrfToken
   const prior = (await fs.stat(ready.private_fixture)).mtimeMs
-  await submit(student); await student.locator('#student-otp').waitFor()
+  assert.equal((await student.request.post(base + '/api/accounts/otp/request/', {data:{email:privateFixture.studentEmail},headers:{'X-CSRFToken':studentCsrf}})).status(),202)
   let code
   await waitFor(async () => { const value = JSON.parse(await fs.readFile(ready.private_fixture, 'utf8')); code = value.otp; return /^[0-9]{6}$/.test(code || '') && (await fs.stat(ready.private_fixture)).mtimeMs > prior })
-  await student.locator('#student-otp').fill(code); await submit(student)
+  assert.equal((await student.request.post(base + '/api/accounts/otp/verify/', {data:{email:privateFixture.studentEmail,code},headers:{'X-CSRFToken':studentCsrf}})).status(),200)
+  await student.goto(base + '/student/dashboard')
   await student.waitForURL(base + '/student/dashboard')
   await student.locator('.passport-carousel').waitFor()
   await student.getByRole('button', { name: 'Share Passport', exact: true }).click()

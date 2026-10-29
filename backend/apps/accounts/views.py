@@ -109,12 +109,17 @@ def _user_summary(user):
         and getattr(user, "role", None) == "STUDENT"
         and getattr(user, "student_id", None)
     )
+    workspace = bool(getattr(user, '_workspace_authoritative', False))
+    if workspace:
+        from .portal import owned_student_id
+        linked = owned_student_id(user) is not None
     return {
         "email": user.email,
         "role": user.role,
         "email_verified": user.is_email_verified,
         "student_association": "linked" if linked else "unlinked",
         "capabilities": admin_capabilities(user),
+        **({'portal_access': True} if workspace else {}),
     }
 
 

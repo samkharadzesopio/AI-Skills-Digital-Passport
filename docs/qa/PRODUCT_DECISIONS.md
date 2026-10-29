@@ -1,5 +1,15 @@
 # Product decisions
 
+Latest authentication decision (2026-10-29): the owner explicitly allows all
+verified `@btu.edu.ge` Google Workspace accounts, including alumni and staff,
+to create/access a personal portal without an eligibility roster. This grants
+no administrator privileges or historical Passport ownership. New principals
+are keyed by Google `sub`; academic records require an existing trusted binding
+or approved institutional identifier mapping, never automatic email matching.
+The owner authorizes normal merge/push to `integration` after focused gates;
+live Google testing still requires separate approval. See
+`WORKSPACE_PORTAL_AUTH.md` for configuration, evidence and external limitations.
+
 Current delivery scope (2026-10-29): the owner's final team-integration request
 supersedes the earlier delivery/authentication exclusions below. It authorizes
 reviewing completed team changes and normal merge/push to `integration` after

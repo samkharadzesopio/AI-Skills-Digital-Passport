@@ -137,6 +137,9 @@ def main():
         if google_browser or google_review:
             from google_auth_review import configure
             google_client = configure(owned, artifact_dir, ROOT, synthetic=google_browser)
+        if google_browser:
+            from apps.accounts.models import GoogleIdentity
+            GoogleIdentity.objects.create(user=User.objects.get(student=fixture.student), subject='synthetic-browser-linked-subject')
         review_stop = None
         synthetic_source = None
         if '--review-stop-file' in sys.argv:

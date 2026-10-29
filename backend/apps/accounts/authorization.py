@@ -51,7 +51,7 @@ def get_authenticated_student_id(user) -> UUID:
     ):
         raise PermissionDenied("An active student account is required.")
     student_id = getattr(user, "student_id", None)
-    if student_id is None:
+    if student_id is None and not getattr(user, '_workspace_authoritative', False):
         raise PermissionDenied("No student record is linked to this account.")
     if isinstance(user, User):
         # The persisted Student status and email-to-account association are

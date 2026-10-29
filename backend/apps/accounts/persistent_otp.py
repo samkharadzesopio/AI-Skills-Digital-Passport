@@ -73,7 +73,7 @@ def eligible(email):
     ).first()
     if not student:
         return False
-    account = User.objects.filter(email__iexact=email).first()
+    account = User.objects.filter(email__iexact=email, portal_only=False).first()
     if account:
         return bool(account.is_active and not account.is_staff and not account.is_superuser
                     and account.student_id == student.pk)

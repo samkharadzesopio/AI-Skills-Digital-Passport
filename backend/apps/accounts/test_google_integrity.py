@@ -30,6 +30,7 @@ class GoogleNonceConcurrencyTests(TransactionTestCase):
                 barrier.wait(timeout=10)
                 try:
                     finish(request, str(challenge.pk), 'synthetic-token')
+                    return 'PORTAL_AUTHENTICATED'
                 except GoogleProblem as error:
                     return error.code
             finally:
@@ -37,7 +38,7 @@ class GoogleNonceConcurrencyTests(TransactionTestCase):
         with patch('apps.accounts.google_auth.verify_credential', return_value=('unlinked-subject', 'synthetic@btu.edu.ge')) as verifier:
             with ThreadPoolExecutor(max_workers=2) as pool:
                 results = list(pool.map(lambda _: submit(), range(2)))
-        self.assertCountEqual(results, ['GOOGLE_LINK_REQUIRED', 'GOOGLE_INVALID_CHALLENGE'])
+        self.assertCountEqual(results, ['PORTAL_AUTHENTICATED', 'GOOGLE_INVALID_CHALLENGE'])
         self.assertEqual(verifier.call_count, 1)
 
 
