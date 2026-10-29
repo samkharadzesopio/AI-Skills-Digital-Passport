@@ -91,6 +91,35 @@ class GeorgianFontTests(SimpleTestCase):
                         self.assertGreaterEqual(y0, 189)
                         self.assertLessEqual(y1, 459)
 
+    def test_all_ten_skill_card_labels_fit_the_unchanged_template_borders(self):
+        data = font_sample()
+        data['skills'] = [dict(data['skills'][0], name=f'AI Reasoning {index:02}',
+            category='Artificial Intelligence', subcategory='Critical Reasoning',
+            level='Advanced', description='Evaluate reasoning.') for index in range(1, 11)]
+        with pymupdf.open(stream=render_passport_pdf(data), filetype='pdf') as pdf:
+            page = pdf[2]
+            cards = sorted((drawing['rect'] for drawing in page.get_drawings()
+                if 130 < drawing['rect'].width < 132 and 151 < drawing['rect'].height < 153),
+                key=lambda rect: (round(rect.y0), rect.x0))
+            self.assertEqual(len(cards), 10)
+            spans = [span for block in page.get_text('dict')['blocks']
+                for line in block.get('lines', []) for span in line['spans']
+                if 'NotoSansGeorgian' in span['font'] and 230 < span['bbox'][1] < 480]
+            self.assertGreaterEqual(len(spans), 30)  # name plus two classification lines/card
+            for span in spans:
+                box = pymupdf.Rect(span['bbox'])
+                row = 0 if box.y0 < 300 else 1
+                card = min(cards[row * 5:row * 5 + 5],
+                    key=lambda rect: abs((rect.x0 + rect.x1) / 2 - (box.x0 + box.x1) / 2))
+                with self.subTest(text=span['text'], card=tuple(card)):
+                    self.assertGreaterEqual(box.x0, card.x0 + 1)
+                    self.assertLessEqual(box.x1, card.x1 - 1)
+                    self.assertGreaterEqual(box.y0, card.y0 + 1)
+                    self.assertLessEqual(box.y1, card.y1 - 1)
+            text = ' '.join(page.get_text().split())
+            for index in range(1, 11):
+                self.assertIn(f'AI REASONING {index:02}', text)
+
     def test_unsupported_glyphs_and_real_line_or_box_overflow_are_rejected(self):
         for field, value in [('first_name', 'სახელი\U0001f431'), ('last_name', 'მ' * 90)]:
             data = font_sample()

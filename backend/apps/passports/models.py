@@ -97,6 +97,7 @@ class PassportVersion(models.Model):
     issued_at = models.DateTimeField(null=True, blank=True)
     content_sha256 = models.CharField(max_length=64, blank=True, default="")
     student_snapshot = models.JSONField(default=dict)
+    snapshot_schema_version = models.PositiveSmallIntegerField(default=2, db_default=2)
     created_at = models.DateTimeField(auto_now_add=True, db_default=Now())
 
     class Meta:
@@ -170,6 +171,8 @@ class PassportVersionSkill(models.Model):
     description = models.TextField()
     stamp_type = models.CharField(max_length=30)
     badge_asset_id = models.CharField(max_length=150)
+    # NULL is retained only for legacy immutable snapshots that never recorded it.
+    earned_on = models.DateField(null=True, blank=True)
 
     class Meta:
         db_table = "passport_version_skills"

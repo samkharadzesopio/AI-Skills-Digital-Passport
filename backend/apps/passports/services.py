@@ -89,11 +89,21 @@ def _current_credential_rows(student_id, effective_at):
 
 
 def _snapshot_payload(student_snapshot, credentials):
+    earned_dates = {}
+    for credential in credentials:
+        for link in credential.achievement_links.all():
+            award = link.achievement
+            if (award.earned_on is None or award.verification_status != "VERIFIED"
+                    or award.earned_on > credential.issued_at.date()):
+                raise ValidationError("Represented awards require an authoritative earned date and approval; dates cannot follow issuance.")
+            key = str(award.skill_id)
+            earned_dates[key] = min(earned_dates.get(key, award.earned_on), award.earned_on)
     credential_payloads = []
     for credential in credentials:
         skills = {}
         for link in credential.achievement_links.all():
             skill = link.achievement.skill
+            earned_on = earned_dates[str(skill.pk)]
             skills[str(skill.pk)] = {
                     "id": str(skill.pk),
                     "skill_code": skill.skill_code,
@@ -103,6 +113,7 @@ def _snapshot_payload(student_snapshot, credentials):
                     "description": skill.description,
                     "stamp_type": skill.stamp_type,
                     "badge_asset_id": skill.badge_asset_id,
+                    "earned_on": earned_on.isoformat(),
                 }
         credential_payloads.append(
             {
@@ -118,6 +129,7 @@ def _snapshot_payload(student_snapshot, credentials):
             }
         )
     payload = {
+        "snapshot_schema_version": 2,
         "student": student_snapshot,
         "credentials": credential_payloads,
     }
@@ -234,6 +246,7 @@ def publish_passport_version(
 
             credential_snapshots = []
             unique_skills = {}
+            earned_dates = {}
             credential_skills = {}
             for credential in credentials:
                 credential_snapshots.append(
@@ -251,6 +264,8 @@ def publish_passport_version(
                 for link in credential.achievement_links.all():
                     skill = link.achievement.skill
                     unique_skills[skill.pk] = skill
+                    earned_on = link.achievement.earned_on
+                    earned_dates[skill.pk] = min(earned_dates.get(skill.pk, earned_on), earned_on)
                     skill_ids.add(skill.pk)
                 credential_skills[credential.pk] = skill_ids
 
@@ -266,6 +281,7 @@ def publish_passport_version(
                     description=skill.description,
                     stamp_type=skill.stamp_type,
                     badge_asset_id=skill.badge_asset_id,
+                    earned_on=earned_dates[skill.pk],
                 )
                 for _, skill in sorted(unique_skills.items(), key=lambda item: str(item[0]))
             ]

@@ -190,9 +190,12 @@ def public_preview(preview):
 
 
 @transaction.atomic
-def apply_award(profile_id, item, *, actor):
+def apply_award(profile_id, item, *, actor, automation=None):
     # Lock policy and Student for the entire award transaction. Profile disable and
     # identity lifecycle actions serialize against issuance; existing services own their guards.
+    if automation is not None:
+        from apps.integrations.spreadsheet_automation import require_automation_lease
+        actor = require_automation_lease(*automation, profile_id, actor.pk)
     profile = SpreadsheetProfile.objects.select_for_update().get(pk=profile_id)
     check_profile(profile)
     record = item['record']
@@ -220,7 +223,7 @@ def apply_award(profile_id, item, *, actor):
     return receipt, True
 
 
-def confirm_preview(preview_id, snapshot, *, actor):
+def confirm_preview(preview_id, snapshot, *, actor, automation=None):
     require_admin_permission(actor, 'accounts.import_completions')
     if connection.in_atomic_block:
         raise ImportProblem('CONFIRMATION_REQUIRES_AUTOCOMMIT', 503)
@@ -268,7 +271,7 @@ def confirm_preview(preview_id, snapshot, *, actor):
             profile = SpreadsheetProfile.objects.get(pk=preview.profile_id)
             check_profile(profile)
             if profile.kind == 'SKILL_AWARD':
-                receipt, created = apply_award(profile.pk, item, actor=actor)
+                receipt, created = apply_award(profile.pk, item, actor=actor, **({'automation': automation} if automation is not None else {}))
                 result['issued' if created else 'skipped'] += 1
                 result['awarded'] += int(created)
                 result['rows'].append({'row': item['row'], 'status': 'ISSUED' if created else 'SKIPPED',
