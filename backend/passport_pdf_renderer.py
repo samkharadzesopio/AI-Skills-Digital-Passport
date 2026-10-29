@@ -8,7 +8,7 @@ import pymupdf as fitz
 
 BASE_DIR = Path(__file__).resolve().parent
 TEMPLATE = BASE_DIR / "templates" / "Passport_Blank.pdf"
-RENDERER_VERSION = "pymupdf-template-v5-passport-lifecycle"
+RENDERER_VERSION = "pymupdf-template-v6-neutral-date-layout"
 
 FONT_FILES = {
     "regular": BASE_DIR / "templates" / "NotoSansGeorgian-Regular.ttf",
@@ -32,9 +32,12 @@ def renderer_fingerprint():
         digest.update(path.read_bytes())
     return digest.hexdigest()
 
+# Center the 125-point text boxes in the template's 130.7-point cards.
+# Both rows reserve enough room for two classification lines above the border.
 CARD_POSITIONS = [
-    (75, 255), (220, 255), (365, 255), (510, 255), (655, 255),
-    (75, 425), (220, 425), (365, 425), (510, 425), (655, 425),
+    (x, y)
+    for y in (247, 409)
+    for x in (81.06, 220.82, 360.58, 500.34, 640.09)
 ]
 
 
@@ -86,6 +89,7 @@ def _stamp_path(stamp_type):
 
 def _render_cover(document, data):
     page = document[0]
+    _render_neutral_verification_stamp(page)
     student, version, passport = data["student"], data["version"], data["passport"]
     _insert_line(page, (255, 270), _text(student["first_name"], 100), fontsize=14, max_x=580)
     _insert_line(page, (255, 310), _text(student["last_name"], 100), fontsize=14, max_x=620)
@@ -98,6 +102,25 @@ def _render_cover(document, data):
     page.insert_text((650, 515), _text(passport["public_reference"], 40), fontsize=7)
     page.insert_text((510, 220), f"VERSION ID: {_text(version['public_reference'], 40)}", fontsize=6.5)
     page.insert_text((510, 234), f"VERIFY: {_text(data['verification_reference'], 80)}", fontsize=6.5)
+
+
+def _render_neutral_verification_stamp(page):
+    # The template lettering is vector outlines. Cover only the inner ticket,
+    # retaining its original magenta artwork and dashed white border.
+    origin = fitz.Point(659.89966, 365.06491)
+    along = fitz.Point(0.96430, -0.26480)
+    down = fitz.Point(0.26480, 0.96430)
+    def point(x, y):
+        return origin + along * x + down * y
+    shape = page.new_shape()
+    shape.draw_polyline([point(12, 12), point(137, 12), point(137, 48), point(12, 48), point(12, 12)])
+    shape.finish(color=None, fill=(0.808, 0.125, 0.58), closePath=True)
+    shape.commit()
+    for label, baseline in (("VERIFY", 27), ("DOCUMENT", 43)):
+        width = fitz.get_text_length(label, fontname="hebo", fontsize=14)
+        position = point((148.37 - width) / 2, baseline)
+        page.insert_text(position, label, fontname="hebo", fontsize=14,
+                         color=(1, 1, 1), morph=(position, fitz.Matrix(15.36)))
 
 
 def _render_skill_cards(document, skills):

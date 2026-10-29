@@ -1,0 +1,194 @@
+{
+  "synthetic": true,
+  "mockedResponses": false,
+  "googleAccess": false,
+  "journeys": [
+    "Existing administrator session, default off, explicit authorization gating and CSRF rejection",
+    "Explicit enable persists after reload; polling sees pending evidence and excludes issuance",
+    "Automatic new CONFIRMED records create real awards; duplicates, pending, rejected and unknown students excluded; persisted history on desktop/mobile",
+    "Disable persists and prevents new discovery; creator-owned digest-bound manual Google preview/confirmation remains available"
+  ],
+  "calls": [
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/login/",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/bba94c97-9df8-4846-9809-017f1a6cb28e/",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/bba94c97-9df8-4846-9809-017f1a6cb28e/history/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/bba94c97-9df8-4846-9809-017f1a6cb28e/",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/bba94c97-9df8-4846-9809-017f1a6cb28e/history/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/me/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/google-sheets/preview/",
+      "method": "POST",
+      "status": 201
+    },
+    {
+      "path": "/api/integrations/import/previews/446a4e9e-be47-418e-8dfe-c8068b1c0630/confirm/",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "method": "GET",
+      "status": 200
+    }
+  ],
+  "errors": []
+}

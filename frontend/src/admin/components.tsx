@@ -30,8 +30,10 @@ export function DataTable<T extends { id: string }>({ rows, columns, status, sta
 export function Status({ value }: { value: AdminTextKey }) { const t = useAdminText(); return <span className={`admin-status status-${value}`}>{t(value)}</span> }
 export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null), id = useId(), t = useAdminText()
-  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { dialog?.close() } }, [])
-  return <dialog ref={ref} className="admin-dialog" aria-labelledby={id} onCancel={onClose} onClose={onClose}><div className="admin-dialog-title"><h2 id={id}>{title}</h2><button type="button" className="button" onClick={onClose} aria-label={t('close')}><X size={18}/></button></div>{children}</dialog>
+  useEffect(() => { const dialog = ref.current; if (dialog && !dialog.open) dialog.showModal(); return () => { if (dialog?.open) dialog.close() } }, [])
+  // StrictMode can reopen before the cleanup's queued close event arrives.
+  // Let native Escape cancellation close first so the browser restores focus.
+  return <dialog ref={ref} className="admin-dialog" aria-labelledby={id} onClose={event => { if (!event.currentTarget.open) onClose() }}><div className="admin-dialog-title"><h2 id={id}>{title}</h2><button type="button" className="button" onClick={onClose} aria-label={t('close')}><X size={18}/></button></div>{children}</dialog>
 }
 export function PageTitle({ title, description, action }: { title: string; description?: string; action?: ReactNode }) { return <div className="admin-page-title"><div><div className="eyebrow">BTU AI SKILLS DIGITAL PASSPORT</div><h1>{title}</h1>{description && <p>{description}</p>}</div>{action}</div> }
 export function ActionForm({ title, onClose, action, children, validate }: { title: string; onClose: () => void; action: () => AdminAction; children?: ReactNode; validate?: () => string | null }) {

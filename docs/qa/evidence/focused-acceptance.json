@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "google": "synthetic read-only provider",
+  "chain": "LOCAL_ANVIL",
+  "checks": [
+    "HTTP administrator enable",
+    "automatic confirmed award",
+    "same Passport ID and first issue",
+    "new frozen earned date",
+    "new neutral PDF final bytes hashed",
+    "independent successful Anvil receipt and commitment",
+    "HTTP original accepted",
+    "HTTP altered rejected",
+    "HTTP current and historical private downloads",
+    "old snapshot PDF hash and proof unchanged",
+    "HTTP disable"
+  ],
+  "old_pdf_sha256": "132d015ddbb821f29851a950f49ec16a9c5b0deedf4842851a4847cd06f212b8",
+  "new_pdf_sha256": "35309cf25a366062115dd7c9da2a593d453422dc431f7e4f64d417035eda95c2",
+  "old_snapshot_sha256": "dfe4abb3a3a1664774dd15a7e894eac2429d46276d1302e680a548e33ab874b3",
+  "new_snapshot_sha256": "123354237fecd436c354690ddca273644963b671151682500098abf826f5a7fd",
+  "new_transaction": "0xf27402000d6decd01486b6e5006d6eaa21fc9644293716b48520c9e94d37dfd0",
+  "owned_cleanup": "PASS"
+}

@@ -77,6 +77,9 @@ def main():
             command([sys.executable, 'ops/test_disposable_postgres.py'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'check', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'makemigrations', '--check', '--dry-run', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
+            if '--automatic-passport' in sys.argv:
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.passports.test_documents.PassportDocumentServiceTests.test_missing_and_corrupt_issued_artifact_never_regenerates', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env)
+                command([sys.executable, 'ops/test_automatic_passport_e2e.py'], cwd=ROOT, env=env)
             if '--frontend-django' in sys.argv:
                 # Frontend/API compatibility only: no blockchain suite, Anvil or
                 # external Google/production settings. Existing proof code stays intact.

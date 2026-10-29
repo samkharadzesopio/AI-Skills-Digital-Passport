@@ -146,22 +146,61 @@ class PassportDocumentServiceTests(DocumentDataMixin, TransactionTestCase):
         self.assertEqual(PassportDocument.objects.count(), 1)
         self.assertEqual(first.attempt_count, 1)
 
-    def test_renderer_change_creates_new_generation_and_preserves_previous_file(self):
+    def test_renderer_change_reuses_issued_artifact_without_rendering_or_rebinding(self):
         first = generate_passport_document(
             passport_version_id=self.version.pk, storage=self.storage
         )
+        previous = first.__dict__.copy()
+        original = Path(self.storage.path(first.storage_key)).read_bytes()
         with patch(
             "apps.passports.document_services.renderer_fingerprint",
-            return_value="f" * 64,
-        ):
+            side_effect=AssertionError("Issued versions must not consult renderer assets"),
+        ), patch("apps.passports.document_services.render_passport_pdf") as renderer:
             second = generate_passport_document(
                 passport_version_id=self.version.pk, storage=self.storage
             )
-        self.assertNotEqual(first.pk, second.pk)
-        self.assertEqual((first.generation_number, second.generation_number), (1, 2))
-        self.assertTrue(self.storage.exists(first.storage_key))
-        self.assertTrue(self.storage.exists(second.storage_key))
-        self.assertEqual(first.pdf_sha256, second.pdf_sha256)
+        renderer.assert_not_called()
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(PassportDocument.objects.count(), 1)
+        for field in ("storage_key", "pdf_sha256", "request_sha256", "generation_number", "generated_at"):
+            self.assertEqual(getattr(second, field), previous[field])
+        self.assertEqual(Path(self.storage.path(second.storage_key)).read_bytes(), original)
+
+    def test_fresh_version_uses_new_renderer_and_keeps_historical_artifact(self):
+        old = generate_passport_document(passport_version_id=self.version.pk, storage=self.storage)
+        original = Path(self.storage.path(old.storage_key)).read_bytes()
+        Student.objects.filter(pk=self.student.pk).update(program="Updated AI")
+        version, _ = publish_passport_version(student_id=self.student.pk,
+            event_key="NEW-RENDERER-VERSION", effective_at=self.now + timedelta(hours=1))
+        with patch("apps.passports.document_services.renderer_fingerprint", return_value="f" * 64):
+            new = generate_passport_document(passport_version_id=version.pk, storage=self.storage)
+        self.assertNotEqual(old.pk, new.pk)
+        self.assertNotEqual(old.request_sha256, new.request_sha256)
+        self.assertEqual(Path(self.storage.path(old.storage_key)).read_bytes(), original)
+        with pymupdf.open(self.storage.path(new.storage_key)) as pdf:
+            self.assertIn("VERIFY", pdf[0].get_text())
+            self.assertIn("DOCUMENT", pdf[0].get_text())
+
+    def test_missing_and_corrupt_issued_artifact_never_regenerates(self):
+        document = generate_passport_document(passport_version_id=self.version.pk, storage=self.storage)
+        path = Path(self.storage.path(document.storage_key))
+        original = path.read_bytes()
+        for value in (None, original + b"altered"):
+            if value is None:
+                path.unlink()
+            else:
+                path.write_bytes(value)
+            with patch("apps.passports.document_services.renderer_fingerprint", return_value="f" * 64), \
+                 patch("apps.passports.document_services.render_passport_pdf") as renderer:
+                with self.assertRaisesMessage(ValidationError, "regeneration is prohibited"):
+                    generate_passport_document(passport_version_id=self.version.pk, storage=self.storage)
+            renderer.assert_not_called()
+            with self.assertRaisesMessage(ValidationError, "regeneration is prohibited"):
+                open_passport_document_for_student(document_reference=document.public_reference,
+                    student_id=self.student.pk, storage=self.storage)
+            self.assertEqual(PassportDocument.objects.count(), 1)
+            document.refresh_from_db()
+            self.assertEqual(document.pdf_sha256, hashlib.sha256(original).hexdigest())
 
     @override_settings(PASSPORT_PDF_MAX_BYTES=16)
     def test_oversized_render_is_rejected_before_storage(self):

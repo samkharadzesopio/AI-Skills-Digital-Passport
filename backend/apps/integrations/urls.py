@@ -65,3 +65,10 @@ urlpatterns += [
     path('import/previews/<uuid:preview_id>/', PreviewDetailView.as_view(), name='spreadsheet-preview'),
     path('import/previews/<uuid:preview_id>/confirm/', PreviewConfirmView.as_view(), name='spreadsheet-confirm'),
 ]
+
+from .automation_views import AutomaticSourcesView, AutomaticSourceView, AutomaticHistoryView
+urlpatterns += [
+    path('import/automatic-sources/', AutomaticSourcesView.as_view(), name='spreadsheet-automatic-sources'),
+    path('import/automatic-sources/<uuid:profile_id>/', AutomaticSourceView.as_view(), name='spreadsheet-automatic-source'),
+    path('import/automatic-sources/<uuid:profile_id>/history/', AutomaticHistoryView.as_view(), name='spreadsheet-automatic-history'),
+]
