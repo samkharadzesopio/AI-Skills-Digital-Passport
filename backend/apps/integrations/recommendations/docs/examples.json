@@ -1,0 +1,889 @@
+[
+  {
+    "synthetic_scenario": "DEMO-STUDENT-BEGINNER",
+    "notice": "Declared synthetic context; not a real student or issued Passport.",
+    "source": "SIMULATED_BTU_CATALOG",
+    "analysis_mode": "RULE_BASED",
+    "disclaimer": "All catalog offerings and academic history fixtures are simulated. Guidance is not official course approval, enrollment availability or a credential award.",
+    "profile": {
+      "completed_courses": [
+        "AI-101",
+        "DEMO-CS-101",
+        "DEMO-DIGITAL-101"
+      ],
+      "verified_achievement_skills": [
+        "AI_LITERACY",
+        "PROMPT_ENGINEERING"
+      ],
+      "passport_verified_skills": [],
+      "inferred_course_skills": [
+        "AI_FUNDAMENTALS",
+        "AI_LITERACY",
+        "COMPUTATIONAL_THINKING",
+        "DIGITAL_LITERACY"
+      ],
+      "highest_completed_catalog_level": 1,
+      "missing_competencies": [
+        "AI_MONITORING",
+        "ALGORITHMS",
+        "AUTOMATED_TESTING",
+        "BACKEND_APIS",
+        "CI_CD",
+        "CLOUD_COMPUTING",
+        "CLOUD_IDENTITY",
+        "CODE_REVIEW",
+        "CONTAINERS",
+        "DATA_ANALYSIS",
+        "DATA_PIPELINES",
+        "DATA_QUALITY",
+        "DATA_STRUCTURES",
+        "DATA_VISUALIZATION",
+        "DEBUGGING",
+        "DEEP_LEARNING",
+        "GENERATIVE_AI",
+        "LINEAR_ALGEBRA",
+        "LINUX",
+        "MACHINE_LEARNING",
+        "MODEL_EVALUATION",
+        "MODEL_SERVING",
+        "NETWORKING",
+        "NEURAL_NETWORKS",
+        "OBSERVABILITY",
+        "OPERATING_SYSTEMS",
+        "PROBABILITY",
+        "PYTHON",
+        "QUERY_OPTIMIZATION",
+        "RELATIONAL_MODELING",
+        "SECURE_DESIGN",
+        "SECURITY_CONTROLS",
+        "SECURITY_TESTING",
+        "SQL",
+        "TEST_DESIGN",
+        "THREAT_MODELING",
+        "TRANSACTION_DESIGN",
+        "VERSION_CONTROL",
+        "WEB_SECURITY"
+      ]
+    },
+    "recommendations": [
+      {
+        "course_id": "DEMO-PYTHON-101",
+        "title": "Python Programming",
+        "department": "Computer Science",
+        "category": "PROGRAMMING",
+        "difficulty": "FOUNDATION",
+        "score": 75.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "COMPUTATIONAL_THINKING"
+        ],
+        "related_completed_courses": [
+          "DEMO-CS-101"
+        ],
+        "potential_new_skills": [
+          "DEBUGGING",
+          "PYTHON"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Computer Science Foundations. Uses existing competencies COMPUTATIONAL_THINKING. Develops DEBUGGING, PYTHON through Write and test Python programs using functions, collections and modules.; Diagnose program failures using tracebacks and controlled experiments.. Completing it can unlock DEMO-DATA-201, DEMO-DS-201, DEMO-TEST-201",
+        "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "PYTHON",
+            "description": "Write and test Python programs using functions, collections and modules."
+          },
+          {
+            "competency": "DEBUGGING",
+            "description": "Diagnose program failures using tracebacks and controlled experiments."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 1
+      },
+      {
+        "course_id": "DEMO-GIT-101",
+        "title": "Version Control and Team Development",
+        "department": "Software Engineering",
+        "category": "SOFTWARE_ENGINEERING",
+        "difficulty": "FOUNDATION",
+        "score": 55.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "COMPUTATIONAL_THINKING"
+        ],
+        "related_completed_courses": [
+          "DEMO-CS-101"
+        ],
+        "potential_new_skills": [
+          "CODE_REVIEW",
+          "VERSION_CONTROL"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Computer Science Foundations. Uses existing competencies COMPUTATIONAL_THINKING. Develops CODE_REVIEW, VERSION_CONTROL through Track changes, review branches and resolve integration conflicts with Git.; Apply and assess code review in practical computing exercises.",
+        "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "VERSION_CONTROL",
+            "description": "Track changes, review branches and resolve integration conflicts with Git."
+          },
+          {
+            "competency": "CODE_REVIEW",
+            "description": "Apply and assess code review in practical computing exercises."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 1
+      },
+      {
+        "course_id": "DEMO-DB-101",
+        "title": "Introduction to Databases",
+        "department": "Information Systems",
+        "category": "DATABASES",
+        "difficulty": "FOUNDATION",
+        "score": 50.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "COMPUTATIONAL_THINKING"
+        ],
+        "related_completed_courses": [],
+        "potential_new_skills": [
+          "RELATIONAL_MODELING",
+          "SQL"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Uses existing competencies COMPUTATIONAL_THINKING. Develops RELATIONAL_MODELING, SQL through Query and update relational data with SQL and integrity constraints.; Design normalized relational schemas, keys and referential integrity constraints.",
+        "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "SQL",
+            "description": "Query and update relational data with SQL and integrity constraints."
+          },
+          {
+            "competency": "RELATIONAL_MODELING",
+            "description": "Design normalized relational schemas, keys and referential integrity constraints."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 1
+      },
+      {
+        "course_id": "DEMO-MATH-101",
+        "title": "Mathematics for Computing",
+        "department": "Mathematics",
+        "category": "MATHEMATICS",
+        "difficulty": "FOUNDATION",
+        "score": 50.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "COMPUTATIONAL_THINKING"
+        ],
+        "related_completed_courses": [],
+        "potential_new_skills": [
+          "LINEAR_ALGEBRA",
+          "PROBABILITY"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Uses existing competencies COMPUTATIONAL_THINKING. Develops LINEAR_ALGEBRA, PROBABILITY through Apply and assess linear algebra in practical computing exercises.; Apply and assess probability in practical computing exercises.",
+        "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "LINEAR_ALGEBRA",
+            "description": "Apply and assess linear algebra in practical computing exercises."
+          },
+          {
+            "competency": "PROBABILITY",
+            "description": "Apply and assess probability in practical computing exercises."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 1
+      },
+      {
+        "course_id": "DEMO-NET-101",
+        "title": "Networking Fundamentals",
+        "department": "Information Technology",
+        "category": "IT",
+        "difficulty": "FOUNDATION",
+        "score": 50.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "DIGITAL_LITERACY"
+        ],
+        "related_completed_courses": [],
+        "potential_new_skills": [
+          "NETWORKING"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Uses existing competencies DIGITAL_LITERACY. Develops NETWORKING through Explain addressing, routing, DNS and transport protocols.",
+        "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "NETWORKING",
+            "description": "Explain addressing, routing, DNS and transport protocols."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 1
+      }
+    ],
+    "pathways": [
+      {
+        "recommended_next": "DEMO-PYTHON-101",
+        "future_courses": [
+          {
+            "course_id": "DEMO-DATA-201",
+            "title": "Data Analysis with Python",
+            "department": "Data and Analytics",
+            "category": "DATA_SCIENCE",
+            "difficulty": "INTERMEDIATE",
+            "readiness": "FUTURE",
+            "score": 65.0,
+            "assumes_completion_of": [
+              "DEMO-PYTHON-101"
+            ],
+            "existing_skills": [],
+            "related_completed_courses": [],
+            "potential_new_skills": [
+              "DATA_ANALYSIS",
+              "DATA_VISUALIZATION"
+            ],
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-PYTHON-101"
+              ],
+              "skills": [
+                "PYTHON"
+              ]
+            },
+            "reason": "Conditional on completing planned courses DEMO-PYTHON-101. Builds on completed Python Programming. Uses existing competencies PYTHON. Develops DATA_ANALYSIS, DATA_VISUALIZATION through Apply and assess data analysis in practical computing exercises.; Apply and assess data visualization in practical computing exercises.",
+            "progression": "Planned progression only; no future completion or skill is recorded as earned.",
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 3
+          }
+        ]
+      },
+      {
+        "recommended_next": "DEMO-GIT-101",
+        "future_courses": []
+      },
+      {
+        "recommended_next": "DEMO-DB-101",
+        "future_courses": []
+      }
+    ],
+    "blocked_courses": [
+      {
+        "course_id": "AI-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-MATH-101",
+            "DEMO-PYTHON-101"
+          ],
+          "skills": [
+            "PROBABILITY",
+            "PYTHON"
+          ]
+        }
+      },
+      {
+        "course_id": "AI-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "AI-201"
+          ],
+          "skills": [
+            "MACHINE_LEARNING",
+            "MODEL_EVALUATION"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-BACKEND-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-DB-101",
+            "DEMO-PYTHON-101"
+          ],
+          "skills": [
+            "PYTHON",
+            "SQL"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-CLOUD-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-NET-101",
+            "DEMO-OS-101"
+          ],
+          "skills": [
+            "LINUX",
+            "NETWORKING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DATA-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-PYTHON-101"
+          ],
+          "skills": [
+            "PYTHON"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DATAENG-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-DATA-201",
+            "DEMO-DB-101"
+          ],
+          "skills": [
+            "DATA_ANALYSIS",
+            "PYTHON",
+            "SQL"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DB-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-DB-101",
+            "DEMO-DS-201"
+          ],
+          "skills": [
+            "DATA_STRUCTURES",
+            "SQL"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DEEP-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "AI-201",
+            "DEMO-DS-201"
+          ],
+          "skills": [
+            "LINEAR_ALGEBRA",
+            "MACHINE_LEARNING",
+            "PYTHON"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DEVOPS-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-BACKEND-201",
+            "DEMO-CLOUD-201"
+          ],
+          "skills": [
+            "BACKEND_APIS",
+            "CLOUD_COMPUTING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DS-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-PYTHON-101"
+          ],
+          "skills": [
+            "PYTHON"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-MLDEPLOY-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "AI-201",
+            "DEMO-BACKEND-201"
+          ],
+          "skills": [
+            "BACKEND_APIS",
+            "MACHINE_LEARNING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-SEC-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-NET-101",
+            "DEMO-OS-101"
+          ],
+          "skills": [
+            "NETWORKING",
+            "OPERATING_SYSTEMS"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-SEC-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-BACKEND-201",
+            "DEMO-SEC-201"
+          ],
+          "skills": [
+            "BACKEND_APIS",
+            "THREAT_MODELING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-TEST-201",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-PYTHON-101"
+          ],
+          "skills": [
+            "PYTHON"
+          ]
+        }
+      }
+    ],
+    "warnings": []
+  },
+  {
+    "synthetic_scenario": "DEMO-STUDENT-ADVANCED",
+    "notice": "Declared synthetic context; not a real student or issued Passport.",
+    "source": "SIMULATED_BTU_CATALOG",
+    "analysis_mode": "RULE_BASED",
+    "disclaimer": "All catalog offerings and academic history fixtures are simulated. Guidance is not official course approval, enrollment availability or a credential award.",
+    "profile": {
+      "completed_courses": [
+        "AI-101",
+        "DEMO-CS-101",
+        "DEMO-DB-101",
+        "DEMO-DS-201",
+        "DEMO-MATH-101",
+        "DEMO-NET-101",
+        "DEMO-OS-101",
+        "DEMO-PYTHON-101"
+      ],
+      "verified_achievement_skills": [
+        "AI_LITERACY",
+        "DATA_ANALYSIS",
+        "PYTHON"
+      ],
+      "passport_verified_skills": [],
+      "inferred_course_skills": [
+        "AI_FUNDAMENTALS",
+        "AI_LITERACY",
+        "ALGORITHMS",
+        "COMPUTATIONAL_THINKING",
+        "DATA_STRUCTURES",
+        "DEBUGGING",
+        "LINEAR_ALGEBRA",
+        "LINUX",
+        "NETWORKING",
+        "OPERATING_SYSTEMS",
+        "PROBABILITY",
+        "PYTHON",
+        "RELATIONAL_MODELING",
+        "SQL"
+      ],
+      "highest_completed_catalog_level": 2,
+      "missing_competencies": [
+        "AI_MONITORING",
+        "AUTOMATED_TESTING",
+        "BACKEND_APIS",
+        "CI_CD",
+        "CLOUD_COMPUTING",
+        "CLOUD_IDENTITY",
+        "CODE_REVIEW",
+        "CONTAINERS",
+        "DATA_PIPELINES",
+        "DATA_QUALITY",
+        "DATA_VISUALIZATION",
+        "DEEP_LEARNING",
+        "DIGITAL_LITERACY",
+        "GENERATIVE_AI",
+        "MACHINE_LEARNING",
+        "MODEL_EVALUATION",
+        "MODEL_SERVING",
+        "NEURAL_NETWORKS",
+        "OBSERVABILITY",
+        "PROMPT_ENGINEERING",
+        "QUERY_OPTIMIZATION",
+        "SECURE_DESIGN",
+        "SECURITY_CONTROLS",
+        "SECURITY_TESTING",
+        "TEST_DESIGN",
+        "THREAT_MODELING",
+        "TRANSACTION_DESIGN",
+        "VERSION_CONTROL",
+        "WEB_SECURITY"
+      ]
+    },
+    "recommendations": [
+      {
+        "course_id": "AI-201",
+        "title": "Machine Learning Fundamentals",
+        "department": "Artificial Intelligence",
+        "category": "ARTIFICIAL_INTELLIGENCE",
+        "difficulty": "INTERMEDIATE",
+        "score": 75.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "AI_LITERACY",
+          "DATA_ANALYSIS",
+          "PROBABILITY",
+          "PYTHON"
+        ],
+        "related_completed_courses": [
+          "AI-101",
+          "DEMO-MATH-101",
+          "DEMO-PYTHON-101"
+        ],
+        "potential_new_skills": [
+          "MACHINE_LEARNING",
+          "MODEL_EVALUATION"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Introduction to Artificial Intelligence, Mathematics for Computing, Python Programming. Uses existing competencies AI_LITERACY, DATA_ANALYSIS, PROBABILITY, PYTHON. Develops MACHINE_LEARNING, MODEL_EVALUATION through Train supervised learning models and compare generalization performance.; Evaluate models with held-out data, appropriate metrics and leakage checks.. Completing it can unlock AI-301, DEMO-DEEP-301",
+        "progression": "Eligible level 2; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "MACHINE_LEARNING",
+            "description": "Train supervised learning models and compare generalization performance."
+          },
+          {
+            "competency": "MODEL_EVALUATION",
+            "description": "Evaluate models with held-out data, appropriate metrics and leakage checks."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 3
+      },
+      {
+        "course_id": "DEMO-DB-301",
+        "title": "Database Performance and Transactions",
+        "department": "Information Systems",
+        "category": "DATABASES",
+        "difficulty": "ADVANCED",
+        "score": 65.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "DATA_STRUCTURES",
+          "SQL"
+        ],
+        "related_completed_courses": [
+          "DEMO-DB-101",
+          "DEMO-DS-201"
+        ],
+        "potential_new_skills": [
+          "QUERY_OPTIMIZATION",
+          "TRANSACTION_DESIGN"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Introduction to Databases, Data Structures and Algorithms. Uses existing competencies DATA_STRUCTURES, SQL. Develops QUERY_OPTIMIZATION, TRANSACTION_DESIGN through Interpret database query plans and choose indexes for measured workloads.; Design atomic transactions and reason about concurrency and isolation.",
+        "progression": "Eligible level 3; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "QUERY_OPTIMIZATION",
+            "description": "Interpret database query plans and choose indexes for measured workloads."
+          },
+          {
+            "competency": "TRANSACTION_DESIGN",
+            "description": "Design atomic transactions and reason about concurrency and isolation."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 5
+      },
+      {
+        "course_id": "DEMO-BACKEND-201",
+        "title": "Backend Application Engineering",
+        "department": "Software Engineering",
+        "category": "SOFTWARE_ENGINEERING",
+        "difficulty": "INTERMEDIATE",
+        "score": 55.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "DEBUGGING",
+          "PYTHON",
+          "SQL"
+        ],
+        "related_completed_courses": [
+          "DEMO-DB-101",
+          "DEMO-PYTHON-101"
+        ],
+        "potential_new_skills": [
+          "BACKEND_APIS",
+          "WEB_SECURITY"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Introduction to Databases, Python Programming. Uses existing competencies DEBUGGING, PYTHON, SQL. Develops BACKEND_APIS, WEB_SECURITY through Implement validated application APIs with persistence and access control.; Apply and assess web security in practical computing exercises.",
+        "progression": "Eligible level 2; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "BACKEND_APIS",
+            "description": "Implement validated application APIs with persistence and access control."
+          },
+          {
+            "competency": "WEB_SECURITY",
+            "description": "Apply and assess web security in practical computing exercises."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 3
+      },
+      {
+        "course_id": "DEMO-CLOUD-201",
+        "title": "Cloud Computing Foundations",
+        "department": "Computing Infrastructure",
+        "category": "CLOUD",
+        "difficulty": "INTERMEDIATE",
+        "score": 55.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "LINUX",
+          "NETWORKING",
+          "PYTHON"
+        ],
+        "related_completed_courses": [
+          "DEMO-NET-101",
+          "DEMO-OS-101"
+        ],
+        "potential_new_skills": [
+          "CLOUD_COMPUTING",
+          "CLOUD_IDENTITY"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Networking Fundamentals, Operating Systems Foundations. Uses existing competencies LINUX, NETWORKING, PYTHON. Develops CLOUD_COMPUTING, CLOUD_IDENTITY through Deploy compute, storage and network resources using cloud service models.; Manage least-privilege identities and access boundaries for cloud resources.",
+        "progression": "Eligible level 2; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "CLOUD_COMPUTING",
+            "description": "Deploy compute, storage and network resources using cloud service models."
+          },
+          {
+            "competency": "CLOUD_IDENTITY",
+            "description": "Manage least-privilege identities and access boundaries for cloud resources."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 3
+      },
+      {
+        "course_id": "DEMO-GIT-101",
+        "title": "Version Control and Team Development",
+        "department": "Software Engineering",
+        "category": "SOFTWARE_ENGINEERING",
+        "difficulty": "FOUNDATION",
+        "score": 55.0,
+        "readiness": "READY",
+        "existing_skills": [
+          "COMPUTATIONAL_THINKING"
+        ],
+        "related_completed_courses": [
+          "DEMO-CS-101"
+        ],
+        "potential_new_skills": [
+          "CODE_REVIEW",
+          "VERSION_CONTROL"
+        ],
+        "missing_prerequisites": [],
+        "reason": "Builds on completed Computer Science Foundations. Uses existing competencies COMPUTATIONAL_THINKING. Develops CODE_REVIEW, VERSION_CONTROL through Track changes, review branches and resolve integration conflicts with Git.; Apply and assess code review in practical computing exercises.",
+        "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+        "learning_outcomes": [
+          {
+            "competency": "VERSION_CONTROL",
+            "description": "Track changes, review branches and resolve integration conflicts with Git."
+          },
+          {
+            "competency": "CODE_REVIEW",
+            "description": "Apply and assess code review in practical computing exercises."
+          }
+        ],
+        "ai_assisted": false,
+        "source": "SIMULATED_BTU_CATALOG",
+        "availability": true,
+        "credits": 6,
+        "suggested_semester": 1
+      }
+    ],
+    "pathways": [
+      {
+        "recommended_next": "AI-201",
+        "future_courses": [
+          {
+            "course_id": "AI-301",
+            "title": "Applied Generative AI",
+            "department": "Artificial Intelligence",
+            "category": "ARTIFICIAL_INTELLIGENCE",
+            "difficulty": "ADVANCED",
+            "readiness": "FUTURE",
+            "score": 65.0,
+            "assumes_completion_of": [
+              "AI-201"
+            ],
+            "existing_skills": [],
+            "related_completed_courses": [],
+            "potential_new_skills": [
+              "GENERATIVE_AI",
+              "PROMPT_ENGINEERING"
+            ],
+            "missing_prerequisites": {
+              "courses": [
+                "AI-201"
+              ],
+              "skills": [
+                "MACHINE_LEARNING",
+                "MODEL_EVALUATION"
+              ]
+            },
+            "reason": "Conditional on completing planned courses AI-201. Builds on completed Machine Learning Fundamentals. Uses existing competencies MACHINE_LEARNING, MODEL_EVALUATION. Develops GENERATIVE_AI, PROMPT_ENGINEERING through Apply and assess generative ai in practical computing exercises.; Apply and assess prompt engineering in practical computing exercises.",
+            "progression": "Planned progression only; no future completion or skill is recorded as earned.",
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 5
+          }
+        ]
+      },
+      {
+        "recommended_next": "DEMO-DB-301",
+        "future_courses": []
+      },
+      {
+        "recommended_next": "DEMO-BACKEND-201",
+        "future_courses": []
+      }
+    ],
+    "blocked_courses": [
+      {
+        "course_id": "AI-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "AI-201"
+          ],
+          "skills": [
+            "MACHINE_LEARNING",
+            "MODEL_EVALUATION"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DATAENG-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-DATA-201"
+          ],
+          "skills": []
+        }
+      },
+      {
+        "course_id": "DEMO-DEEP-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "AI-201"
+          ],
+          "skills": [
+            "MACHINE_LEARNING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-DEVOPS-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-BACKEND-201",
+            "DEMO-CLOUD-201"
+          ],
+          "skills": [
+            "BACKEND_APIS",
+            "CLOUD_COMPUTING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-MLDEPLOY-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "AI-201",
+            "DEMO-BACKEND-201"
+          ],
+          "skills": [
+            "BACKEND_APIS",
+            "MACHINE_LEARNING"
+          ]
+        }
+      },
+      {
+        "course_id": "DEMO-SEC-301",
+        "readiness": "PREREQUISITES_MISSING",
+        "missing_prerequisites": {
+          "courses": [
+            "DEMO-BACKEND-201",
+            "DEMO-SEC-201"
+          ],
+          "skills": [
+            "BACKEND_APIS",
+            "THREAT_MODELING"
+          ]
+        }
+      }
+    ],
+    "warnings": []
+  }
+]

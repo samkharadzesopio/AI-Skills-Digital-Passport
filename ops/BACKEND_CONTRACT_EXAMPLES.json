@@ -1,0 +1,3105 @@
+{
+  "environment": "LOCAL_ANVIL",
+  "synthetic_data": true,
+  "http_requests": 59,
+  "journeys": {
+    "1": {
+      "outcome": "PASS",
+      "evidence": "OTP, rotated session, restored account context, cross-student credential denial"
+    },
+    "2": {
+      "outcome": "PASS",
+      "evidence": "Login without achievements creates no Passport identity or issued version"
+    },
+    "3": {
+      "outcome": "PASS",
+      "evidence": "Authorized Excel import creates credential, identity, version, PDF and confirmed Anvil proof"
+    },
+    "4": {
+      "outcome": "PASS",
+      "evidence": "New approved completion appends immutable version under the same permanent identity"
+    },
+    "5": {
+      "outcome": "PASS",
+      "evidence": "Anonymous reference/PDF verification confirms exact bytes and rejects altered PDF"
+    },
+    "6": {
+      "outcome": "PASS",
+      "evidence": "Credential revocation invalidates its historical snapshot; refreshed current version uses surviving evidence"
+    },
+    "7": {
+      "outcome": "PASS",
+      "evidence": "Permissioned legal correction, CSRF, idempotent replay, on-chain cancellation dependency and historical Admin PDF"
+    },
+    "9": {
+      "outcome": "PASS",
+      "evidence": "Real RPC outage fails closed; restarted worker retains transaction hashes/nonces and restores live verification"
+    },
+    "8": {
+      "outcome": "PASS",
+      "evidence": "Authorized Passport revocation is terminal and retains historical cryptographic evidence"
+    },
+    "10": {
+      "outcome": "PASS",
+      "evidence": "Anonymous/Student lifecycle denial, least privilege, public privacy and logout invalidation"
+    },
+    "11": {
+      "outcome": "PASS",
+      "evidence": "Repeated import is idempotent; no duplicate credentials or reactivation of revoked identity"
+    }
+  },
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/api/accounts/me/",
+      "http_status": 200,
+      "seconds": 0.0944,
+      "rpc_requests": 0,
+      "body": {
+        "email": "http.student@btu.edu.ge",
+        "role": "STUDENT",
+        "email_verified": true,
+        "student_association": "linked",
+        "capabilities": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/passport/",
+      "http_status": 200,
+      "seconds": 0.0925,
+      "rpc_requests": 0,
+      "body": {
+        "passport": null
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/6337f667-cde2-4d83-8a86-033e3b6cc0bc/",
+      "http_status": 200,
+      "seconds": 0.1106,
+      "rpc_requests": 0,
+      "body": {
+        "status": "NOT_ISSUED",
+        "authentic": false,
+        "is_latest": null,
+        "passport_version": null,
+        "latest_version": null,
+        "credential_status": "UNVERIFIABLE",
+        "credential_counts": {},
+        "source": "POSTGRESQL_PASSPORT_REGISTRY"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/15d97b55-1520-4f7e-bf92-281558a49013/",
+      "http_status": 200,
+      "seconds": 0.1196,
+      "rpc_requests": 0,
+      "body": {
+        "status": "NOT_FOUND",
+        "authentic": false,
+        "is_latest": null,
+        "passport_version": null,
+        "latest_version": null,
+        "credential_status": "UNVERIFIABLE",
+        "credential_counts": {},
+        "source": "POSTGRESQL_PASSPORT_REGISTRY"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/accounts/login/",
+      "http_status": 200,
+      "seconds": 0.1855,
+      "rpc_requests": 0,
+      "body": {
+        "email": "http.registrar@btu.edu.ge",
+        "role": "ADMIN",
+        "email_verified": true,
+        "student_association": "unlinked",
+        "capabilities": [
+          "view_student_records",
+          "revoke_credentials",
+          "import_completions",
+          "manage_legal_identity",
+          "manage_passport_lifecycle"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/accounts/login/",
+      "http_status": 200,
+      "seconds": 0.4968,
+      "rpc_requests": 0,
+      "body": {
+        "email": "http.reader@btu.edu.ge",
+        "role": "ADMIN",
+        "email_verified": true,
+        "student_association": "unlinked",
+        "capabilities": [
+          "view_student_records"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/integrations/import/excel/",
+      "http_status": 200,
+      "seconds": 0.543,
+      "rpc_requests": 0,
+      "body": {
+        "source": "BTU_EXCEL",
+        "result": {
+          "processed": 1,
+          "awarded": 2,
+          "issued": 1,
+          "skipped": 0,
+          "failed": 0,
+          "errors": [],
+          "import_id": 1
+        },
+        "validation_errors": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/passport/",
+      "http_status": 200,
+      "seconds": 0.137,
+      "rpc_requests": 0,
+      "body": {
+        "id": "709e8377-d848-422f-8337-58ac0a3db198",
+        "public_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+        "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+        "status": "PENDING_BLOCKCHAIN",
+        "lifecycle_status": "ACTIVE",
+        "created_at": "2026-10-27T10:22:40.541620-05:00",
+        "updated_at": "2026-10-27T10:22:40.592642-05:00",
+        "latest_version": {
+          "id": "b33c77f9-8dae-4997-b7ca-8ac36acbdea4",
+          "public_reference": "dd7b8ec4-3db7-451d-92f9-3daf3f7fc849",
+          "version_number": 1,
+          "status": "ISSUED",
+          "issued_at": "2026-10-27T10:22:40.516094-05:00",
+          "created_at": "2026-10-27T10:22:40.566041-05:00",
+          "skills": [
+            {
+              "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+              "skill_code": "AI_FUNDAMENTALS",
+              "skill_name": "Ai Fundamentals",
+              "category": "AI",
+              "subcategory": "",
+              "description": "Synthetic assessed AI learning evidence.",
+              "stamp_type": "FOCUSED"
+            },
+            {
+              "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+              "skill_code": "AI_LITERACY",
+              "skill_name": "Ai Literacy",
+              "category": "AI",
+              "subcategory": "",
+              "description": "Synthetic assessed AI learning evidence.",
+              "stamp_type": "FOCUSED"
+            }
+          ],
+          "credentials": [
+            {
+              "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+              "issuer_reference": "BTU-UNIVERSITY",
+              "issuer_name": "BTU Synthetic University",
+              "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+              "credential_expires_at": null
+            }
+          ]
+        },
+        "first_issued_at": "2026-10-27T10:22:40.516094-05:00",
+        "blockchain": {
+          "status": "PENDING_BLOCKCHAIN",
+          "blockchain_verified": false,
+          "historical_blockchain_authentic": false,
+          "issuer_key_authorized": false,
+          "institutional_issuer_approved": false,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:40.748479+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/303ced6a-14d9-4e8f-960d-ab689a5e0595/",
+      "http_status": 200,
+      "seconds": 0.3466,
+      "rpc_requests": 13,
+      "body": {
+        "status": "VALID",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 1,
+        "latest_version": 1,
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 1,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "19edd3cb0dd0d534594df04d2b940393f513f44d7d615f628dd831a8dc4d74d9",
+          "snapshot_sha256": "10cfd3efddec10086b4489ac3ca3b59852009202178e308088b5e4c9d44147cf",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xd7fbc21d743385144cc5f96891ca10f0c9582e4696e158a2f82a8e575810e3af",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "fbcf36eda50da7bacebc451a23a13ceb105d1922281465297272fdf71b97a889",
+          "document_key": "5e7cb8cc3a04d9e611734441450cbcb00c9b3533cdd675b16c9b2d407f66f6a2",
+          "commitment": "eca8b4cc3353c835b027106ddc256b734c61cec7a8333ec94145c38fcb75eaf0",
+          "commitment_salt": "959af4c6910f94eec85b6ebbd6ec058501075c91e2e5eb625de07c6652b2a5a4",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "dd7b8ec4-3db7-451d-92f9-3daf3f7fc849",
+          "latest_version": 1,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 3,
+          "block_hash": "0x979e7bf04743a98a621175917de38e845d041376eee379a9f95899eabeb90d12",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:43.432834+00:00"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/integrations/import/excel/",
+      "http_status": 200,
+      "seconds": 0.5114,
+      "rpc_requests": 0,
+      "body": {
+        "source": "BTU_EXCEL",
+        "result": {
+          "processed": 1,
+          "awarded": 2,
+          "issued": 1,
+          "skipped": 0,
+          "failed": 0,
+          "errors": [],
+          "import_id": 2
+        },
+        "validation_errors": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/dashboard/",
+      "http_status": 200,
+      "seconds": 0.3928,
+      "rpc_requests": 13,
+      "body": {
+        "profile": {
+          "id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+          "external_student_id": "HTTP-SYNTHETIC-001",
+          "first_name": "Synthetic",
+          "last_name": "Student",
+          "email": "http.student@btu.edu.ge",
+          "program": "AI",
+          "education_level": "Bachelor",
+          "student_status": "Active"
+        },
+        "recognized_skills": 4,
+        "skills_by_category": [
+          {
+            "category": "AI",
+            "count": 4
+          }
+        ],
+        "skills_by_subcategory": [
+          {
+            "subcategory": "",
+            "count": 4
+          }
+        ],
+        "verified_achievements": 4,
+        "credentials": {
+          "total": 2,
+          "valid": 2,
+          "expired": 0,
+          "revoked": 0,
+          "invalid": 0
+        },
+        "recent_achievements": [
+          {
+            "id": "344ce5d7-528e-49a8-b1c9-9453da3cff18",
+            "skill": {
+              "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+              "skill_code": "MACHINE_LEARNING",
+              "skill_name": "Machine Learning",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-201",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "92fc24c0-5f6b-41a0-a596-e1fb50957167",
+            "skill": {
+              "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+              "skill_code": "AI_LITERACY",
+              "skill_name": "Ai Literacy",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-101",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "99bb0c6c-5f1d-4823-a4a7-70dae3ff8f45",
+            "skill": {
+              "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+              "skill_code": "DATA_ANALYSIS",
+              "skill_name": "Data Analysis",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-201",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "f81a8f1e-c149-4f83-b321-918c4d8dfef9",
+            "skill": {
+              "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+              "skill_code": "AI_FUNDAMENTALS",
+              "skill_name": "Ai Fundamentals",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-101",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          }
+        ],
+        "recent_credentials": [
+          {
+            "id": "d1b451e2-a0f8-45e8-b701-802bafab8fb8",
+            "public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "issuer_reference": "BTU-UNIVERSITY",
+            "issuer_name": "BTU Synthetic University",
+            "issued_at": "2026-10-27T10:22:43.794912-05:00",
+            "expires_at": null,
+            "status": "ISSUED",
+            "validity_status": "VALID",
+            "revoked_at": null,
+            "achievements": [
+              {
+                "id": "344ce5d7-528e-49a8-b1c9-9453da3cff18",
+                "skill": {
+                  "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                  "skill_code": "MACHINE_LEARNING",
+                  "skill_name": "Machine Learning",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-201",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              },
+              {
+                "id": "99bb0c6c-5f1d-4823-a4a7-70dae3ff8f45",
+                "skill": {
+                  "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                  "skill_code": "DATA_ANALYSIS",
+                  "skill_name": "Data Analysis",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-201",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ]
+          },
+          {
+            "id": "9e7c8373-f57a-4b08-af18-f5eb97de46e2",
+            "public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "issuer_reference": "BTU-UNIVERSITY",
+            "issuer_name": "BTU Synthetic University",
+            "issued_at": "2026-10-27T10:22:40.441451-05:00",
+            "expires_at": null,
+            "status": "ISSUED",
+            "validity_status": "VALID",
+            "revoked_at": null,
+            "achievements": [
+              {
+                "id": "92fc24c0-5f6b-41a0-a596-e1fb50957167",
+                "skill": {
+                  "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                  "skill_code": "AI_LITERACY",
+                  "skill_name": "Ai Literacy",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-101",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              },
+              {
+                "id": "f81a8f1e-c149-4f83-b321-918c4d8dfef9",
+                "skill": {
+                  "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                  "skill_code": "AI_FUNDAMENTALS",
+                  "skill_name": "Ai Fundamentals",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-101",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ]
+          }
+        ],
+        "passport": {
+          "id": "709e8377-d848-422f-8337-58ac0a3db198",
+          "public_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+          "status": "BLOCKCHAIN_VERIFIED",
+          "lifecycle_status": "ACTIVE",
+          "created_at": "2026-10-27T10:22:40.541620-05:00",
+          "updated_at": "2026-10-27T10:22:43.937279-05:00",
+          "latest_version": {
+            "id": "13e12a07-fa34-44e1-945d-2bb8305bd402",
+            "public_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+            "version_number": 2,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:43.861647-05:00",
+            "created_at": "2026-10-27T10:22:43.905153-05:00",
+            "skills": [
+              {
+                "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                "skill_code": "AI_FUNDAMENTALS",
+                "skill_name": "Ai Fundamentals",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                "skill_code": "AI_LITERACY",
+                "skill_name": "Ai Literacy",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                "skill_code": "DATA_ANALYSIS",
+                "skill_name": "Data Analysis",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                "skill_code": "MACHINE_LEARNING",
+                "skill_name": "Machine Learning",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+                "credential_expires_at": null
+              },
+              {
+                "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          },
+          "first_issued_at": "2026-10-27T10:22:40.516094-05:00",
+          "blockchain": {
+            "status": "CONFIRMED",
+            "blockchain_verified": true,
+            "historical_blockchain_authentic": true,
+            "issuer_key_authorized": true,
+            "institutional_issuer_approved": true,
+            "source": "POLYGON_PDF_COMMITMENT_V1",
+            "chain_id": 31337,
+            "environment": "LOCAL_ANVIL",
+            "required_confirmations": 1,
+            "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+            "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+            "passport_status": "ACTIVE",
+            "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+            "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+            "retryable": true,
+            "operation_state": "CONFIRMED",
+            "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+            "operator_review_required": false,
+            "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+            "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+            "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+            "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+            "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+            "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+            "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+            "latest_version": 2,
+            "registry_status": "VALID",
+            "credential_status": "VALID",
+            "block_number": 4,
+            "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+            "confirmations": 1,
+            "onchain_status": "ACTIVE",
+            "network": "Anvil",
+            "transaction_explorer_url": null,
+            "assessed_at": "2026-10-27T15:22:46.102617+00:00"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/skills/",
+      "http_status": 200,
+      "seconds": 0.1285,
+      "rpc_requests": 0,
+      "body": {
+        "count": 4,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+            "skill_code": "AI_FUNDAMENTALS",
+            "skill_name": "Ai Fundamentals",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence.",
+            "achievements": [
+              {
+                "id": "f81a8f1e-c149-4f83-b321-918c4d8dfef9",
+                "skill": {
+                  "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                  "skill_code": "AI_FUNDAMENTALS",
+                  "skill_name": "Ai Fundamentals",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-101",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ],
+            "achievements_limit": 100
+          },
+          {
+            "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+            "skill_code": "AI_LITERACY",
+            "skill_name": "Ai Literacy",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence.",
+            "achievements": [
+              {
+                "id": "92fc24c0-5f6b-41a0-a596-e1fb50957167",
+                "skill": {
+                  "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                  "skill_code": "AI_LITERACY",
+                  "skill_name": "Ai Literacy",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-101",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ],
+            "achievements_limit": 100
+          },
+          {
+            "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+            "skill_code": "DATA_ANALYSIS",
+            "skill_name": "Data Analysis",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence.",
+            "achievements": [
+              {
+                "id": "99bb0c6c-5f1d-4823-a4a7-70dae3ff8f45",
+                "skill": {
+                  "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                  "skill_code": "DATA_ANALYSIS",
+                  "skill_name": "Data Analysis",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-201",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ],
+            "achievements_limit": 100
+          },
+          {
+            "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+            "skill_code": "MACHINE_LEARNING",
+            "skill_name": "Machine Learning",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence.",
+            "achievements": [
+              {
+                "id": "344ce5d7-528e-49a8-b1c9-9453da3cff18",
+                "skill": {
+                  "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                  "skill_code": "MACHINE_LEARNING",
+                  "skill_name": "Machine Learning",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-201",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ],
+            "achievements_limit": 100
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/achievements/",
+      "http_status": 200,
+      "seconds": 0.1396,
+      "rpc_requests": 0,
+      "body": {
+        "count": 4,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "344ce5d7-528e-49a8-b1c9-9453da3cff18",
+            "skill": {
+              "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+              "skill_code": "MACHINE_LEARNING",
+              "skill_name": "Machine Learning",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-201",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "92fc24c0-5f6b-41a0-a596-e1fb50957167",
+            "skill": {
+              "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+              "skill_code": "AI_LITERACY",
+              "skill_name": "Ai Literacy",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-101",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "99bb0c6c-5f1d-4823-a4a7-70dae3ff8f45",
+            "skill": {
+              "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+              "skill_code": "DATA_ANALYSIS",
+              "skill_name": "Data Analysis",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-201",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "f81a8f1e-c149-4f83-b321-918c4d8dfef9",
+            "skill": {
+              "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+              "skill_code": "AI_FUNDAMENTALS",
+              "skill_name": "Ai Fundamentals",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-101",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/credentials/",
+      "http_status": 200,
+      "seconds": 0.1528,
+      "rpc_requests": 0,
+      "body": {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "d1b451e2-a0f8-45e8-b701-802bafab8fb8",
+            "public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "issuer_reference": "BTU-UNIVERSITY",
+            "issuer_name": "BTU Synthetic University",
+            "issued_at": "2026-10-27T10:22:43.794912-05:00",
+            "expires_at": null,
+            "status": "ISSUED",
+            "validity_status": "VALID",
+            "revoked_at": null,
+            "achievements": [
+              {
+                "id": "344ce5d7-528e-49a8-b1c9-9453da3cff18",
+                "skill": {
+                  "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                  "skill_code": "MACHINE_LEARNING",
+                  "skill_name": "Machine Learning",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-201",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              },
+              {
+                "id": "99bb0c6c-5f1d-4823-a4a7-70dae3ff8f45",
+                "skill": {
+                  "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                  "skill_code": "DATA_ANALYSIS",
+                  "skill_name": "Data Analysis",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-201",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ]
+          },
+          {
+            "id": "9e7c8373-f57a-4b08-af18-f5eb97de46e2",
+            "public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "issuer_reference": "BTU-UNIVERSITY",
+            "issuer_name": "BTU Synthetic University",
+            "issued_at": "2026-10-27T10:22:40.441451-05:00",
+            "expires_at": null,
+            "status": "ISSUED",
+            "validity_status": "VALID",
+            "revoked_at": null,
+            "achievements": [
+              {
+                "id": "92fc24c0-5f6b-41a0-a596-e1fb50957167",
+                "skill": {
+                  "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                  "skill_code": "AI_LITERACY",
+                  "skill_name": "Ai Literacy",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-101",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              },
+              {
+                "id": "f81a8f1e-c149-4f83-b321-918c4d8dfef9",
+                "skill": {
+                  "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                  "skill_code": "AI_FUNDAMENTALS",
+                  "skill_name": "Ai Fundamentals",
+                  "category": "AI",
+                  "subcategory": "",
+                  "competency_level": "FOCUSED",
+                  "description": "Synthetic assessed AI learning evidence."
+                },
+                "course_reference": "AI-101",
+                "earned_on": "2026-10-20",
+                "verification_status": "VERIFIED"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/passport/",
+      "http_status": 200,
+      "seconds": 0.3377,
+      "rpc_requests": 13,
+      "body": {
+        "id": "709e8377-d848-422f-8337-58ac0a3db198",
+        "public_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+        "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+        "status": "BLOCKCHAIN_VERIFIED",
+        "lifecycle_status": "ACTIVE",
+        "created_at": "2026-10-27T10:22:40.541620-05:00",
+        "updated_at": "2026-10-27T10:22:43.937279-05:00",
+        "latest_version": {
+          "id": "13e12a07-fa34-44e1-945d-2bb8305bd402",
+          "public_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+          "version_number": 2,
+          "status": "ISSUED",
+          "issued_at": "2026-10-27T10:22:43.861647-05:00",
+          "created_at": "2026-10-27T10:22:43.905153-05:00",
+          "skills": [
+            {
+              "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+              "skill_code": "AI_FUNDAMENTALS",
+              "skill_name": "Ai Fundamentals",
+              "category": "AI",
+              "subcategory": "",
+              "description": "Synthetic assessed AI learning evidence.",
+              "stamp_type": "FOCUSED"
+            },
+            {
+              "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+              "skill_code": "AI_LITERACY",
+              "skill_name": "Ai Literacy",
+              "category": "AI",
+              "subcategory": "",
+              "description": "Synthetic assessed AI learning evidence.",
+              "stamp_type": "FOCUSED"
+            },
+            {
+              "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+              "skill_code": "DATA_ANALYSIS",
+              "skill_name": "Data Analysis",
+              "category": "AI",
+              "subcategory": "",
+              "description": "Synthetic assessed AI learning evidence.",
+              "stamp_type": "FOCUSED"
+            },
+            {
+              "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+              "skill_code": "MACHINE_LEARNING",
+              "skill_name": "Machine Learning",
+              "category": "AI",
+              "subcategory": "",
+              "description": "Synthetic assessed AI learning evidence.",
+              "stamp_type": "FOCUSED"
+            }
+          ],
+          "credentials": [
+            {
+              "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+              "issuer_reference": "BTU-UNIVERSITY",
+              "issuer_name": "BTU Synthetic University",
+              "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+              "credential_expires_at": null
+            },
+            {
+              "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+              "issuer_reference": "BTU-UNIVERSITY",
+              "issuer_name": "BTU Synthetic University",
+              "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+              "credential_expires_at": null
+            }
+          ]
+        },
+        "first_issued_at": "2026-10-27T10:22:40.516094-05:00",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+          "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+          "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+          "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+          "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+          "latest_version": 2,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 4,
+          "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:46.938427+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/passport/versions/",
+      "http_status": 200,
+      "seconds": 0.1613,
+      "rpc_requests": 0,
+      "body": {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "13e12a07-fa34-44e1-945d-2bb8305bd402",
+            "public_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+            "version_number": 2,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:43.861647-05:00",
+            "created_at": "2026-10-27T10:22:43.905153-05:00",
+            "skills": [
+              {
+                "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                "skill_code": "AI_FUNDAMENTALS",
+                "skill_name": "Ai Fundamentals",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                "skill_code": "AI_LITERACY",
+                "skill_name": "Ai Literacy",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                "skill_code": "DATA_ANALYSIS",
+                "skill_name": "Data Analysis",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                "skill_code": "MACHINE_LEARNING",
+                "skill_name": "Machine Learning",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+                "credential_expires_at": null
+              },
+              {
+                "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          },
+          {
+            "id": "b33c77f9-8dae-4997-b7ca-8ac36acbdea4",
+            "public_reference": "dd7b8ec4-3db7-451d-92f9-3daf3f7fc849",
+            "version_number": 1,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:40.516094-05:00",
+            "created_at": "2026-10-27T10:22:40.566041-05:00",
+            "skills": [
+              {
+                "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                "skill_code": "AI_FUNDAMENTALS",
+                "skill_name": "Ai Fundamentals",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                "skill_code": "AI_LITERACY",
+                "skill_name": "Ai Literacy",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/student/passport/pdf/status/",
+      "http_status": 200,
+      "seconds": 0.3669,
+      "rpc_requests": 13,
+      "body": {
+        "document_reference": "f567e749-e9cb-40b5-b560-5d449ed43291",
+        "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+        "passport_version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+        "status": "ISSUED",
+        "generated_at": "2026-10-27T10:22:44.786774-05:00",
+        "available_for_download": true,
+        "download_document_reference": "f567e749-e9cb-40b5-b560-5d449ed43291",
+        "error": null,
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+          "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+          "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+          "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+          "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+          "latest_version": 2,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 4,
+          "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:47.472470+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/blockchain/document/f567e749-e9cb-40b5-b560-5d449ed43291/",
+      "http_status": 200,
+      "seconds": 0.324,
+      "rpc_requests": 13,
+      "body": {
+        "status": "CONFIRMED",
+        "blockchain_verified": true,
+        "historical_blockchain_authentic": true,
+        "issuer_key_authorized": true,
+        "institutional_issuer_approved": true,
+        "source": "POLYGON_PDF_COMMITMENT_V1",
+        "chain_id": 31337,
+        "environment": "LOCAL_ANVIL",
+        "required_confirmations": 1,
+        "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+        "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+        "passport_status": "ACTIVE",
+        "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+        "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+        "retryable": true,
+        "operation_state": "CONFIRMED",
+        "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+        "operator_review_required": false,
+        "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+        "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+        "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+        "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+        "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+        "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+        "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+        "latest_version": 2,
+        "registry_status": "VALID",
+        "credential_status": "VALID",
+        "block_number": 4,
+        "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+        "confirmations": 1,
+        "onchain_status": "ACTIVE",
+        "network": "Anvil",
+        "transaction_explorer_url": null,
+        "assessed_at": "2026-10-27T15:22:47.797652+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport-version/6d7e52ed-6399-4788-beda-a67b921f40a8/",
+      "http_status": 200,
+      "seconds": 0.3104,
+      "rpc_requests": 13,
+      "body": {
+        "status": "VALID",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 2,
+        "latest_version": 2,
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 2,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+          "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+          "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+          "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+          "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+          "latest_version": 2,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 4,
+          "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:48.100597+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/integrations/course-recommendations/",
+      "http_status": 200,
+      "seconds": 0.2163,
+      "rpc_requests": 0,
+      "body": {
+        "source": "SIMULATED_BTU_CATALOG",
+        "analysis_mode": "RULE_BASED",
+        "disclaimer": "All catalog offerings and academic history fixtures are simulated. Guidance is not official course approval, enrollment availability or a credential award.",
+        "profile": {
+          "completed_courses": [
+            "AI-101",
+            "AI-201"
+          ],
+          "verified_achievement_skills": [
+            "AI_FUNDAMENTALS",
+            "AI_LITERACY",
+            "DATA_ANALYSIS",
+            "MACHINE_LEARNING"
+          ],
+          "passport_verified_skills": [
+            "AI_FUNDAMENTALS",
+            "AI_LITERACY",
+            "DATA_ANALYSIS",
+            "MACHINE_LEARNING"
+          ],
+          "inferred_course_skills": [
+            "AI_FUNDAMENTALS",
+            "AI_LITERACY",
+            "MACHINE_LEARNING",
+            "MODEL_EVALUATION"
+          ],
+          "highest_completed_catalog_level": 2,
+          "missing_competencies": [
+            "AI_MONITORING",
+            "ALGORITHMS",
+            "AUTOMATED_TESTING",
+            "BACKEND_APIS",
+            "CI_CD",
+            "CLOUD_COMPUTING",
+            "CLOUD_IDENTITY",
+            "CODE_REVIEW",
+            "COMPUTATIONAL_THINKING",
+            "CONTAINERS",
+            "DATA_PIPELINES",
+            "DATA_QUALITY",
+            "DATA_STRUCTURES",
+            "DATA_VISUALIZATION",
+            "DEBUGGING",
+            "DEEP_LEARNING",
+            "DIGITAL_LITERACY",
+            "GENERATIVE_AI",
+            "LINEAR_ALGEBRA",
+            "LINUX",
+            "MODEL_SERVING",
+            "NETWORKING",
+            "NEURAL_NETWORKS",
+            "OBSERVABILITY",
+            "OPERATING_SYSTEMS",
+            "PROBABILITY",
+            "PROMPT_ENGINEERING",
+            "PYTHON",
+            "QUERY_OPTIMIZATION",
+            "RELATIONAL_MODELING",
+            "SECURE_DESIGN",
+            "SECURITY_CONTROLS",
+            "SECURITY_TESTING",
+            "SQL",
+            "TEST_DESIGN",
+            "THREAT_MODELING",
+            "TRANSACTION_DESIGN",
+            "VERSION_CONTROL",
+            "WEB_SECURITY"
+          ]
+        },
+        "recommendations": [
+          {
+            "course_id": "AI-301",
+            "title": "Applied Generative AI",
+            "department": "Artificial Intelligence",
+            "category": "ARTIFICIAL_INTELLIGENCE",
+            "difficulty": "ADVANCED",
+            "score": 65.0,
+            "readiness": "READY",
+            "existing_skills": [
+              "MACHINE_LEARNING",
+              "MODEL_EVALUATION"
+            ],
+            "related_completed_courses": [
+              "AI-201"
+            ],
+            "potential_new_skills": [
+              "GENERATIVE_AI",
+              "PROMPT_ENGINEERING"
+            ],
+            "missing_prerequisites": [],
+            "reason": "Builds on completed Machine Learning Fundamentals. Uses existing competencies MACHINE_LEARNING, MODEL_EVALUATION. Develops GENERATIVE_AI, PROMPT_ENGINEERING through Apply and assess generative ai in practical computing exercises.; Apply and assess prompt engineering in practical computing exercises.",
+            "progression": "Eligible level 3; learning outcomes add competencies and may satisfy later prerequisites.",
+            "learning_outcomes": [
+              {
+                "competency": "GENERATIVE_AI",
+                "description": "Apply and assess generative ai in practical computing exercises."
+              },
+              {
+                "competency": "PROMPT_ENGINEERING",
+                "description": "Apply and assess prompt engineering in practical computing exercises."
+              }
+            ],
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 5
+          },
+          {
+            "course_id": "DEMO-CS-101",
+            "title": "Computer Science Foundations",
+            "department": "Computer Science",
+            "category": "PROGRAMMING",
+            "difficulty": "FOUNDATION",
+            "score": 65.0,
+            "readiness": "READY",
+            "existing_skills": [],
+            "related_completed_courses": [],
+            "potential_new_skills": [
+              "COMPUTATIONAL_THINKING"
+            ],
+            "missing_prerequisites": [],
+            "reason": "This eligible foundation has no unmet course or competency prerequisites. Develops COMPUTATIONAL_THINKING through Apply and assess computational thinking in practical computing exercises.. Completing it can unlock DEMO-GIT-101, DEMO-PYTHON-101",
+            "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+            "learning_outcomes": [
+              {
+                "competency": "COMPUTATIONAL_THINKING",
+                "description": "Apply and assess computational thinking in practical computing exercises."
+              }
+            ],
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 1
+          },
+          {
+            "course_id": "DEMO-DB-101",
+            "title": "Introduction to Databases",
+            "department": "Information Systems",
+            "category": "DATABASES",
+            "difficulty": "FOUNDATION",
+            "score": 45.0,
+            "readiness": "READY",
+            "existing_skills": [],
+            "related_completed_courses": [],
+            "potential_new_skills": [
+              "RELATIONAL_MODELING",
+              "SQL"
+            ],
+            "missing_prerequisites": [],
+            "reason": "This eligible foundation has no unmet course or competency prerequisites. Develops RELATIONAL_MODELING, SQL through Query and update relational data with SQL and integrity constraints.; Design normalized relational schemas, keys and referential integrity constraints.",
+            "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+            "learning_outcomes": [
+              {
+                "competency": "SQL",
+                "description": "Query and update relational data with SQL and integrity constraints."
+              },
+              {
+                "competency": "RELATIONAL_MODELING",
+                "description": "Design normalized relational schemas, keys and referential integrity constraints."
+              }
+            ],
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 1
+          },
+          {
+            "course_id": "DEMO-DIGITAL-101",
+            "title": "Digital Literacy",
+            "department": "Information Technology",
+            "category": "IT",
+            "difficulty": "FOUNDATION",
+            "score": 45.0,
+            "readiness": "READY",
+            "existing_skills": [],
+            "related_completed_courses": [],
+            "potential_new_skills": [
+              "DIGITAL_LITERACY"
+            ],
+            "missing_prerequisites": [],
+            "reason": "This eligible foundation has no unmet course or competency prerequisites. Develops DIGITAL_LITERACY through Apply and assess digital literacy in practical computing exercises.",
+            "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+            "learning_outcomes": [
+              {
+                "competency": "DIGITAL_LITERACY",
+                "description": "Apply and assess digital literacy in practical computing exercises."
+              }
+            ],
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 1
+          },
+          {
+            "course_id": "DEMO-MATH-101",
+            "title": "Mathematics for Computing",
+            "department": "Mathematics",
+            "category": "MATHEMATICS",
+            "difficulty": "FOUNDATION",
+            "score": 45.0,
+            "readiness": "READY",
+            "existing_skills": [],
+            "related_completed_courses": [],
+            "potential_new_skills": [
+              "LINEAR_ALGEBRA",
+              "PROBABILITY"
+            ],
+            "missing_prerequisites": [],
+            "reason": "This eligible foundation has no unmet course or competency prerequisites. Develops LINEAR_ALGEBRA, PROBABILITY through Apply and assess linear algebra in practical computing exercises.; Apply and assess probability in practical computing exercises.",
+            "progression": "Eligible level 1; learning outcomes add competencies and may satisfy later prerequisites.",
+            "learning_outcomes": [
+              {
+                "competency": "LINEAR_ALGEBRA",
+                "description": "Apply and assess linear algebra in practical computing exercises."
+              },
+              {
+                "competency": "PROBABILITY",
+                "description": "Apply and assess probability in practical computing exercises."
+              }
+            ],
+            "ai_assisted": false,
+            "source": "SIMULATED_BTU_CATALOG",
+            "availability": true,
+            "credits": 6,
+            "suggested_semester": 1
+          }
+        ],
+        "pathways": [
+          {
+            "recommended_next": "AI-301",
+            "future_courses": []
+          },
+          {
+            "recommended_next": "DEMO-CS-101",
+            "future_courses": [
+              {
+                "course_id": "DEMO-PYTHON-101",
+                "title": "Python Programming",
+                "department": "Computer Science",
+                "category": "PROGRAMMING",
+                "difficulty": "FOUNDATION",
+                "readiness": "FUTURE",
+                "score": 75.0,
+                "assumes_completion_of": [
+                  "DEMO-CS-101"
+                ],
+                "existing_skills": [],
+                "related_completed_courses": [],
+                "potential_new_skills": [
+                  "DEBUGGING",
+                  "PYTHON"
+                ],
+                "missing_prerequisites": {
+                  "courses": [
+                    "DEMO-CS-101"
+                  ],
+                  "skills": []
+                },
+                "reason": "Conditional on completing planned courses DEMO-CS-101. Builds on completed Computer Science Foundations. Uses existing competencies COMPUTATIONAL_THINKING. Develops DEBUGGING, PYTHON through Write and test Python programs using functions, collections and modules.; Diagnose program failures using tracebacks and controlled experiments.. Completing it can unlock DEMO-DATA-201, DEMO-DS-201, DEMO-TEST-201",
+                "progression": "Planned progression only; no future completion or skill is recorded as earned.",
+                "ai_assisted": false,
+                "source": "SIMULATED_BTU_CATALOG",
+                "availability": true,
+                "credits": 6,
+                "suggested_semester": 1
+              },
+              {
+                "course_id": "DEMO-DS-201",
+                "title": "Data Structures and Algorithms",
+                "department": "Software Engineering",
+                "category": "SOFTWARE_ENGINEERING",
+                "difficulty": "INTERMEDIATE",
+                "readiness": "FUTURE",
+                "score": 55.0,
+                "assumes_completion_of": [
+                  "DEMO-CS-101",
+                  "DEMO-PYTHON-101"
+                ],
+                "existing_skills": [],
+                "related_completed_courses": [],
+                "potential_new_skills": [
+                  "ALGORITHMS",
+                  "DATA_STRUCTURES"
+                ],
+                "missing_prerequisites": {
+                  "courses": [
+                    "DEMO-PYTHON-101"
+                  ],
+                  "skills": [
+                    "PYTHON"
+                  ]
+                },
+                "reason": "Conditional on completing planned courses DEMO-CS-101, DEMO-PYTHON-101. Builds on completed Python Programming. Uses existing competencies DEBUGGING, PYTHON. Develops ALGORITHMS, DATA_STRUCTURES through Choose and implement collections according to their access and update costs.; Analyze algorithm correctness and time/space complexity.",
+                "progression": "Planned progression only; no future completion or skill is recorded as earned.",
+                "ai_assisted": false,
+                "source": "SIMULATED_BTU_CATALOG",
+                "availability": true,
+                "credits": 6,
+                "suggested_semester": 3
+              }
+            ]
+          },
+          {
+            "recommended_next": "DEMO-DB-101",
+            "future_courses": []
+          }
+        ],
+        "blocked_courses": [
+          {
+            "course_id": "DEMO-BACKEND-201",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-DB-101",
+                "DEMO-PYTHON-101"
+              ],
+              "skills": [
+                "PYTHON",
+                "SQL"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-CLOUD-201",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-NET-101",
+                "DEMO-OS-101"
+              ],
+              "skills": [
+                "LINUX",
+                "NETWORKING"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-DATA-201",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-PYTHON-101"
+              ],
+              "skills": [
+                "PYTHON"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-DATAENG-301",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-DATA-201",
+                "DEMO-DB-101"
+              ],
+              "skills": [
+                "PYTHON",
+                "SQL"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-DB-301",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-DB-101",
+                "DEMO-DS-201"
+              ],
+              "skills": [
+                "DATA_STRUCTURES",
+                "SQL"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-DEEP-301",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-DS-201"
+              ],
+              "skills": [
+                "LINEAR_ALGEBRA",
+                "PYTHON"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-DEVOPS-301",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-BACKEND-201",
+                "DEMO-CLOUD-201"
+              ],
+              "skills": [
+                "BACKEND_APIS",
+                "CLOUD_COMPUTING"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-DS-201",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-PYTHON-101"
+              ],
+              "skills": [
+                "PYTHON"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-GIT-101",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-CS-101"
+              ],
+              "skills": []
+            }
+          },
+          {
+            "course_id": "DEMO-MLDEPLOY-301",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-BACKEND-201"
+              ],
+              "skills": [
+                "BACKEND_APIS"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-PYTHON-101",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-CS-101"
+              ],
+              "skills": []
+            }
+          },
+          {
+            "course_id": "DEMO-SEC-201",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-NET-101",
+                "DEMO-OS-101"
+              ],
+              "skills": [
+                "NETWORKING",
+                "OPERATING_SYSTEMS"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-SEC-301",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-BACKEND-201",
+                "DEMO-SEC-201"
+              ],
+              "skills": [
+                "BACKEND_APIS",
+                "THREAT_MODELING"
+              ]
+            }
+          },
+          {
+            "course_id": "DEMO-TEST-201",
+            "readiness": "PREREQUISITES_MISSING",
+            "missing_prerequisites": {
+              "courses": [
+                "DEMO-PYTHON-101"
+              ],
+              "skills": [
+                "PYTHON"
+              ]
+            }
+          }
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/statistics/",
+      "http_status": 200,
+      "seconds": 0.1524,
+      "rpc_requests": 0,
+      "body": {
+        "students": 3,
+        "credentials": {
+          "total": 3,
+          "valid": 3,
+          "expired": 0,
+          "revoked": 0,
+          "invalid": 0
+        },
+        "passports": 3,
+        "recognized_skills": 5,
+        "skills_by_category": [
+          {
+            "category": "AI",
+            "count": 4
+          },
+          {
+            "category": "Artificial Intelligence",
+            "count": 1
+          }
+        ],
+        "skills_by_subcategory": [
+          {
+            "subcategory": "",
+            "count": 5
+          }
+        ],
+        "verified_achievements": 5
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/catalog/",
+      "http_status": 200,
+      "seconds": 0.1986,
+      "rpc_requests": 0,
+      "body": {
+        "count": 5,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+            "skill_code": "AI_FUNDAMENTALS",
+            "skill_name": "Ai Fundamentals",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence."
+          },
+          {
+            "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+            "skill_code": "AI_LITERACY",
+            "skill_name": "Ai Literacy",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence."
+          },
+          {
+            "id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+            "skill_code": "DATA_ANALYSIS",
+            "skill_name": "Data Analysis",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence."
+          },
+          {
+            "id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+            "skill_code": "MACHINE_LEARNING",
+            "skill_name": "Machine Learning",
+            "category": "AI",
+            "subcategory": "",
+            "competency_level": "FOCUSED",
+            "description": "Synthetic assessed AI learning evidence."
+          },
+          {
+            "id": "e3a39182-f0e9-4d08-a115-a64e6ef4327c",
+            "skill_code": "PDF-SKILL-001",
+            "skill_name": "Machine Learning Foundations",
+            "category": "Artificial Intelligence",
+            "subcategory": "",
+            "competency_level": "APPLIED",
+            "description": "Build and evaluate foundational machine learning systems."
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/course-mappings/",
+      "http_status": 200,
+      "seconds": 0.2213,
+      "rpc_requests": 0,
+      "body": {
+        "source": "BACKEND_CONTROLLED_COURSE_MAPPINGS",
+        "results": [
+          {
+            "course_id": "AI-101",
+            "course_name": "Introduction to Artificial Intelligence",
+            "minimum_grade": 51,
+            "skill_codes": [
+              "AI_LITERACY",
+              "AI_FUNDAMENTALS"
+            ],
+            "enabled": true
+          },
+          {
+            "course_id": "AI-201",
+            "course_name": "Machine Learning Fundamentals",
+            "minimum_grade": 51,
+            "skill_codes": [
+              "MACHINE_LEARNING",
+              "DATA_ANALYSIS"
+            ],
+            "enabled": true
+          },
+          {
+            "course_id": "AI-301",
+            "course_name": "Applied Generative AI",
+            "minimum_grade": 51,
+            "skill_codes": [
+              "GENERATIVE_AI",
+              "PROMPT_ENGINEERING"
+            ],
+            "enabled": true
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/students/",
+      "http_status": 200,
+      "seconds": 0.2134,
+      "rpc_requests": 0,
+      "body": {
+        "count": 3,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "external_student_id": "HTTP-SYNTHETIC-001",
+            "first_name": "Synthetic",
+            "last_name": "Student",
+            "email": "http.student@btu.edu.ge",
+            "program": "AI",
+            "education_level": "Bachelor",
+            "student_status": "Active"
+          },
+          {
+            "id": "06479f1e-32b5-4e5a-ba5c-c6a45eed0d89",
+            "external_student_id": "HTTP-UNISSUED-001",
+            "first_name": "Unissued",
+            "last_name": "Synthetic",
+            "email": "http.unissued@btu.edu.ge",
+            "program": "AI",
+            "education_level": "Bachelor",
+            "student_status": "Active"
+          },
+          {
+            "id": "e9c91c64-1954-4ce0-a163-661c2ee72572",
+            "external_student_id": "PDF-STUDENT-001",
+            "first_name": "PDF",
+            "last_name": "Student",
+            "email": "pdf-student@example.org",
+            "program": "AI",
+            "education_level": "Bachelor",
+            "student_status": "Active"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/passports/?student_id=2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+      "http_status": 200,
+      "seconds": 0.3656,
+      "rpc_requests": 13,
+      "body": {
+        "count": 1,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "709e8377-d848-422f-8337-58ac0a3db198",
+            "public_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "status": "BLOCKCHAIN_VERIFIED",
+            "lifecycle_status": "ACTIVE",
+            "created_at": "2026-10-27T10:22:40.541620-05:00",
+            "updated_at": "2026-10-27T10:22:43.937279-05:00",
+            "latest_version": {
+              "id": "13e12a07-fa34-44e1-945d-2bb8305bd402",
+              "public_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+              "version_number": 2,
+              "status": "ISSUED",
+              "issued_at": "2026-10-27T10:22:43.861647-05:00",
+              "created_at": "2026-10-27T10:22:43.905153-05:00",
+              "skills": [
+                {
+                  "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                  "skill_code": "AI_FUNDAMENTALS",
+                  "skill_name": "Ai Fundamentals",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                },
+                {
+                  "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                  "skill_code": "AI_LITERACY",
+                  "skill_name": "Ai Literacy",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                },
+                {
+                  "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                  "skill_code": "DATA_ANALYSIS",
+                  "skill_name": "Data Analysis",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                },
+                {
+                  "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                  "skill_code": "MACHINE_LEARNING",
+                  "skill_name": "Machine Learning",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                }
+              ],
+              "credentials": [
+                {
+                  "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+                  "issuer_reference": "BTU-UNIVERSITY",
+                  "issuer_name": "BTU Synthetic University",
+                  "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+                  "credential_expires_at": null
+                },
+                {
+                  "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                  "issuer_reference": "BTU-UNIVERSITY",
+                  "issuer_name": "BTU Synthetic University",
+                  "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                  "credential_expires_at": null
+                }
+              ]
+            },
+            "first_issued_at": "2026-10-27T10:22:40.516094-05:00",
+            "blockchain": {
+              "status": "CONFIRMED",
+              "blockchain_verified": true,
+              "historical_blockchain_authentic": true,
+              "issuer_key_authorized": true,
+              "institutional_issuer_approved": true,
+              "source": "POLYGON_PDF_COMMITMENT_V1",
+              "chain_id": 31337,
+              "environment": "LOCAL_ANVIL",
+              "required_confirmations": 1,
+              "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+              "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+              "passport_status": "ACTIVE",
+              "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+              "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+              "retryable": true,
+              "operation_state": "CONFIRMED",
+              "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+              "operator_review_required": false,
+              "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+              "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+              "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+              "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+              "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+              "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+              "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+              "latest_version": 2,
+              "registry_status": "VALID",
+              "credential_status": "VALID",
+              "block_number": 4,
+              "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+              "confirmations": 1,
+              "onchain_status": "ACTIVE",
+              "network": "Anvil",
+              "transaction_explorer_url": null,
+              "assessed_at": "2026-10-27T15:22:49.475221+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/verification/document/",
+      "http_status": 200,
+      "seconds": 0.3828,
+      "rpc_requests": 13,
+      "body": {
+        "status": "VALID",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 2,
+        "latest_version": 2,
+        "message": "Registered document integrity and current credential status checked.",
+        "source": "POSTGRESQL_DOCUMENT_REGISTRY",
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 2,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+          "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+          "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+          "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+          "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+          "latest_version": 2,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 4,
+          "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:50.033206+00:00"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/verification/document/",
+      "http_status": 200,
+      "seconds": 0.1193,
+      "rpc_requests": 0,
+      "body": {
+        "status": "UNVERIFIABLE",
+        "authentic": false,
+        "is_latest": null,
+        "passport_version": null,
+        "latest_version": null,
+        "message": "No matching issued document was found.",
+        "source": "POSTGRESQL_DOCUMENT_REGISTRY",
+        "credential_status": "UNVERIFIABLE",
+        "credential_counts": {}
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/credentials/9e7c8373-f57a-4b08-af18-f5eb97de46e2/revoke/",
+      "http_status": 200,
+      "seconds": 0.4035,
+      "rpc_requests": 0,
+      "body": {
+        "id": "9e7c8373-f57a-4b08-af18-f5eb97de46e2",
+        "public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+        "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+        "issuer_reference": "BTU-UNIVERSITY",
+        "issuer_name": "BTU Synthetic University",
+        "issued_at": "2026-10-27T10:22:40.441451-05:00",
+        "expires_at": null,
+        "status": "REVOKED",
+        "validity_status": "REVOKED",
+        "revoked_at": "2026-10-27T10:22:50.403497-05:00",
+        "achievements": [
+          {
+            "id": "92fc24c0-5f6b-41a0-a596-e1fb50957167",
+            "skill": {
+              "id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+              "skill_code": "AI_LITERACY",
+              "skill_name": "Ai Literacy",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-101",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          },
+          {
+            "id": "f81a8f1e-c149-4f83-b321-918c4d8dfef9",
+            "skill": {
+              "id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+              "skill_code": "AI_FUNDAMENTALS",
+              "skill_name": "Ai Fundamentals",
+              "category": "AI",
+              "subcategory": "",
+              "competency_level": "FOCUSED",
+              "description": "Synthetic assessed AI learning evidence."
+            },
+            "course_reference": "AI-101",
+            "earned_on": "2026-10-20",
+            "verification_status": "VERIFIED"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/verification/document/",
+      "http_status": 200,
+      "seconds": 0.3528,
+      "rpc_requests": 13,
+      "body": {
+        "status": "REVOKED",
+        "authentic": true,
+        "is_latest": false,
+        "passport_version": 2,
+        "latest_version": 3,
+        "message": "Registered document integrity and current credential status checked.",
+        "source": "POSTGRESQL_DOCUMENT_REGISTRY",
+        "credential_status": "REVOKED",
+        "credential_counts": {
+          "VALID": 1,
+          "REVOKED": 1,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": false,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "9939f7ca0d041af2dc571224d5c1504204391a18013c87ba39d8d3fa56482836",
+          "snapshot_sha256": "ff34ead7614538df2c5071c17c571321346a231a494a9830be213fea95cebc38",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0x2450bbd4f9b7962db2caf2db6bddc2d042c7ecdc74c20498242d5129499b8281",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "c462221167457501ade753ca5b3c4f4c8408fa8fd5740c01235e6d82c2ffe0ad",
+          "document_key": "ae06b703011ab0d70c7280d0753e32bb3a1bf8a4a546bc5b9e03a25cda46d3f1",
+          "commitment": "7d6ba20edede166f20c57d02a4e1617da7203c756ab28f2162601e05c3c06a5d",
+          "commitment_salt": "a6215d06258a531b80396085996a4b3d2064f27512f4624f436b28bd437cd23e",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+          "latest_version": 3,
+          "registry_status": "REVOKED",
+          "credential_status": "REVOKED",
+          "block_number": 4,
+          "block_hash": "0xada8c0f827d0e2f46a64c98937c0248d074122397fdfa72db2f82c712f92d61a",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:50.911595+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/303ced6a-14d9-4e8f-960d-ab689a5e0595/",
+      "http_status": 200,
+      "seconds": 0.3257,
+      "rpc_requests": 13,
+      "body": {
+        "status": "VALID",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 3,
+        "latest_version": 3,
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 1,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "ea3a99a1b91e85c01197a7d74298186e4746b37d8275f0c8e364dcaad00ca5ef",
+          "snapshot_sha256": "22ff14e57ae026de1d62e7b1d6c030ee04645f77d1a001fd867e8bcd052f0ec3",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xca8634c83dcb673e9fbd21ba5dfd386827a33fe16740dc56fdad741c5445b463",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "84bf4c2f3bb69e76fbf146aa53c01256357ef57feb532e16e034395ecabea1ad",
+          "document_key": "3fb936c843567e2e2e70bca74f9b3821025c8331b57a38e9fc282ef0d9d2e015",
+          "commitment": "6bb84d63e4cf7b7fe19a1b10ff53a78802b2b0dd6afcfc6ebbd4d8e859f96d99",
+          "commitment_salt": "becd25804806d24e9d931cd8887a96dfeb7fcce1e3fbaf23b729874581b6c375",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "c74d700c-23ef-4c60-9fbc-a108c2d7e5c8",
+          "latest_version": 3,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 5,
+          "block_hash": "0xce2d3dc45db2446d902ef864f71e56dad664f100040b80c335f674aed7842a7d",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:53.079623+00:00"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/students/2942ffa1-82db-4e6b-b88f-d9e657fd390d/legal-name-change/",
+      "http_status": 403,
+      "seconds": 0.1414,
+      "rpc_requests": 0,
+      "body": {
+        "detail": "Administrator access required."
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/students/2942ffa1-82db-4e6b-b88f-d9e657fd390d/legal-name-change/",
+      "http_status": 200,
+      "seconds": 0.4613,
+      "rpc_requests": 0,
+      "body": {
+        "event_id": "d0751430-1a92-4311-a2e1-fd1633eca9a2",
+        "passport": {
+          "id": "f9be9b77-2787-4eea-a6c3-21efd59dc87c",
+          "public_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+          "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+          "status": "PENDING_BLOCKCHAIN",
+          "lifecycle_status": "ACTIVE",
+          "created_at": "2026-10-27T10:22:53.591255-05:00",
+          "updated_at": "2026-10-27T10:22:53.719268-05:00",
+          "latest_version": {
+            "id": "35cc4b96-0acd-4438-aa59-729a62320013",
+            "public_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+            "version_number": 1,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:53.633426-05:00",
+            "created_at": "2026-10-27T10:22:53.689645-05:00",
+            "skills": [
+              {
+                "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                "skill_code": "DATA_ANALYSIS",
+                "skill_name": "Data Analysis",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                "skill_code": "MACHINE_LEARNING",
+                "skill_name": "Machine Learning",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          },
+          "first_issued_at": "2026-10-27T10:22:53.633426-05:00",
+          "blockchain": {
+            "status": "PENDING_BLOCKCHAIN",
+            "blockchain_verified": false,
+            "historical_blockchain_authentic": false,
+            "issuer_key_authorized": false,
+            "institutional_issuer_approved": false,
+            "source": "POLYGON_PDF_COMMITMENT_V1",
+            "chain_id": 31337,
+            "environment": "LOCAL_ANVIL",
+            "required_confirmations": 1,
+            "network": "Anvil",
+            "transaction_explorer_url": null,
+            "assessed_at": "2026-10-27T15:22:53.811594+00:00"
+          }
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/303ced6a-14d9-4e8f-960d-ab689a5e0595/",
+      "http_status": 200,
+      "seconds": 0.2837,
+      "rpc_requests": 13,
+      "body": {
+        "status": "REPLACED",
+        "authentic": true,
+        "is_latest": false,
+        "passport_version": 3,
+        "latest_version": 3,
+        "credential_status": "UNVERIFIABLE",
+        "credential_counts": {},
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": false,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "REPLACED",
+          "pdf_sha256": "ea3a99a1b91e85c01197a7d74298186e4746b37d8275f0c8e364dcaad00ca5ef",
+          "snapshot_sha256": "22ff14e57ae026de1d62e7b1d6c030ee04645f77d1a001fd867e8bcd052f0ec3",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xca8634c83dcb673e9fbd21ba5dfd386827a33fe16740dc56fdad741c5445b463",
+          "operator_review_required": false,
+          "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+          "version_key": "84bf4c2f3bb69e76fbf146aa53c01256357ef57feb532e16e034395ecabea1ad",
+          "document_key": "3fb936c843567e2e2e70bca74f9b3821025c8331b57a38e9fc282ef0d9d2e015",
+          "commitment": "6bb84d63e4cf7b7fe19a1b10ff53a78802b2b0dd6afcfc6ebbd4d8e859f96d99",
+          "commitment_salt": "becd25804806d24e9d931cd8887a96dfeb7fcce1e3fbaf23b729874581b6c375",
+          "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+          "version_reference": "c74d700c-23ef-4c60-9fbc-a108c2d7e5c8",
+          "latest_version": 3,
+          "registry_status": "REPLACED",
+          "credential_status": "UNVERIFIABLE",
+          "block_number": 5,
+          "block_hash": "0xce2d3dc45db2446d902ef864f71e56dad664f100040b80c335f674aed7842a7d",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:54.434888+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/aed26aae-dba9-42e9-aef5-e7edf56a0d6e/",
+      "http_status": 200,
+      "seconds": 0.421,
+      "rpc_requests": 23,
+      "body": {
+        "status": "VALID",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 1,
+        "latest_version": 1,
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 1,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "34978b2479294b8f71128158c895aee88ae0b61e20e4437c0eb42d1201acbbfe",
+          "snapshot_sha256": "164d35fca8e2b7f50ccf2669b94e024ee64a63fa4e26aab2ca9b2f45b18c8fb7",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xf2b5e87338bd88204d82e8913fc7bdd7ae66c321fd5071eb1ea5c3a14eef77ca",
+          "operator_review_required": false,
+          "passport_key": "568fd4eafd8a367b11d8c7b00e2abe3ac633c0feeb657528eb5ff8630f43625b",
+          "version_key": "a9a65ae84b36096fe7b0c4f6ba67a59ca1920f17e8a3ac8970c3ea0ab991352d",
+          "document_key": "577638ea76a8cab871f4790772acf90ee2bafa7eca606ef2fa1e536d5f458873",
+          "commitment": "38c3b03620e0e0088680d17bf62917b031dc404a56787950d3483aa232d55225",
+          "commitment_salt": "b5a7bee3c338b9b2f35148c531c8cfd461d57e31131601a2022747a655bba68d",
+          "passport_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+          "version_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+          "replacement_transaction_hash": "0x95445eb493aa0f5d6d789630a78595d57bfa82fea06996ecdf60b26172de8c03",
+          "latest_version": 1,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 7,
+          "block_hash": "0x2584fe200ac06bedcab3bcb30acb00bcb508b4a58dfd5ff0fb04af8d3ba9eca7",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:22:57.634564+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/passports/?student_id=2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+      "http_status": 200,
+      "seconds": 0.6065,
+      "rpc_requests": 36,
+      "body": {
+        "count": 2,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "709e8377-d848-422f-8337-58ac0a3db198",
+            "public_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "status": "REPLACED",
+            "lifecycle_status": "REPLACED",
+            "created_at": "2026-10-27T10:22:40.541620-05:00",
+            "updated_at": "2026-10-27T10:22:53.579412-05:00",
+            "latest_version": {
+              "id": "19df5980-632f-483b-99b9-bf3b6c133056",
+              "public_reference": "c74d700c-23ef-4c60-9fbc-a108c2d7e5c8",
+              "version_number": 3,
+              "status": "ISSUED",
+              "issued_at": "2026-10-27T10:22:50.457957-05:00",
+              "created_at": "2026-10-27T10:22:50.503556-05:00",
+              "skills": [
+                {
+                  "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                  "skill_code": "DATA_ANALYSIS",
+                  "skill_name": "Data Analysis",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                },
+                {
+                  "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                  "skill_code": "MACHINE_LEARNING",
+                  "skill_name": "Machine Learning",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                }
+              ],
+              "credentials": [
+                {
+                  "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                  "issuer_reference": "BTU-UNIVERSITY",
+                  "issuer_name": "BTU Synthetic University",
+                  "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                  "credential_expires_at": null
+                }
+              ]
+            },
+            "first_issued_at": "2026-10-27T10:22:40.516094-05:00",
+            "blockchain": {
+              "status": "CONFIRMED",
+              "blockchain_verified": false,
+              "historical_blockchain_authentic": true,
+              "issuer_key_authorized": true,
+              "institutional_issuer_approved": true,
+              "source": "POLYGON_PDF_COMMITMENT_V1",
+              "chain_id": 31337,
+              "environment": "LOCAL_ANVIL",
+              "required_confirmations": 1,
+              "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+              "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+              "passport_status": "REPLACED",
+              "pdf_sha256": "ea3a99a1b91e85c01197a7d74298186e4746b37d8275f0c8e364dcaad00ca5ef",
+              "snapshot_sha256": "22ff14e57ae026de1d62e7b1d6c030ee04645f77d1a001fd867e8bcd052f0ec3",
+              "retryable": true,
+              "operation_state": "CONFIRMED",
+              "transaction_hash": "0xca8634c83dcb673e9fbd21ba5dfd386827a33fe16740dc56fdad741c5445b463",
+              "operator_review_required": false,
+              "passport_key": "4fcad90f8a07049c33044b4db709cfb85cae5193669edfa457d41d052ba8b203",
+              "version_key": "84bf4c2f3bb69e76fbf146aa53c01256357ef57feb532e16e034395ecabea1ad",
+              "document_key": "3fb936c843567e2e2e70bca74f9b3821025c8331b57a38e9fc282ef0d9d2e015",
+              "commitment": "6bb84d63e4cf7b7fe19a1b10ff53a78802b2b0dd6afcfc6ebbd4d8e859f96d99",
+              "commitment_salt": "becd25804806d24e9d931cd8887a96dfeb7fcce1e3fbaf23b729874581b6c375",
+              "passport_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+              "version_reference": "c74d700c-23ef-4c60-9fbc-a108c2d7e5c8",
+              "latest_version": 3,
+              "registry_status": "REPLACED",
+              "credential_status": "UNVERIFIABLE",
+              "block_number": 5,
+              "block_hash": "0xce2d3dc45db2446d902ef864f71e56dad664f100040b80c335f674aed7842a7d",
+              "confirmations": 3,
+              "onchain_status": "REPLACED",
+              "network": "Anvil",
+              "transaction_explorer_url": null,
+              "assessed_at": "2026-10-27T15:22:58.009500+00:00"
+            }
+          },
+          {
+            "id": "f9be9b77-2787-4eea-a6c3-21efd59dc87c",
+            "public_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+            "student_id": "2942ffa1-82db-4e6b-b88f-d9e657fd390d",
+            "status": "BLOCKCHAIN_VERIFIED",
+            "lifecycle_status": "ACTIVE",
+            "created_at": "2026-10-27T10:22:53.591255-05:00",
+            "updated_at": "2026-10-27T10:22:53.719268-05:00",
+            "latest_version": {
+              "id": "35cc4b96-0acd-4438-aa59-729a62320013",
+              "public_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+              "version_number": 1,
+              "status": "ISSUED",
+              "issued_at": "2026-10-27T10:22:53.633426-05:00",
+              "created_at": "2026-10-27T10:22:53.689645-05:00",
+              "skills": [
+                {
+                  "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                  "skill_code": "DATA_ANALYSIS",
+                  "skill_name": "Data Analysis",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                },
+                {
+                  "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                  "skill_code": "MACHINE_LEARNING",
+                  "skill_name": "Machine Learning",
+                  "category": "AI",
+                  "subcategory": "",
+                  "description": "Synthetic assessed AI learning evidence.",
+                  "stamp_type": "FOCUSED"
+                }
+              ],
+              "credentials": [
+                {
+                  "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                  "issuer_reference": "BTU-UNIVERSITY",
+                  "issuer_name": "BTU Synthetic University",
+                  "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                  "credential_expires_at": null
+                }
+              ]
+            },
+            "first_issued_at": "2026-10-27T10:22:53.633426-05:00",
+            "blockchain": {
+              "status": "CONFIRMED",
+              "blockchain_verified": true,
+              "historical_blockchain_authentic": true,
+              "issuer_key_authorized": true,
+              "institutional_issuer_approved": true,
+              "source": "POLYGON_PDF_COMMITMENT_V1",
+              "chain_id": 31337,
+              "environment": "LOCAL_ANVIL",
+              "required_confirmations": 1,
+              "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+              "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+              "passport_status": "ACTIVE",
+              "pdf_sha256": "34978b2479294b8f71128158c895aee88ae0b61e20e4437c0eb42d1201acbbfe",
+              "snapshot_sha256": "164d35fca8e2b7f50ccf2669b94e024ee64a63fa4e26aab2ca9b2f45b18c8fb7",
+              "retryable": true,
+              "operation_state": "CONFIRMED",
+              "transaction_hash": "0xf2b5e87338bd88204d82e8913fc7bdd7ae66c321fd5071eb1ea5c3a14eef77ca",
+              "operator_review_required": false,
+              "passport_key": "568fd4eafd8a367b11d8c7b00e2abe3ac633c0feeb657528eb5ff8630f43625b",
+              "version_key": "a9a65ae84b36096fe7b0c4f6ba67a59ca1920f17e8a3ac8970c3ea0ab991352d",
+              "document_key": "577638ea76a8cab871f4790772acf90ee2bafa7eca606ef2fa1e536d5f458873",
+              "commitment": "38c3b03620e0e0088680d17bf62917b031dc404a56787950d3483aa232d55225",
+              "commitment_salt": "b5a7bee3c338b9b2f35148c531c8cfd461d57e31131601a2022747a655bba68d",
+              "passport_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+              "version_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+              "replacement_transaction_hash": "0x95445eb493aa0f5d6d789630a78595d57bfa82fea06996ecdf60b26172de8c03",
+              "latest_version": 1,
+              "registry_status": "VALID",
+              "credential_status": "VALID",
+              "block_number": 7,
+              "block_hash": "0x2584fe200ac06bedcab3bcb30acb00bcb508b4a58dfd5ff0fb04af8d3ba9eca7",
+              "confirmations": 1,
+              "onchain_status": "ACTIVE",
+              "network": "Anvil",
+              "transaction_explorer_url": null,
+              "assessed_at": "2026-10-27T15:22:58.252872+00:00"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/passports/709e8377-d848-422f-8337-58ac0a3db198/versions/",
+      "http_status": 200,
+      "seconds": 0.1739,
+      "rpc_requests": 0,
+      "body": {
+        "count": 3,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "19df5980-632f-483b-99b9-bf3b6c133056",
+            "public_reference": "c74d700c-23ef-4c60-9fbc-a108c2d7e5c8",
+            "version_number": 3,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:50.457957-05:00",
+            "created_at": "2026-10-27T10:22:50.503556-05:00",
+            "skills": [
+              {
+                "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                "skill_code": "DATA_ANALYSIS",
+                "skill_name": "Data Analysis",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                "skill_code": "MACHINE_LEARNING",
+                "skill_name": "Machine Learning",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          },
+          {
+            "id": "13e12a07-fa34-44e1-945d-2bb8305bd402",
+            "public_reference": "6d7e52ed-6399-4788-beda-a67b921f40a8",
+            "version_number": 2,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:43.861647-05:00",
+            "created_at": "2026-10-27T10:22:43.905153-05:00",
+            "skills": [
+              {
+                "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                "skill_code": "AI_FUNDAMENTALS",
+                "skill_name": "Ai Fundamentals",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                "skill_code": "AI_LITERACY",
+                "skill_name": "Ai Literacy",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "730ddc95-fb28-4ea0-8399-54df5a064b91",
+                "skill_code": "DATA_ANALYSIS",
+                "skill_name": "Data Analysis",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "fb31abfb-1c29-442d-bbbd-7ee367f2fd3a",
+                "skill_code": "MACHINE_LEARNING",
+                "skill_name": "Machine Learning",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+                "credential_expires_at": null
+              },
+              {
+                "credential_public_reference": "69b640b8-0d9c-4ced-baec-61e0196050b4",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:43.794912-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          },
+          {
+            "id": "b33c77f9-8dae-4997-b7ca-8ac36acbdea4",
+            "public_reference": "dd7b8ec4-3db7-451d-92f9-3daf3f7fc849",
+            "version_number": 1,
+            "status": "ISSUED",
+            "issued_at": "2026-10-27T10:22:40.516094-05:00",
+            "created_at": "2026-10-27T10:22:40.566041-05:00",
+            "skills": [
+              {
+                "skill_id": "3da4f4fa-3640-44c9-aab3-f4fbd1a83c99",
+                "skill_code": "AI_FUNDAMENTALS",
+                "skill_name": "Ai Fundamentals",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              },
+              {
+                "skill_id": "65d6ef35-537a-4c78-8bb5-3973721ebd13",
+                "skill_code": "AI_LITERACY",
+                "skill_name": "Ai Literacy",
+                "category": "AI",
+                "subcategory": "",
+                "description": "Synthetic assessed AI learning evidence.",
+                "stamp_type": "FOCUSED"
+              }
+            ],
+            "credentials": [
+              {
+                "credential_public_reference": "5f09baba-07d8-4a1a-a111-16f322f18b79",
+                "issuer_reference": "BTU-UNIVERSITY",
+                "issuer_name": "BTU Synthetic University",
+                "credential_issued_at": "2026-10-27T10:22:40.441451-05:00",
+                "credential_expires_at": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/students/2942ffa1-82db-4e6b-b88f-d9e657fd390d/passport-lifecycle/",
+      "http_status": 200,
+      "seconds": 0.2154,
+      "rpc_requests": 0,
+      "body": {
+        "count": 1,
+        "next": null,
+        "previous": null,
+        "results": [
+          {
+            "id": "d0751430-1a92-4311-a2e1-fd1633eca9a2",
+            "event_type": "NAME_CHANGE",
+            "previous_reference": "303ced6a-14d9-4e8f-960d-ab689a5e0595",
+            "replacement_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+            "approved_by": "b7ac2e43-201d-400d-90db-ebd3cc26860f",
+            "evidence_source": "BTU_REGISTRAR",
+            "evidence_reference": "SYNTHETIC-APPROVAL-1",
+            "reason": "Approved synthetic legal correction",
+            "created_at": "2026-10-27T15:22:53.597373+00:00"
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/aed26aae-dba9-42e9-aef5-e7edf56a0d6e/",
+      "http_status": 200,
+      "seconds": 1.2001,
+      "rpc_requests": 1,
+      "body": {
+        "status": "UNVERIFIABLE",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 1,
+        "latest_version": 1,
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 1,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "UNAVAILABLE",
+          "blockchain_verified": false,
+          "historical_blockchain_authentic": false,
+          "issuer_key_authorized": false,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "34978b2479294b8f71128158c895aee88ae0b61e20e4437c0eb42d1201acbbfe",
+          "snapshot_sha256": "164d35fca8e2b7f50ccf2669b94e024ee64a63fa4e26aab2ca9b2f45b18c8fb7",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xf2b5e87338bd88204d82e8913fc7bdd7ae66c321fd5071eb1ea5c3a14eef77ca",
+          "operator_review_required": false,
+          "passport_key": "568fd4eafd8a367b11d8c7b00e2abe3ac633c0feeb657528eb5ff8630f43625b",
+          "version_key": "a9a65ae84b36096fe7b0c4f6ba67a59ca1920f17e8a3ac8970c3ea0ab991352d",
+          "document_key": "577638ea76a8cab871f4790772acf90ee2bafa7eca606ef2fa1e536d5f458873",
+          "commitment": "38c3b03620e0e0088680d17bf62917b031dc404a56787950d3483aa232d55225",
+          "commitment_salt": "b5a7bee3c338b9b2f35148c531c8cfd461d57e31131601a2022747a655bba68d",
+          "passport_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+          "version_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+          "error": "RPC_TIMEOUT",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:23:00.198061+00:00"
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/aed26aae-dba9-42e9-aef5-e7edf56a0d6e/",
+      "http_status": 200,
+      "seconds": 0.5065,
+      "rpc_requests": 23,
+      "body": {
+        "status": "VALID",
+        "authentic": true,
+        "is_latest": true,
+        "passport_version": 1,
+        "latest_version": 1,
+        "credential_status": "VALID",
+        "credential_counts": {
+          "VALID": 1,
+          "REVOKED": 0,
+          "EXPIRED": 0,
+          "INVALID": 0
+        },
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": true,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "ACTIVE",
+          "pdf_sha256": "34978b2479294b8f71128158c895aee88ae0b61e20e4437c0eb42d1201acbbfe",
+          "snapshot_sha256": "164d35fca8e2b7f50ccf2669b94e024ee64a63fa4e26aab2ca9b2f45b18c8fb7",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xf2b5e87338bd88204d82e8913fc7bdd7ae66c321fd5071eb1ea5c3a14eef77ca",
+          "operator_review_required": false,
+          "passport_key": "568fd4eafd8a367b11d8c7b00e2abe3ac633c0feeb657528eb5ff8630f43625b",
+          "version_key": "a9a65ae84b36096fe7b0c4f6ba67a59ca1920f17e8a3ac8970c3ea0ab991352d",
+          "document_key": "577638ea76a8cab871f4790772acf90ee2bafa7eca606ef2fa1e536d5f458873",
+          "commitment": "38c3b03620e0e0088680d17bf62917b031dc404a56787950d3483aa232d55225",
+          "commitment_salt": "b5a7bee3c338b9b2f35148c531c8cfd461d57e31131601a2022747a655bba68d",
+          "passport_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+          "version_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+          "replacement_transaction_hash": "0x95445eb493aa0f5d6d789630a78595d57bfa82fea06996ecdf60b26172de8c03",
+          "latest_version": 1,
+          "registry_status": "VALID",
+          "credential_status": "VALID",
+          "block_number": 7,
+          "block_hash": "0x2584fe200ac06bedcab3bcb30acb00bcb508b4a58dfd5ff0fb04af8d3ba9eca7",
+          "confirmations": 1,
+          "onchain_status": "ACTIVE",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:23:01.579299+00:00"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/passports/f9be9b77-2787-4eea-a6c3-21efd59dc87c/revoke/",
+      "http_status": 200,
+      "seconds": 0.217,
+      "rpc_requests": 0,
+      "body": {
+        "event_id": "c2be4ded-fc5b-4efa-99c1-81a96abf2038",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/verification/passport/aed26aae-dba9-42e9-aef5-e7edf56a0d6e/",
+      "http_status": 200,
+      "seconds": 0.5129,
+      "rpc_requests": 23,
+      "body": {
+        "status": "REVOKED",
+        "authentic": true,
+        "is_latest": false,
+        "passport_version": 1,
+        "latest_version": 1,
+        "credential_status": "UNVERIFIABLE",
+        "credential_counts": {},
+        "source": "POSTGRESQL_PASSPORT_REGISTRY",
+        "blockchain": {
+          "status": "CONFIRMED",
+          "blockchain_verified": false,
+          "historical_blockchain_authentic": true,
+          "issuer_key_authorized": true,
+          "institutional_issuer_approved": true,
+          "source": "POLYGON_PDF_COMMITMENT_V1",
+          "chain_id": 31337,
+          "environment": "LOCAL_ANVIL",
+          "required_confirmations": 1,
+          "contract_address": "0xd80b7e76af64270fddf06574f21102dd35f7aa47",
+          "issuer_address": "0x2b6535dbeb5baf5a7a2fe6fe5d6aa2e4bcd4b3de",
+          "passport_status": "REVOKED",
+          "pdf_sha256": "34978b2479294b8f71128158c895aee88ae0b61e20e4437c0eb42d1201acbbfe",
+          "snapshot_sha256": "164d35fca8e2b7f50ccf2669b94e024ee64a63fa4e26aab2ca9b2f45b18c8fb7",
+          "retryable": true,
+          "operation_state": "CONFIRMED",
+          "transaction_hash": "0xf2b5e87338bd88204d82e8913fc7bdd7ae66c321fd5071eb1ea5c3a14eef77ca",
+          "operator_review_required": false,
+          "passport_key": "568fd4eafd8a367b11d8c7b00e2abe3ac633c0feeb657528eb5ff8630f43625b",
+          "version_key": "a9a65ae84b36096fe7b0c4f6ba67a59ca1920f17e8a3ac8970c3ea0ab991352d",
+          "document_key": "577638ea76a8cab871f4790772acf90ee2bafa7eca606ef2fa1e536d5f458873",
+          "commitment": "38c3b03620e0e0088680d17bf62917b031dc404a56787950d3483aa232d55225",
+          "commitment_salt": "b5a7bee3c338b9b2f35148c531c8cfd461d57e31131601a2022747a655bba68d",
+          "passport_reference": "aed26aae-dba9-42e9-aef5-e7edf56a0d6e",
+          "version_reference": "20f1ea63-91c8-4245-8e70-1878e658e85d",
+          "replacement_transaction_hash": "0x95445eb493aa0f5d6d789630a78595d57bfa82fea06996ecdf60b26172de8c03",
+          "latest_version": 1,
+          "registry_status": "REVOKED",
+          "credential_status": "UNVERIFIABLE",
+          "block_number": 7,
+          "block_hash": "0x2584fe200ac06bedcab3bcb30acb00bcb508b4a58dfd5ff0fb04af8d3ba9eca7",
+          "confirmations": 2,
+          "onchain_status": "REVOKED",
+          "network": "Anvil",
+          "transaction_explorer_url": null,
+          "assessed_at": "2026-10-27T15:23:03.846473+00:00"
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/integrations/import/excel/",
+      "http_status": 200,
+      "seconds": 0.259,
+      "rpc_requests": 0,
+      "body": {
+        "source": "BTU_EXCEL",
+        "result": {
+          "processed": 1,
+          "awarded": 0,
+          "issued": 0,
+          "skipped": 1,
+          "failed": 0,
+          "errors": [],
+          "import_id": 3
+        },
+        "validation_errors": []
+      }
+    }
+  ]
+}

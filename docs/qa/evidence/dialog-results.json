@@ -1,0 +1,36 @@
+{
+  "syntheticDemo": true,
+  "mockedSuccessfulResponses": false,
+  "checks": [
+    {
+      "name": "StrictMode keeps the reopened native modal mounted",
+      "status": "PASS"
+    },
+    {
+      "name": "Tab and Shift+Tab exclude background controls",
+      "status": "PASS"
+    },
+    {
+      "name": "Escape dismisses and restores the opening control",
+      "status": "PASS"
+    },
+    {
+      "name": "A genuine native close event dismisses",
+      "status": "PASS"
+    },
+    {
+      "name": "Close icon dismisses without saving",
+      "status": "PASS"
+    },
+    {
+      "name": "Form Cancel does not save",
+      "status": "PASS"
+    },
+    {
+      "name": "Form Save survives client navigation and Reset removes it",
+      "status": "PASS"
+    }
+  ],
+  "apiRequests": [],
+  "pageErrors": []
+}

@@ -1,0 +1,37 @@
+
+[
+    {
+      "event_id": "CLASSROOM-EVT-001",
+      "student_id": "BTU-T-0010",
+      "course_id": "AI-101",
+      "course_name": "Introduction to Artificial Intelligence",
+      "enrollment_status": "enrolled",
+      "completion_status": "completed",
+      "grade": 92,
+      "passed": true,
+      "completion_date": "2026-06-15"
+    },
+    {
+      "event_id": "CLASSROOM-EVT-002",
+      "student_id": "BTU-T-0010",
+      "course_id": "AI-201",
+      "course_name": "Machine Learning Fundamentals",
+      "enrollment_status": "enrolled",
+      "completion_status": "in_progress",
+      "grade": null,
+      "passed": false,
+      "completion_date": null
+    },
+    {
+      "event_id": "CLASSROOM-EVT-003",
+      "student_id": "BTU-T-0020",
+      "course_id": "MATH-101",
+      "course_name": "Calculus",
+      "enrollment_status": "enrolled",
+      "completion_status": "completed",
+      "grade": 88,
+      "passed": true,
+      "completion_date": "2026-06-17"
+    }
+  ]
+  

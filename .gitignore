@@ -29,3 +29,12 @@ coverage/
 Thumbs.db
 
 output/*.pdf
+backend/output/*.pdf
+backend/media/
+backend/tmp/
+backend/.local-mail/
+backend/.local-run/
+blockchain/out/
+blockchain/cache/
+blockchain/broadcast/
+blockchain/keystores/

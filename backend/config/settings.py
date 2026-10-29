@@ -10,35 +10,82 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
+import json
 from pathlib import Path
+from urllib.parse import urlsplit
+
+import dj_database_url
+from config.spreadsheet_sources import validate_sources
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / '.env')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#kyk!x4%v7x*tycj*@2-@u=(h1am*de--%gmhbh(ow-q=nwm-3'
+def _env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized not in {"true", "false", "1", "0", "yes", "no"}:
+        raise ImproperlyConfigured(f"{name} must be a boolean value.")
+    return normalized in {"true", "1", "yes"}
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set in the environment or backend/.env.")
+
+DEBUG = _env_bool("DJANGO_DEBUG", default=False)
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
+if "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured("Wildcard hosts are not allowed.")
+if not DEBUG and "DJANGO_ALLOWED_HOSTS" not in os.environ:
+    raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must be set when DEBUG is disabled.")
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("At least one production host must be configured.")
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if not DEBUG and any(urlsplit(origin).scheme != "https" for origin in CSRF_TRUSTED_ORIGINS):
+    raise ImproperlyConfigured("Production CSRF trusted origins must use HTTPS.")
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
     'django.contrib.staticfiles',
     'rest_framework',
+    'apps.accounts.apps.AccountsConfig',
+    'apps.students.apps.StudentsConfig',
+    'apps.skills.apps.SkillsConfig',
+    'apps.credentials.apps.CredentialsConfig',
+    'apps.passports.apps.PassportsConfig',
+    'apps.integrations',
+    'apps.verification.apps.VerificationConfig',
+    'apps.blockchain.apps.BlockchainConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'apps.blockchain.middleware.BlockchainRPCBudgetMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -63,18 +110,107 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
-# Database configuration will be added when persistence is implemented.
-DATABASES = {}
+if not os.environ.get('DATABASE_URL'):
+    raise ImproperlyConfigured('DATABASE_URL must be set in the environment or backend/.env.')
+
+DATABASES = {
+    'default': dj_database_url.config(ssl_require=True),
+}
 
 
-# Password validation
-# https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
+AUTH_USER_MODEL = "accounts.User"
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.authentication.GoogleWorkspaceBackend",
+    "apps.accounts.authentication.StudentOTPBackend",
+    "apps.accounts.authentication.AdminPasswordBackend",
+]
 
-# Keep DRF independent of Django's auth models until authentication is added.
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'apps.accounts.authentication.AccountSessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'apps.accounts.permissions.IsVerifiedAuthenticated',
+    ],
     'UNAUTHENTICATED_USER': None,
 }
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_USE_SESSIONS = False
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "0" if DEBUG else "3600"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+SECURE_HSTS_PRELOAD = _env_bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+if _env_bool("DJANGO_TRUST_X_FORWARDED_PROTO", default=False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+EMAIL_BACKEND = os.environ.get(
+    "DJANGO_EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = os.environ.get("DJANGO_EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("DJANGO_EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = _env_bool("DJANGO_EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = _env_bool("DJANGO_EMAIL_USE_SSL", default=False)
+if EMAIL_USE_TLS and EMAIL_USE_SSL:
+    raise ImproperlyConfigured("Configure either SMTP TLS or SSL, not both.")
+if not DEBUG and EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":
+    if not EMAIL_HOST:
+        raise ImproperlyConfigured("DJANGO_EMAIL_HOST must be set for production SMTP delivery.")
+    if not EMAIL_USE_TLS and not EMAIL_USE_SSL:
+        raise ImproperlyConfigured("Production SMTP must use TLS or SSL.")
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "no-reply@btu.edu.ge")
+OTP_PEPPER = os.environ.get("AUTH_TOKEN_PEPPER", SECRET_KEY)
+ACCOUNTS_OTP_HMAC_KEY = os.environ.get("ACCOUNTS_OTP_HMAC_KEY", "")
+ACCOUNTS_ACTIVE_STUDENT_STATUSES = [
+    value.strip()
+    for value in os.environ.get("ACCOUNTS_ACTIVE_STUDENT_STATUSES", "").split(",")
+    if value.strip()
+]
+ACCOUNTS_ALLOW_TEST_EMAIL = False
+ACCOUNTS_ALLOW_UNSAFE_TEST_DB = False
+if not DEBUG and "AUTH_TOKEN_PEPPER" not in os.environ:
+    raise ImproperlyConfigured("AUTH_TOKEN_PEPPER must be configured outside development.")
+if not DEBUG and len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured("DJANGO_SECRET_KEY must be at least 50 characters outside development.")
+if not DEBUG and len(OTP_PEPPER) < 32:
+    raise ImproperlyConfigured("AUTH_TOKEN_PEPPER must be at least 32 characters outside development.")
+if not DEBUG and len(ACCOUNTS_OTP_HMAC_KEY) < 32:
+    raise ImproperlyConfigured("ACCOUNTS_OTP_HMAC_KEY must be at least 32 characters outside development.")
+if not DEBUG and not ACCOUNTS_ACTIVE_STUDENT_STATUSES:
+    raise ImproperlyConfigured(
+        "ACCOUNTS_ACTIVE_STUDENT_STATUSES must list the approved Student status values."
+    )
+
+CREDENTIAL_REVOCATION_AUTHORIZER = "apps.accounts.authorization.authorize_credential_revocation"
+AUTH_OTP_EXPIRY_SECONDS = 300
+AUTH_OTP_MAX_ATTEMPTS = 5
+AUTH_OTP_EMAIL_REQUESTS_PER_WINDOW = 3
+AUTH_OTP_IP_REQUESTS_PER_WINDOW = 20
+AUTH_LOGIN_EMAIL_ATTEMPTS_PER_WINDOW = 10
+AUTH_LOGIN_IP_ATTEMPTS_PER_WINDOW = 30
+AUTH_RATE_LIMIT_WINDOW_SECONDS = 900
+STUDENT_INVITATION_EXPIRY_SECONDS = 86400
 
 
 # Internationalization
@@ -94,12 +230,85 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_ROOT = BASE_DIR / 'media'
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# Passport PDF generation stays bounded and storage-agnostic. These values may
+# be overridden per deployment without changing document or passport schemas.
+PASSPORT_PDF_MAX_SKILLS = int(os.environ.get('PASSPORT_PDF_MAX_SKILLS', '100'))
+PASSPORT_PDF_MAX_CREDENTIALS = int(
+    os.environ.get('PASSPORT_PDF_MAX_CREDENTIALS', '100')
+)
+PASSPORT_PDF_MAX_BYTES = int(
+    os.environ.get('PASSPORT_PDF_MAX_BYTES', str(5 * 1024 * 1024))
+)
+PASSPORT_PDF_LEASE_SECONDS = int(
+    os.environ.get('PASSPORT_PDF_LEASE_SECONDS', '120')
+)
+PASSPORT_PDF_WAIT_SECONDS = float(
+    os.environ.get('PASSPORT_PDF_WAIT_SECONDS', '10')
+)
+PASSPORT_REFRESH_LEASE_SECONDS = int(
+    os.environ.get('PASSPORT_REFRESH_LEASE_SECONDS', '120')
+)
+PASSPORT_REFRESH_MAX_ATTEMPTS = int(
+    os.environ.get('PASSPORT_REFRESH_MAX_ATTEMPTS', '8')
+)
+PASSPORT_REFRESH_RETRY_BASE_SECONDS = float(
+    os.environ.get('PASSPORT_REFRESH_RETRY_BASE_SECONDS', '5')
+)
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# Credential issuance is restricted by the credential service to this permanent
+# institutional identity. Do not let deployment configuration or request data
+# substitute another issuer.
+BTU_ISSUER_REFERENCE = 'BTU-UNIVERSITY'
+BTU_CLASSROOM_ISSUER_REFERENCE = os.environ.get(
+    'BTU_CLASSROOM_ISSUER_REFERENCE', BTU_ISSUER_REFERENCE
+).strip()
+if BTU_CLASSROOM_ISSUER_REFERENCE != BTU_ISSUER_REFERENCE:
+    raise ImproperlyConfigured(
+        'BTU_CLASSROOM_ISSUER_REFERENCE must be the fixed BTU-UNIVERSITY issuer.'
+    )
+
+# Public verification fails closed unless an issuer is explicitly trusted. The
+# fixed BTU issuer is the default; any additional allowlist entries still have to
+# match an issuer record marked trusted in the database.
+VERIFICATION_TRUSTED_ISSUER_REFERENCES = [
+    ref.strip() for ref in os.environ.get(
+        'VERIFICATION_TRUSTED_ISSUER_REFERENCES', BTU_ISSUER_REFERENCE
+    ).split(',')
+    if ref.strip()
+]
+BTU_AUTHORIZED_COMPLETION_SOURCES = [
+    source.strip() for source in os.environ.get('BTU_AUTHORIZED_COMPLETION_SOURCES', '').split(',')
+    if source.strip()
+]
+if set(BTU_AUTHORIZED_COMPLETION_SOURCES) - {'BTU_EXCEL', 'BTU_GOOGLE_SHEETS'}:
+    raise ImproperlyConfigured('Only approved spreadsheet source identifiers are supported.')
+BTU_GOOGLE_SHEET_ID = os.environ.get('BTU_GOOGLE_SHEET_ID', '').strip()
+GOOGLE_SERVICE_ACCOUNT_FILE = os.environ.get('GOOGLE_SERVICE_ACCOUNT_FILE', '').strip()
+try:
+    _spreadsheet_sources_json = os.environ.get('BTU_SPREADSHEET_GOOGLE_SOURCES_JSON', '{}')
+    if len(_spreadsheet_sources_json) > 50_000:
+        raise ValueError()
+    BTU_SPREADSHEET_GOOGLE_SOURCES = validate_sources(json.loads(_spreadsheet_sources_json))
+except (ValueError, TypeError):
+    raise ImproperlyConfigured('Invalid server-side spreadsheet source configuration.') from None
+EMAIL_TIMEOUT = 10
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 30
+DATA_UPLOAD_MAX_NUMBER_FILES = 1
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+
+# Disabled until a reviewed registry deployment and issuer key are configured.
+# RPC/signing are never enabled by request parameters or client configuration.
+PASSPORT_BLOCKCHAIN_ENABLED = _env_bool('PASSPORT_BLOCKCHAIN_ENABLED', default=False)
+PASSPORT_BLOCKCHAIN_RPC_URL = os.environ.get('PASSPORT_BLOCKCHAIN_RPC_URL', '')
+PASSPORT_BLOCKCHAIN_CHAIN_ID = os.environ.get('PASSPORT_BLOCKCHAIN_CHAIN_ID', '')
+PASSPORT_BLOCKCHAIN_CONTRACT_ADDRESS = os.environ.get('PASSPORT_BLOCKCHAIN_CONTRACT_ADDRESS', '')
+PASSPORT_BLOCKCHAIN_ISSUER_ADDRESS = os.environ.get('PASSPORT_BLOCKCHAIN_ISSUER_ADDRESS', '')
+PASSPORT_BLOCKCHAIN_SIGNING_KEY_FILE = os.environ.get('PASSPORT_BLOCKCHAIN_SIGNING_KEY_FILE', '')
+PASSPORT_BLOCKCHAIN_CONFIRMATIONS = os.environ.get('PASSPORT_BLOCKCHAIN_CONFIRMATIONS', '3')
+PASSPORT_BLOCKCHAIN_MAX_GAS_PRICE_WEI = os.environ.get('PASSPORT_BLOCKCHAIN_MAX_GAS_PRICE_WEI', '50000000000')
+# Verification is fail-closed even before RPC/key provisioning.
+PASSPORT_BLOCKCHAIN_ENFORCE = True
+PASSPORT_IDENTITY_EVIDENCE_SOURCES = [v.strip() for v in os.environ.get('PASSPORT_IDENTITY_EVIDENCE_SOURCES', '').split(',') if v.strip()]

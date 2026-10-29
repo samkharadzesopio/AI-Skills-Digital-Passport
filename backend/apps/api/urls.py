@@ -1,0 +1,33 @@
+from django.urls import include, path
+from .views import StudentView, AdminStudents, AdminCredentials, AdminIssue, AdminRevoke, AdminPassports, AdminStatistics
+from .admin_reads import AdminAchievements, AdminCatalog, AdminMappings, AdminCredentialHistory
+from .lifecycle_views import LegalNameChangeView, PassportRevocationView, PassportLifecycleHistoryView
+
+urlpatterns = [
+    path('admin/students/<uuid:id>/legal-name-change/',LegalNameChangeView.as_view(),name='admin-legal-name-change'),
+    path('admin/students/<uuid:id>/passport-lifecycle/',PassportLifecycleHistoryView.as_view(),name='admin-passport-lifecycle-history'),
+    path('admin/passports/<uuid:id>/revoke/',PassportRevocationView.as_view(),name='admin-revoke-passport'),
+    path('', include('apps.api.pdf_urls')),
+    path('student/dashboard/', StudentView.as_view(resource='dashboard')),
+    path('student/skills/', StudentView.as_view(resource='skills')),
+    path('student/achievements/', StudentView.as_view(resource='achievements')),
+    path('student/credentials/', StudentView.as_view(resource='credentials')),
+    path('student/credentials/<uuid:id>/', StudentView.as_view(resource='credentials')),
+    path('student/passport/', StudentView.as_view(resource='passport')),
+    path('student/passport/versions/', StudentView.as_view(resource='versions')),
+    path('student/passport/versions/<uuid:id>/', StudentView.as_view(resource='versions')),
+    path('admin/students/', AdminStudents.as_view()),
+    path('admin/students/<uuid:id>/', AdminStudents.as_view()),
+    path('admin/students/<uuid:id>/achievements/', AdminAchievements.as_view()),
+    path('admin/catalog/', AdminCatalog.as_view()),
+    path('admin/course-mappings/', AdminMappings.as_view()),
+    path('admin/credentials/<uuid:id>/history/', AdminCredentialHistory.as_view()),
+    path('admin/credentials/', AdminCredentials.as_view()),
+    path('admin/credentials/issue/', AdminIssue.as_view()),
+    path('admin/credentials/<uuid:id>/', AdminCredentials.as_view()),
+    path('admin/credentials/<uuid:id>/revoke/', AdminRevoke.as_view()),
+    path('admin/passports/', AdminPassports.as_view()),
+    path('admin/passports/<uuid:id>/', AdminPassports.as_view()),
+    path('admin/passports/<uuid:id>/versions/', AdminPassports.as_view(), {'versions': True}),
+    path('admin/statistics/', AdminStatistics.as_view()),
+]
