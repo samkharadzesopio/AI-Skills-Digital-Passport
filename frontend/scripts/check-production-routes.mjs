@@ -64,6 +64,14 @@ try {
         for (const refresh of [false, true]) {
           if (refresh) await page.reload(); else await page.goto(base + target)
           await page.getByRole('navigation', { name: 'Passport workspaces' }).waitFor()
+          const navigationLayout = await page.locator('.workspace-navigation').evaluate(nav => ({
+            direction: getComputedStyle(nav).flexDirection,
+            height: nav.getBoundingClientRect().height,
+            linkTops: [...nav.querySelectorAll('a')].map(link => link.getBoundingClientRect().top),
+          }))
+          assert.equal(navigationLayout.direction, 'row', 'Header navigation must override global sidebar column styles')
+          assert.ok(navigationLayout.height <= 60, `${width}: compact header navigation height`)
+          assert.ok(Math.max(...navigationLayout.linkTops) - Math.min(...navigationLayout.linkTops) < 2, `${width}: all three links stay horizontal`)
           if (state === 'anonymous') {
             await page.waitForURL(base + `/${role}/login`)
             await page.getByRole('heading', { name: role === 'student' ? 'Student sign in' : 'Administrator sign in', exact: true }).waitFor()
