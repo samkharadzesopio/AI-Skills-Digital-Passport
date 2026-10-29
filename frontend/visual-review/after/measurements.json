@@ -1,0 +1,242 @@
+[
+  {
+    "route": "/student/dashboard",
+    "width": 1366,
+    "height": 768,
+    "passport": {
+      "x": 416.234375,
+      "y": 106.765625,
+      "width": 749.515625,
+      "height": 529.953125,
+      "bottom": 636.71875
+    },
+    "actions": {
+      "x": 416.234375,
+      "y": 706.71875,
+      "width": 749.515625,
+      "height": 36,
+      "bottom": 742.71875
+    },
+    "scrollHeight": 768,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/dashboard",
+    "width": 1440,
+    "height": 900,
+    "passport": {
+      "x": 378,
+      "y": 119.5625,
+      "width": 900,
+      "height": 636.359375,
+      "bottom": 755.921875
+    },
+    "actions": {
+      "x": 378,
+      "y": 825.921875,
+      "width": 900,
+      "height": 36,
+      "bottom": 861.921875
+    },
+    "scrollHeight": 900,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/dashboard",
+    "width": 1920,
+    "height": 1080,
+    "passport": {
+      "x": 618,
+      "y": 209.5625,
+      "width": 900,
+      "height": 636.359375,
+      "bottom": 845.921875
+    },
+    "actions": {
+      "x": 618,
+      "y": 915.921875,
+      "width": 900,
+      "height": 36,
+      "bottom": 951.921875
+    },
+    "scrollHeight": 1080,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/dashboard",
+    "width": 768,
+    "height": 1024,
+    "passport": {
+      "x": 16,
+      "y": 117.5,
+      "width": 736,
+      "height": 520.390625,
+      "bottom": 637.890625
+    },
+    "actions": {
+      "x": 16,
+      "y": 707.890625,
+      "width": 736,
+      "height": 36,
+      "bottom": 743.890625
+    },
+    "scrollHeight": 1024,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/dashboard",
+    "width": 390,
+    "height": 844,
+    "passport": {
+      "x": 16,
+      "y": 161,
+      "width": 358,
+      "height": 253.125,
+      "bottom": 414.125
+    },
+    "actions": {
+      "x": 16,
+      "y": 506.125,
+      "width": 358,
+      "height": 52,
+      "bottom": 558.125
+    },
+    "scrollHeight": 844,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/login",
+    "width": 1366,
+    "height": 768,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 768,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/admin/login",
+    "width": 1366,
+    "height": 768,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 768,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/verify",
+    "width": 1366,
+    "height": 768,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 939,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/login",
+    "width": 1440,
+    "height": 900,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 900,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/admin/login",
+    "width": 1440,
+    "height": 900,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 900,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/verify",
+    "width": 1440,
+    "height": 900,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 939,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/login",
+    "width": 1920,
+    "height": 1080,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1080,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/admin/login",
+    "width": 1920,
+    "height": 1080,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1080,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/verify",
+    "width": 1920,
+    "height": 1080,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1080,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/login",
+    "width": 768,
+    "height": 1024,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1024,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/admin/login",
+    "width": 768,
+    "height": 1024,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1024,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/verify",
+    "width": 768,
+    "height": 1024,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1024,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/student/login",
+    "width": 390,
+    "height": 844,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 844,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/admin/login",
+    "width": 390,
+    "height": 844,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 948,
+    "horizontalOverflow": false
+  },
+  {
+    "route": "/verify",
+    "width": 390,
+    "height": 844,
+    "passport": null,
+    "actions": null,
+    "scrollHeight": 1475,
+    "horizontalOverflow": false
+  }
+]

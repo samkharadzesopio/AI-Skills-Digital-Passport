@@ -19,7 +19,8 @@
     "check:public-transport": "node scripts/check-public-transport.mjs",
     "check:compatibility": "node scripts/check-compatibility.mjs",
     "check:passport-card": "node scripts/check-passport-card.mjs",
-    "check:passport-layout": "node scripts/check-passport-layout.mjs"
+    "check:passport-layout": "node scripts/check-passport-layout.mjs",
+    "check:visual-redesign": "node scripts/check-visual-redesign.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
