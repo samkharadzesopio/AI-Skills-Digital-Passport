@@ -59,6 +59,10 @@ try {
   await loginStudent(page)
   await page.reload(); await page.locator('.dashboard-passport .passport-carousel').waitFor()
   await page.getByRole('button', { name: 'Share Passport', exact: true }).waitFor()
+  // The card can render before its registered-PDF metadata request completes.
+  // Wait for the actual enabled control; retain all assertions/default budgets.
+  await page.waitForFunction(() => [...document.querySelectorAll('button')]
+    .some(button => button.textContent.trim() === 'Share Passport' && !button.disabled))
   assert.equal(await page.locator('.stats,.dashboard-grid,.dashboard-greeting,.support,.next-step').count(), 0)
   assert.doesNotMatch(await page.locator('main').innerText(), /Welcome,|competency overview|Recent credentials|Save Preferences/)
   const navigation = page.getByRole('navigation', { name: 'Student navigation' })
@@ -187,12 +191,44 @@ try {
   await page.waitForURL(base + '/student/login')
   await page.goto(base + '/student/dashboard'); await page.waitForURL(base + '/student/login')
   assert.equal((await studentContext.cookies()).some(cookie => cookie.name === 'sessionid'), false)
+
+  step = 'Passport revocation heading with valid supporting credentials'
+  const revocationStatus = await admin.evaluate(async ({ studentId, reference }) => {
+    const rows = await (await fetch('/api/admin/passports/?student_id=' + studentId)).json()
+    const passport = rows.results.find(p => p.public_reference === reference)
+    if (!passport) return 404
+    await fetch('/api/accounts/csrf/')
+    const csrf = document.cookie.split('; ').find(c => c.startsWith('csrftoken='))?.slice('csrftoken='.length)
+    const response = await fetch('/api/admin/passports/' + passport.id + '/revoke/', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': decodeURIComponent(csrf || '') },
+      body: JSON.stringify({ idempotency_key: 'SYNTHETIC-BROWSER-REVOKE', reason: 'Synthetic browser revocation check' }),
+    })
+    return response.status
+  }, { studentId: runtime.studentId, reference: runtime.passportReference })
+  assert.equal(revocationStatus, 200)
+  await publicPage.setViewportSize({ width: 1440, height: 900 })
+  await upload(publicPage, bytes, 'revoked')
+  await publicPage.getByRole('heading', { name: 'Passport revoked', exact: true }).waitFor()
+  // Cancelled public identities deliberately skip credential assessment. Check
+  // that public fact unchanged, and verify the underlying credential privately.
+  assert.equal(await publicPage.locator('[data-fact="credential-validity"]').innerText(), 'Could not be established')
+  const supportingCredential = await admin.evaluate(async id => {
+    const response = await fetch('/api/admin/credentials/' + id + '/')
+    const data = await response.json()
+    return { httpStatus: response.status, status: data.status, validity: data.validity_status }
+  }, runtime.credentialId)
+  assert.deepEqual(supportingCredential, { httpStatus: 200, status: 'ISSUED', validity: 'VALID' })
+  assert.doesNotMatch(await publicPage.locator('main').innerText(), /Credential support has been revoked/)
+  assert.doesNotMatch(await publicPage.locator('[data-fact="blockchain"]').innerText(), /proof verified by the backend for the current/)
+  await publicPage.screenshot({ path: path.join(artifacts, 'live-passport-revoked.png'), fullPage: true })
+  journeys.push('Real Passport revocation/PDF: distinct identity heading, public credential assessment unavailable, authorized Credential API still VALID, no current blockchain badge')
   assert.deepEqual(errors, [])
   await fs.writeFile(path.join(artifacts, 'browser-acceptance-results.json'), JSON.stringify({ passed: true, synthetic: true, mockedResponses: false, journeys, layouts, requests }, null, 2))
   console.log(`PASS real Chrome/Django acceptance: ${journeys.length} journeys, ${layouts.length} live viewports, ${requests.length} API responses; native public PDF verification, critical routes and logout passed.`)
 } catch (error) {
   if (step.startsWith('live responsive layouts')) await page.screenshot({ path: path.join(artifacts, 'live-layout-failure.png'), fullPage: true })
-  await fs.writeFile(path.join(artifacts, 'browser-acceptance-failure.json'), JSON.stringify({ step, errorType: error.name, journeys, layouts, measurements, requests }, null, 2))
+  const assertionLine = /check-passport-browser\.mjs:(\d+):\d+/.exec(error.stack || '')?.[1]
+  await fs.writeFile(path.join(artifacts, 'browser-acceptance-failure.json'), JSON.stringify({ step, errorType: error.name, assertionLine, journeys, layouts, measurements, requests }, null, 2))
   console.error('FAIL real browser acceptance at: ' + step + ' (' + error.name + ')')
   process.exitCode = 1
 } finally {

@@ -1,5 +1,11 @@
 # BTU Passport blockchain lifecycle — Anvil MVP
 
+For the mentor-approved local website video submission, use
+[VIDEO_DEMO.md](VIDEO_DEMO.md). Public hosting and Amoy funding are not gates
+for that demonstration. Amoy support remains in the code; see the
+[read-only preflight and undeployed status](PHASE3_PREFLIGHT_2026-10-28.md).
+Actual public deployment/lifecycle acceptance is still outstanding.
+
 For the disposable deployment, real HTTP lifecycle rehearsal and separate-client
 chain checks, see [PHASE2_REHEARSAL_2026-10-28.md](PHASE2_REHEARSAL_2026-10-28.md).
 
@@ -8,7 +14,7 @@ The October 28 Phase 1 audit and contract correction are recorded in
 compatibility warning supersedes the earlier deployment instructions when
 using the corrected artifact. Phase 1 does not authorize public deployment.
 
-**Anvil (chain 31337) is the primary MVP environment for this handoff.** It uses real local EVM transactions, PostgreSQL persistence and independently checked receipts. No Polygon Amoy deployment, faucet balance or real money is required for integration testing. The Amoy adapter remains available but has not been publicly deployed or validated by this work. Frontend/Chrome browser acceptance and shared database rollout remain separate from backend test results.
+**Anvil (chain 31337) is the primary MVP environment for this handoff.** It uses real local EVM transactions, PostgreSQL persistence and independently checked receipts. No Polygon Amoy deployment, faucet balance or real money is required for integration testing. The Amoy adapter remains available but has not been publicly deployed or validated by this work. Actual Chrome/website acceptance is recorded separately in [the local website report](../ops/LOCAL_WEBSITE_ACCEPTANCE_2026-10-28.md); shared database rollout and a built Chrome extension are not established by those results.
 
 Start with [ANVIL_HANDOFF_2026-10-27.md](ANVIL_HANDOFF_2026-10-27.md) for the assigned branch, fresh test results, security review, setup and integration requirements. Earlier reports retain their original Amoy-focused acceptance criteria as historical evidence; the user's current Anvil-first handoff instructions supersede those criteria.
 

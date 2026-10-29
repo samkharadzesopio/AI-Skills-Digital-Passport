@@ -5,6 +5,10 @@ This candidate was validated only against new owned PostgreSQL clusters and
 temporary Anvil chains. No persistent local/Neon database or existing server was
 modified. Public Amoy is optional and is not required for this MVP.
 
+For the current mentor-approved video submission, follow
+[the video checklist](../blockchain/VIDEO_DEMO.md). Current graphical website
+acceptance is recorded in [the October 28 report](LOCAL_WEBSITE_ACCEPTANCE_2026-10-28.md).
+
 ## Reproduce safe automated acceptance
 
 From this candidate's repository root, use an existing compatible Python 3.13
@@ -87,7 +91,7 @@ public-network key, and never display an Anvil mnemonic/private key in logs.
 With installed Foundry or the pinned native binaries:
 
 ```text
-anvil --host 127.0.0.1 --port 8545 --chain-id 31337 --silent
+anvil --host 127.0.0.1 --port 8545 --chain-id 31337 --block-time 1 --silent
 ```
 
 This manual command uses Anvil's public development accounts; use them only on
@@ -105,9 +109,10 @@ Copy the actual deployed public contract address into the local target
 configuration; use chain ID 31337 and the loopback RPC above. The issuer key
 file must correspond to the explicitly authorized issuer. The gateway checks
 chain ID, exact pinned runtime bytecode, issuer role, fees and every signed
-transaction. It cannot silently select a different network. Use one required
-confirmation for the local demo if approved; observed confirmations remain live
-facts. No Amoy deployment/RPC/wallet is needed.
+transaction. It cannot silently select a different network. Retain three required
+confirmations for the local demo, as used by current acceptance; the one-second
+block interval lets confirmations advance without another transaction. Observed
+confirmations remain live facts. No Amoy deployment/RPC/wallet is needed.
 
 Existing document targets and signed bytes are immutable. A reset/empty Anvil
 chain or a new contract address does not rebind old database records. Preserve
@@ -163,7 +168,8 @@ Grant only the actions assigned to each operator. Migrations grant none.
 Use approved synthetic strict completion columns from the API handoff; verify
 bad/pending/rejected evidence issues nothing. Classroom remains simulated.
 Google Sheets requires a server-approved source/service account and was not
-exercised live. The flexible profile/preview branch is not integrated here.
+exercised live. Flexible profile/preview integration is now present; its additive
+migrations require [their own review and backup procedure](SPREADSHEET_MIGRATION_RUNBOOK.md).
 
 Open `/student/login`, `/admin/login` or `/verify` under the Vite origin. The
 backend routes are in [the API handoff](BACKEND_API_HANDOFF.md). CSRF GET returns
@@ -173,10 +179,12 @@ Download the exact registered PDF, then submit it anonymously. Current success
 requires the fresh root verdict and nested proof flags; a hash/transaction link,
 ISSUED document or old CONFIRMED database row alone is insufficient.
 
-The current React parsers still need the handoff's blockchain/lifecycle updates
-and graphical-browser acceptance. Legacy UI regression success does not certify
-the finished chain-aware website. Backend acceptance can be replayed now using
-the safe automated command at the top.
+The current React parsers include blockchain/lifecycle integration. Real graphical
+Chrome acceptance against Django and Anvil passed in the separate October 28
+report linked above. This does not establish the state of any persistent Windows
+setup, a hosted website, or public Amoy. Repeat disposable acceptance using the
+safe automated command at the top; the focused graphical command is in the video
+checklist.
 
 ## Troubleshooting
 

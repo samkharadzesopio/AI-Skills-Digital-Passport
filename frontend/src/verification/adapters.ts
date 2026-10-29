@@ -10,6 +10,7 @@ const record = (value: unknown): value is Record<string, unknown> => !!value && 
 const positiveInteger = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 const statuses: Record<string, PublicStatus> = { VALID: 'valid', REVOKED: 'revoked', EXPIRED: 'expired', INVALID: 'invalid', NOT_FOUND: 'not_found', OUTDATED: 'outdated', UNVERIFIABLE: 'unverifiable', PENDING_BLOCKCHAIN: 'pending', REPLACED: 'replaced', NOT_ISSUED: 'not_issued' }
 const credentialStatuses = ['VALID', 'REVOKED', 'EXPIRED', 'INVALID', 'UNVERIFIABLE']
+const passportStatuses = { ACTIVE: 'active', REPLACED: 'replaced', REVOKED: 'revoked' } as const
 
 /** Actual Django public serializers projected onto an explicit public allowlist.
  * No aggregate decision is calculated from counts in React. Future/private fields
@@ -42,6 +43,11 @@ export function parseVerification(value: unknown, method: VerificationMethod, tr
     counts[key.toLowerCase() as keyof typeof counts] = count
   }
   const blockchain = blockchainAvailability(value.blockchain)
+  // Preserve only this bounded institutional lifecycle fact for wording. It
+  // never establishes a blockchain verdict or exposes the raw proof object.
+  const rawPassportStatus = record(value.blockchain) ? value.blockchain.passport_status : undefined
+  const passportStatus = typeof rawPassportStatus === 'string' && Object.hasOwn(passportStatuses, rawPassportStatus)
+    ? passportStatuses[rawPassportStatus as keyof typeof passportStatuses] : undefined
   if (blockchain === 'verified' && expectedReference) {
     const proof = value.blockchain as Record<string, unknown>
     if (proof[method === 'passport' ? 'passport_reference' : 'version_reference'] !== expectedReference) return failure('contract')
@@ -53,6 +59,7 @@ export function parseVerification(value: unknown, method: VerificationMethod, tr
   return { kind: 'result', method, status, source: value.source, ...(Object.hasOwn(value, 'blockchain') ? { blockchain } : {}), publicInfo: {
     authentic: value.authentic, isLatest: value.is_latest as boolean | null,
     passportVersion: value.passport_version as number | null, latestVersion: value.latest_version as number | null,
+    ...(passportStatus ? { passportStatus } : {}),
     credentialStatus: value.credential_status.toLowerCase() as CredentialStatus, credentialCounts: counts,
   } }
 }
