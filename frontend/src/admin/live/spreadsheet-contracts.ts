@@ -27,3 +27,24 @@ export function parsePreview(v: unknown): ImportPreview {
   if (state === 'COMPLETED' && result === null) throw new Error('SPREADSHEET_CONTRACT')
   return { id: uuid(r.id), snapshot_sha256: digest(r.snapshot_sha256), state, expires_at: expires, report, result }
 }
+
+export interface AutomaticSource {
+  profile_id: string; profile_key: string; profile_version: number; profile_enabled: boolean
+  enabled: boolean; interval_seconds: number; state: string; error_code: string
+  last_checked_at: string | null; next_poll_at: string | null
+}
+const automaticStates = ['IDLE','PROCESSING','COMPLETED','UNCHANGED','EXCLUDED','FAILED','DISABLED'] as const
+function optionalDate(v: unknown) { if (v === null) return null; const s = text(v); if (!Number.isFinite(Date.parse(s))) throw new Error('SPREADSHEET_CONTRACT'); return s }
+function optionalCode(v: unknown) { return v === '' ? '' : code(v) }
+export function automaticSource(v: unknown): AutomaticSource {
+  const r = record(v), id = profile({id:r.profile_id,key:r.profile_key,version:r.profile_version,source:'BTU_GOOGLE_SHEETS',kind:'SKILL_AWARD'}), seconds=integer(r.interval_seconds)
+  if (typeof r.enabled !== 'boolean' || typeof r.profile_enabled !== 'boolean' || seconds < 60 || seconds > 86400) throw new Error('SPREADSHEET_CONTRACT')
+  return {profile_id:id.id,profile_key:id.key,profile_version:id.version,profile_enabled:r.profile_enabled,enabled:r.enabled,interval_seconds:seconds,state:choice(r.state,automaticStates),error_code:optionalCode(r.error_code),last_checked_at:optionalDate(r.last_checked_at),next_poll_at:optionalDate(r.next_poll_at)}
+}
+export interface AutomaticPoll { id:string; state:string; counts:Record<string,number>; error_code:string; started_at:string; finished_at:string|null; preview_id:string|null }
+export function automaticPoll(v:unknown):AutomaticPoll {
+  const r=record(v), counts:Record<string,number>={}, started=optionalDate(r.started_at)
+  if (!started) throw new Error('SPREADSHEET_CONTRACT')
+  for(const [key,value] of Object.entries(record(r.counts))) { if(!['total_rows','valid_records','duplicate_records','invalid_records','review_records','processed','awarded','issued','skipped','failed'].includes(key)) throw new Error('SPREADSHEET_CONTRACT'); counts[key]=integer(value) }
+  return {id:uuid(r.id),state:choice(r.state,automaticStates),counts,error_code:optionalCode(r.error_code),started_at:started,finished_at:optionalDate(r.finished_at),preview_id:r.preview_id===null?null:uuid(r.preview_id)}
+}

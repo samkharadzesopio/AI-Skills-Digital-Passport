@@ -1,3 +1,5 @@
+> Historical source-branch review for commit `2199a37`. Integration adjustments and current validation are recorded in `admin-integration-review.md`.
+
 # Administrator workflow simplification — 2026-10-28
 
 Branch: `feature/frontend-visual-updates`; starting commit `95861f1`. Changes are local and uncommitted. Existing `frontend/restoration-review/` artifacts were preserved. No backend, migration, blockchain, authentication, API client, contract parser, or student-facing component was modified. No merge or push occurred.
@@ -29,7 +31,7 @@ Backend dependencies intentionally remain visible:
 2. General security audit reading needs a dedicated sanitized API and grant. Credential/import/sync history remains available through existing authorized projections.
 3. Live catalog/mapping Add/Edit needs an approved write/approval workflow. Existing Demo Mode draft editing remains available.
 4. Multi-type activity mapping requires a backend extension; existing mappings are course-based.
-5. There is no separate authoritative spreadsheet preview/validate-only endpoint. Local preview cannot certify unknown students, duplicates or approved activities. Configured Google Sheets requires operator-supplied approved source/credentials; arbitrary URLs are not accepted in Live Mode.
+5. The completion-evidence local preview cannot certify unknown students, duplicates or approved activities. On the integration base, the separate approved-profile workflow supplies a server-reviewed snapshot and exact-digest confirmation; both workflows are retained. Configured Google Sheets requires operator-supplied approved source/credentials; arbitrary URLs are not accepted in Live Mode.
 6. Classroom remains backend-simulated. Its current controls are retained and labeled; no real connector was invented.
 7. Credential list records do not contain a complete blockchain proof or student display name. Existing student/Passport links provide the authorized detail journey; no extra private fields or proof verdicts were fabricated.
 

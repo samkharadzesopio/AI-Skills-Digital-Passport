@@ -1,0 +1,22 @@
+# Bug report
+
+| ID | Severity | Component / affected files | Reproduction / actual result | Root cause | Fix / regression / browser retest | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| QA-001 | Test environment failure, originally P1 candidate | Audit temporary path / Windows PDF storage | Fresh baseline Chrome flow fails generation/download; direct chain fixture reproduces FileNotFoundError at FileSystemStorage os.open for a 263-character file path. | Coordinator selected a deeply nested TEMP root; Windows LongPathsEnabled=0 rejects the generated storage path. This is not evidence that product PDF logic is broken. | Short unique task-owned temp roots; preserve original log, rerun native PDF and chain acceptance. No application change justified. | ROOT CAUSE REPRODUCED; short-path browser/chain retests pending |
+| QA-002 | P1 requirement gap | Google awarded-skill discovery; integrations poller absent | Source call graph shows only manual preview/confirm fetch; workers retry previously received events and never discover new source rows. | Missing controlled discovery mechanism; per-snapshot manual review contract needs continuing authority. | Owner approved PD-01/PD-01a. Implement/test approved-profile polling with existing authorization, deduplication and audit; keep manual path. | APPROVED IMPLEMENTATION PENDING |
+| QA-003 | P1 | PDF cover template verification stamp | Actual API-generated synthetic13-skill PDF explicitly has backend NOT_CONFIGURED/false proof yet renders BLOCKCHAIN VERIFIED. Coordinator visually inspected page1. | Static template artwork asserts proof before any chain confirmation; changing committed bytes afterward is invalid. | PD-02 neutral future-PDF wording requested. No issued artifact changes. | CONFIRMED; AWAITING OWNER WORDING DECISION |
+| QA-004 | P2 | PDF skill-card bottom-row text | Coordinator visually inspected `passport/synthetic-13-page-03.png`: category/classification text on bottom row sits on/outside the lower card border. | Baseline/box placement under investigation. | Minimal renderer coordinate repair with visual and bounds regression required. | CONFIRMED VISUAL DEFECT; REPAIR PENDING |
+| QA-005 | P1 | PDF earned dates / version snapshots | Actual PostgreSQL-backed rendered PDF has approved achievement earned2026-10-20 and credential issued2026-10-24; DATE EARNED shows2026-10-24 and actual earned date is absent. `passport/EARNED_DATE_REPRODUCTION.json`. | Snapshot omits actual earned date; document adapter uses credential issuance timestamp. | PD-03 aggregation and PD-03a legacy behavior requested. Future snapshots must freeze actual earned date; never mutate prior versions/PDFs. | CONFIRMED; AWAITING OWNER DATE POLICY |
+
+Source-only candidates (completion retry visibility, worksheet preview/active-sheet mismatch, mobile Escape behavior) remain unconfirmed until runtime reproduction. Intentionally unsupported operations are not marked defects merely because no write API exists.
+
+## Final prioritized disposition
+
+- QA-001: resolved test-environment failure. Short owned temp paths passed private PDF and chain acceptance; no application workaround was added. The separate interrupted broad browser harness remains incomplete.
+- QA-002: FIXED AND VERIFIED. Controlled automatic source polling, existing approvals/grants, target pinning, per-row disable/lease guards, deduplication/history and retained manual imports. 73 targeted PG tests, focused native browser and assembled Anvil acceptance passed.
+- QA-003: FIXED AND VERIFIED for newly generated PDFs: neutral VERIFY DOCUMENT wording. Existing issued artifacts deliberately retain their original appearance/bytes/hashes.
+- QA-004: FIXED AND VERIFIED: skill-card positions corrected; geometry regressions and actual visual renders passed.
+- QA-005: FIXED AND VERIFIED: new snapshots freeze earliest authoritative represented earned date; legacy missing dates use the approved label. Database guards, multi-credential dates, immutable artifact reuse and corrupt-file refusal tested. No historical source/snapshot backfill.
+- QA-006 (P2): FIXED AND VERIFIED. Demo native dialogs disappeared during StrictMode effect replay because cleanup close events dismissed the reopened dialog. Shared Dialog ignores stale events while open and preserves native Escape/focus behavior. Seven focused native Chrome checks passed without API requests.
+
+Secondary candidates are deferred under the owner's resource directive; no complete-application defect-free claim is made.

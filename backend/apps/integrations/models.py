@@ -130,3 +130,47 @@ class SpreadsheetAward(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['namespace', 'record_id'], name='uq_spreadsheet_award_record'),
         ]
+
+
+class SpreadsheetAutomation(models.Model):
+    """Continuing administrator authority for one independently approved policy."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    profile = models.OneToOneField(SpreadsheetProfile, on_delete=models.PROTECT, related_name='automation')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='spreadsheet_automations')
+    authorization_reference = models.CharField(max_length=255)
+    enabled = models.BooleanField(default=False)
+    interval_seconds = models.PositiveIntegerField(default=300)
+    next_poll_at = models.DateTimeField()
+    source_sha256 = models.CharField(max_length=64, blank=True)
+    approved_target_sha256 = models.CharField(max_length=64, blank=True)
+    lease_token = models.UUIDField(null=True)
+    lease_until = models.DateTimeField(null=True)
+    last_checked_at = models.DateTimeField(null=True)
+    last_state = models.CharField(max_length=20, default='IDLE')
+    last_error_code = models.CharField(max_length=100, blank=True)
+    approved_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(interval_seconds__gte=60, interval_seconds__lte=86400), name='chk_spreadsheet_auto_interval')]
+        indexes = [models.Index(fields=['enabled', 'next_poll_at'], name='spreadsheet_auto_due_idx')]
+
+
+class SpreadsheetPoll(models.Model):
+    """Sanitized durable worker history; private source facts stay in existing snapshots."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    automation = models.ForeignKey(SpreadsheetAutomation, on_delete=models.PROTECT, related_name='polls')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='spreadsheet_polls')
+    audit = models.OneToOneField('accounts.SecurityAudit', on_delete=models.PROTECT)
+    lease_token = models.UUIDField()
+    state = models.CharField(max_length=20, default='PROCESSING')
+    source_sha256 = models.CharField(max_length=64, blank=True)
+    preview = models.ForeignKey(SpreadsheetPreview, null=True, on_delete=models.PROTECT)
+    counts = models.JSONField(default=dict)
+    error_code = models.CharField(max_length=100, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['automation', '-started_at'], name='spreadsheet_poll_history_idx')]

@@ -154,7 +154,11 @@ def _render_context(version):
     for skill in skills:
         sources = skill_sources[skill.pk]
         issuers = sorted({source.issuer_name for source in sources})
-        dates = sorted(source.credential_issued_at.date().isoformat() for source in sources)
+        if not all((skill.skill_name, skill.category, skill.description, skill.stamp_type,
+                    skill.badge_asset_id)) or not sources or not all(issuers):
+            raise ValidationError("Passport snapshot is missing mandatory skill or issuer data.")
+        if skill.earned_on is None and version.snapshot_schema_version >= 2:
+            raise ValidationError("Passport snapshot is missing the authoritative earned date.")
         skill_rows.append(
             {
                 "name": skill.skill_name,
@@ -166,11 +170,13 @@ def _render_context(version):
                 "stamp_type": skill.stamp_type,
                 "description": skill.description,
                 "earned_through": ", ".join(issuers),
-                "date_earned": dates[0] if dates else "",
+                "date_earned": skill.earned_on.isoformat() if skill.earned_on else "Not recorded in snapshot",
             }
         )
 
     student = version.student_snapshot
+    if not all(student.get(key) for key in ("first_name", "last_name", "external_student_id")):
+        raise ValidationError("Passport snapshot is missing mandatory student data.")
     return {
         "student": {
             "first_name": student.get("first_name", ""),
@@ -206,6 +212,18 @@ def _claim_document(version_id, request_sha256, now):
         )
         if version.status != PassportVersion.Status.ISSUED:
             raise ValidationError("PDFs can only be generated for issued passport versions.")
+        # Issued bytes are the canonical artifact of this exact version. Renderer
+        # upgrades only apply to versions without an issued document.
+        issued = (PassportDocument.objects.select_related("passport_version__passport")
+                  .filter(passport_version=version, status=PassportDocument.Status.ISSUED)
+                  .order_by("-generation_number").first())
+        if issued is not None:
+            return issued, None, None
+        generating = (PassportDocument.objects.select_related("passport_version__passport")
+                      .filter(passport_version=version, status=PassportDocument.Status.GENERATING,
+                              lease_expires_at__gt=now).first())
+        if generating is not None:
+            return generating, None, None
         document = (
             PassportDocument.objects.select_for_update()
             .select_related("passport_version__passport")
@@ -329,6 +347,12 @@ def generate_passport_document(*, passport_version_id, storage=None, renderer=No
     storage = storage or default_storage
     renderer = renderer or render_passport_pdf
     version = PassportVersion.objects.only("id", "content_sha256").get(pk=version_id)
+    issued = (PassportDocument.objects.select_related("passport_version__passport")
+              .filter(passport_version_id=version_id, status=PassportDocument.Status.ISSUED)
+              .order_by("-generation_number").first())
+    if issued is not None:
+        _check_issued_artifact(issued, storage)
+        return issued
     request_sha256 = _request_sha256(version)
     if wait_seconds is None:
         wait_seconds = getattr(settings, "PASSPORT_PDF_WAIT_SECONDS", DEFAULT_WAIT_SECONDS)
@@ -340,6 +364,7 @@ def generate_passport_document(*, passport_version_id, storage=None, renderer=No
             lambda: _claim_document(version_id, request_sha256, timezone.now())
         )
         if document.status == PassportDocument.Status.ISSUED:
+            _check_issued_artifact(document, storage)
             return document
         if token is not None:
             break
@@ -391,6 +416,21 @@ def generate_passport_document(*, passport_version_id, storage=None, renderer=No
         raise
 
 
+def _check_issued_artifact(document, storage):
+    key = _validate_storage_key(document, document.storage_key)
+    try:
+        with storage.open(key, "rb") as stream:
+            digest = hashlib.sha256()
+            size = 0
+            for chunk in iter(lambda: stream.read(65536), b""):
+                digest.update(chunk)
+                size += len(chunk)
+    except OSError as exc:
+        raise ValidationError("The issued passport PDF is unavailable; regeneration is prohibited.") from exc
+    if size != document.byte_size or digest.hexdigest() != document.pdf_sha256:
+        raise ValidationError("The issued passport PDF failed its integrity check; regeneration is prohibited.")
+
+
 def open_passport_document_for_student(*, document_reference, student_id, storage=None):
     """Open an issued private document only for its owning student."""
 
@@ -407,7 +447,9 @@ def open_passport_document_for_student(*, document_reference, student_id, storag
     if document.passport_version.passport.student_id != UUID(str(student_id)):
         raise PermissionDenied("This passport document belongs to another student.")
     key = _validate_storage_key(document, document.storage_key)
-    return document, (storage or default_storage).open(key, "rb")
+    storage = storage or default_storage
+    _check_issued_artifact(document, storage)
+    return document, storage.open(key, "rb")
 
 
 def find_issued_document_by_bytes(pdf_bytes):

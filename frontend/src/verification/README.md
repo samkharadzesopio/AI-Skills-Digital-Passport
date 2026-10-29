@@ -19,6 +19,19 @@ Authenticity, latest-versus-historical currency, current credential validity and
 
 All authoritative decisions come from Django. Counts, stamps, format metadata, template artwork and QR links do not establish validity in React. Raw backend message/error text, private student records and PDF contents are not displayed/logged. Uploaded filenames are not needed by the registry and are transmitted as `passport.pdf`. Files/results are not put in localStorage or query caches.
 
+For a REVOKED Passport/PDF response, the adapter projects only the bounded
+`blockchain.passport_status` enum into `publicInfo.passportStatus`. A revoked
+identity displays **Passport revoked**, while revoked supporting credentials
+retain their separate heading. Missing lifecycle evidence uses **Revocation
+reported** without guessing the cause. Both English and Georgian distinguish
+these cases. This changes wording only: root status, credential validity,
+historical currency and the independently checked blockchain badge remain
+separate. No backend field, permission or verification rule is changed.
+The public registry skips credential assessment for cancelled identities and can
+return `credential_status=UNVERIFIABLE` even when an authorized Credential read
+still reports VALID. The page preserves that unavailable public fact rather than
+inferring that the academic credential was revoked or exposing private data.
+
 ## Configuration
 
 The same-origin `/api/` client and exact PostgreSQL registry contracts are enabled by default in live mode. `VITE_PUBLIC_VERIFICATION_ENABLED=false` disables requests. An explicitly empty `VITE_PUBLIC_VERIFICATION_SOURCES` also disables requests. Defaults/expected labels are POSTGRESQL_CREDENTIAL_REGISTRY, POSTGRESQL_PASSPORT_REGISTRY and POSTGRESQL_DOCUMENT_REGISTRY; method-specific labels must match. These labels are not signatures or issuer trust grants; Django enforces current issuer policy. Simulated/test/mock responses remain rejected even if listed, and Demo Mode cannot perform official verification.

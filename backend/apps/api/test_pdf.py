@@ -432,14 +432,18 @@ class PassportPDFAPITests(TransactionTestCase):
         self.assertLessEqual(queries(), before)
         self.assertLessEqual(before, 5)
 
-    def test_prior_issued_generation_remains_downloadable_after_new_renderer_failure(self):
+    def test_issued_generation_is_reused_even_when_upgraded_renderer_is_unavailable(self):
         first = self.generate()
         _, original = self.download()
-        with patch('apps.passports.document_services.renderer_fingerprint', return_value='f' * 64):
-            with patch('apps.passports.document_services.render_passport_pdf', side_effect=RuntimeError('renderer unavailable')):
-                self.assertEqual(self.generate().status_code, 503)
+        with patch('apps.passports.document_services.renderer_fingerprint', side_effect=AssertionError('Do not load upgraded renderer assets')):
+            with patch('apps.passports.document_services.render_passport_pdf', side_effect=RuntimeError('renderer unavailable')) as renderer:
+                reused = self.generate()
+                self.assertEqual(reused.status_code, 200)
+                self.assertEqual(reused.data['document_reference'], first.data['document_reference'])
+        renderer.assert_not_called()
+        self.assertEqual(PassportDocument.objects.filter(passport_version=self.version).count(), 1)
         state = self.client.get(self.url + 'status/').data
-        self.assertEqual(state['status'], 'FAILED')
+        self.assertEqual(state['status'], 'ISSUED')
         self.assertTrue(state['available_for_download'])
         self.assertEqual(state['download_document_reference'], first.data['document_reference'])
         _, fallback = self.download()

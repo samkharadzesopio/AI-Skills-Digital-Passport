@@ -3,7 +3,7 @@ import { api } from '../../services/api'
 import { demoMode } from '../../demo/mode'
 import { parsePage, uuid } from '../../student/contracts'
 import { AdminError } from './service'
-import { parsePreview, profile } from './spreadsheet-contracts'
+import { automaticPoll, automaticSource, parsePreview, profile } from './spreadsheet-contracts'
 import type { ImportPreview, ImportProfile } from './spreadsheet-contracts'
 
 const problems: Record<string, string> = {
@@ -18,6 +18,8 @@ const problems: Record<string, string> = {
   SOURCE_PROFILE_DISABLED_OR_CHANGED: 'This approved profile was disabled or changed. Refresh the profiles and create a new preview.',
   INSTITUTIONAL_SOURCE_OR_ISSUER_NOT_CONFIGURED: 'The institutional source or trusted issuer needs configuration. Contact the administrator.',
   INVALID_SPREADSHEET_OR_MAPPING: 'The workbook does not match the approved profile. Check the worksheet, header aliases, dates and file format.',
+  INVALID_AUTOMATION_CONTROL: 'Select a polling interval from 60 to 86400 seconds, provide an authorization reference and explicitly confirm continuing source processing.',
+  AUTOMATION_APPROVED_AWARD_PROFILE_REQUIRED: 'Automatic polling requires an independently approved Google awarded-skill profile.',
 }
 export class SpreadsheetError extends AdminError {
   constructor(status: number, code: string, retryAfter: number) { super(status, retryAfter); this.message = problems[code] ?? this.message }
@@ -40,3 +42,9 @@ export function confirmPreview(preview: ImportPreview, signal?: AbortSignal) {
   if (!/^[a-f0-9]{64}$/.test(preview.snapshot_sha256) || !['READY','FAILED'].includes(preview.state) || Date.parse(preview.expires_at) <= Date.now() || preview.report.valid_records < 1) throw new AdminError(409)
   return request('post', `integrations/import/previews/${uuid(preview.id)}/confirm/`, parsePreview, { confirm: true, snapshot_sha256: preview.snapshot_sha256 }, signal)
 }
+export function getAutomaticSources(page:number,signal?:AbortSignal) { if(!Number.isSafeInteger(page)||page<1) throw new AdminError(400); return request('get',`integrations/import/automatic-sources/?page=${page}`,v=>parsePage(v,automaticSource),undefined,signal) }
+export function configureAutomaticSource(id:string, enabled:boolean, interval:number, reference:string, signal?:AbortSignal) {
+  if(enabled&&(!Number.isSafeInteger(interval)||interval<60||interval>86400||!reference.trim()||reference.length>255)) throw new AdminError(400)
+  return request('post',`integrations/import/automatic-sources/${uuid(id)}/`,automaticSource,enabled?{enabled:true,confirm:true,interval_seconds:interval,authorization_reference:reference.trim()}:{enabled:false},signal)
+}
+export function getAutomaticHistory(id:string,page:number,signal?:AbortSignal) { if(!Number.isSafeInteger(page)||page<1) throw new AdminError(400); return request('get',`integrations/import/automatic-sources/${uuid(id)}/history/?page=${page}`,v=>parsePage(v,automaticPoll),undefined,signal) }

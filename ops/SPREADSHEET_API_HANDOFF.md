@@ -83,3 +83,48 @@ switch. Never infer approval from `Passport Sync Status`, existing Passport IDs,
 badge formulas or a local preview. The connected controls keep private state in
 memory, remount on account changes, require explicit confirmation and never
 automatically retry a confirmation POST. Strict completion controls remain available.
+
+## Opt-in automatic Google awarded-skill discovery (PD-01 / PD-01a)
+
+Existing manually reviewed imports retain the contract above. An importing
+administrator can separately authorize recurring processing of an existing,
+enabled, institutionally approved Google `SKILL_AWARD` profile. This uses the
+existing `accounts.import_completions` grant and session/CSRF controls. No student
+consent field, endpoint or control is added. Administrator source authorization
+does not establish institutional academic approval or a legal processing basis.
+
+- `GET /api/integrations/import/automatic-sources/?page=1` lists profiles/status.
+- `POST /api/integrations/import/automatic-sources/<profile_uuid>/` enables with
+  exactly `{"enabled":true,"confirm":true,"interval_seconds":300,
+  "authorization_reference":"institutional continuing-authority reference"}`.
+  The interval is an integer from 60 to 86400; the reference is required and at
+  most 255 characters. Disable accepts exactly `{"enabled":false}`. Actor comes
+  from the current authenticated administrator. Caller-selected actors, target
+  IDs/URLs, records, profiles, credentials and issuers are rejected.
+- `GET /api/integrations/import/automatic-sources/<profile_uuid>/history/?page=1`
+  returns sanitized states, counts, error codes, timestamps and saved preview IDs.
+  Responses never include private source rows/targets or authorization references.
+
+The worker is a separate supervised integration process:
+`python backend/manage.py poll_spreadsheet_sources --watch --limit 10`.
+Without `--watch` it runs one bounded cycle. Enabling a source does not start the
+worker. Do not run against a real institution or persistent database without the
+required operator approval and source/credential/governance setup.
+
+Automation defaults off. Enable pins the configured spreadsheet identity,
+worksheet, normalized bounded range and immutable policy fingerprint. Drift
+records `AUTOMATION_SOURCE_CHANGED_REAUTHORIZE` and cannot issue until explicit
+reauthorization of a valid target. Existing approved-source, immutable profile,
+fixed trusted issuer, exact student/skill matching, CONFIRMED-only processing and
+Record ID deduplication remain mandatory. The active actor/grant and binding
+lease are rechecked under each award transaction; disable/revocation prevents
+later commits. Poll completion/recovery lock binding then poll to avoid stale
+worker lock inversion. Provider reads remain outside database transactions.
+
+Unchanged snapshots create no new imports or official versions. Provider failure
+keeps the previous safe checkpoint, records a redacted error and can recover on
+a later poll. Interrupted leases are reclaimable; stale workers cannot restore
+disabled/re-authorized state or overwrite the new lease/history. Existing saved
+failed previews reuse the bounded attempt budget when eligible. Issuance counts
+still do not imply blockchain confirmation; existing Passport/publication/chain
+workers and public proof verification remain authoritative.

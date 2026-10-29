@@ -1,0 +1,58 @@
+{
+  "synthetic": true,
+  "disposable_postgresql": true,
+  "tests": 12,
+  "failures": 0,
+  "errors": 0,
+  "pdfs": [
+    {
+      "skills": 1,
+      "pages": 5,
+      "sha256": "4e291f573bf63d0e0a93294ac3d2d317f6d0e58a822327609b64539aa59ba88b",
+      "neutral_stamp_text": true,
+      "actual_earned_date": true,
+      "verification_reference_preserved": true
+    },
+    {
+      "skills": 5,
+      "pages": 5,
+      "sha256": "6b1f5f97947571f7109d714fa35aa34a62d0a9db5dd970ece6de626f85c67784",
+      "neutral_stamp_text": true,
+      "actual_earned_date": true,
+      "verification_reference_preserved": true
+    },
+    {
+      "skills": 6,
+      "pages": 6,
+      "sha256": "26df5844be03964b34a11445893877ac8d5f1701d26abf017c23189b846496d4",
+      "neutral_stamp_text": true,
+      "actual_earned_date": true,
+      "verification_reference_preserved": true
+    },
+    {
+      "skills": 10,
+      "pages": 6,
+      "sha256": "a212ef759b97e3e2af61b2e453d3f6871c13a004676aa443f00a1de180ad5ac8",
+      "neutral_stamp_text": true,
+      "actual_earned_date": true,
+      "verification_reference_preserved": true
+    },
+    {
+      "skills": 11,
+      "pages": 7,
+      "sha256": "4b7949a448101bda45c8f910baa5fac063d86ad17c0cba03d6326673cf86c6f2",
+      "neutral_stamp_text": true,
+      "actual_earned_date": true,
+      "verification_reference_preserved": true
+    },
+    {
+      "skills": 13,
+      "pages": 7,
+      "sha256": "e5f7174f291fe71e45bd717df5008041aa8e8e79352c2fdf1cd254d6103e0faa",
+      "neutral_stamp_text": true,
+      "actual_earned_date": true,
+      "verification_reference_preserved": true
+    }
+  ],
+  "owned_cleanup": "PASS"
+}

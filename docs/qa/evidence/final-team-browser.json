@@ -1,0 +1,281 @@
+{
+  "passed": true,
+  "synthetic": true,
+  "mockedResponses": false,
+  "checks": [
+    "Actual administrator login, Live imports and explicit source authorization",
+    "Scheduled synthetic CONFIRMED discovery, permanent Passport identity and actual confirmed Anvil proof",
+    "Real student OTP/session, awarded skill, actual Passport, registered PDF download, share and history",
+    "Public original VALID, altered UNVERIFIABLE, historical bytes/hash unchanged, anonymous/student/CSRF denials and administrative disable",
+    "Student and administrator logout invalidate protected navigation"
+  ],
+  "calls": [
+    {
+      "path": "/api/accounts/me/",
+      "status": 403,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/login/",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/admin/statistics/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/909e9623-34b4-4522-b434-e35ceeecacce/",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 403,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/otp/request/",
+      "status": 202,
+      "method": "POST"
+    },
+    {
+      "path": "/api/accounts/otp/verify/",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/dashboard/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/passport/pdf/status/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/passport/pdf/download/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/skills/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/passport/versions/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/verification/passport/3fb4ae88-2901-4e53-9d8c-fceadcd363aa/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/verification/document/",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/verification/document/",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/909e9623-34b4-4522-b434-e35ceeecacce/",
+      "status": 403,
+      "method": "POST"
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/909e9623-34b4-4522-b434-e35ceeecacce/",
+      "status": 200,
+      "method": "POST"
+    },
+    {
+      "path": "/api/integrations/imports/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/profiles/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/integrations/import/automatic-sources/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/dashboard/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/student/passport/pdf/status/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/verification/passport/3fb4ae88-2901-4e53-9d8c-fceadcd363aa/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/csrf/",
+      "status": 200,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/logout/",
+      "status": 204,
+      "method": "POST"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 403,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/me/",
+      "status": 403,
+      "method": "GET"
+    },
+    {
+      "path": "/api/accounts/logout/",
+      "status": 204,
+      "method": "POST"
+    }
+  ],
+  "errors": [],
+  "public_url": "http://127.0.0.1:53690/verify/reference?kind=passport&reference=3fb4ae88-2901-4e53-9d8c-fceadcd363aa"
+}

@@ -8,6 +8,9 @@ creates its own fresh cluster; no existing development database is adopted.
 
 Current handoff documents:
 
+- [Mentor-approved local blockchain video demo](../blockchain/VIDEO_DEMO.md)
+- [Fresh isolated recording after lost Anvil state](../blockchain/VIDEO_DEMO.md#if-the-saved-anvil-state-is-empty-or-missing)
+- [Live Chrome / Django / Anvil acceptance](LOCAL_WEBSITE_ACCEPTANCE_2026-10-28.md)
 - [Backend API contracts and remaining frontend work](BACKEND_API_HANDOFF.md)
 - [Captured synthetic HTTP/Anvil examples](BACKEND_CONTRACT_EXAMPLES.json)
 - [Persistent-data migration and worker runbook](BACKEND_MIGRATION_RUNBOOK.md)
@@ -143,3 +146,28 @@ production-settings deployment check, live SMTP/Google/Classroom access, or shar
 Neon migration was performed during this checkpoint.
 
 Current verification validation: 379 tests passed (381 discovered, two legacy comparisons explicitly excluded). See backend/apps/verification/docs/PERFORMANCE.md for current measurements and INTEGRATION_REVIEW.md for status/API compatibility.
+# Persistent local Live review
+
+`python -B ops/run_isolated_tests.py --review-stop-file ABSOLUTE_NEW_PATH.stop`
+starts the existing owned local session without depending on an open console.
+Use a new, short TEMP/TMP directory and the PostgreSQL/Anvil binaries described
+in `BACKEND_ANVIL_LOCAL_RUNBOOK.md`. The stop file's parent must already exist.
+Never select live-Google flags for this session.
+
+This mode keeps fresh loopback PostgreSQL, Django, Vite (Demo Mode OFF), local
+Anvil and durable workers running until the stop file is created. It does not
+reuse development databases or load production settings. Only its synthetic
+Google provider is replaced; authentication, CSRF, source authorization,
+validation, imports, PDFs and blockchain verification use the actual code.
+`review-ready.json` beside the stop file gives actual URLs and the private
+synthetic login/OTP file path. Keep that private file out of Git and recordings.
+Request a student OTP through the UI, then read it privately from that file.
+Source synchronization starts disabled; an authorized admin may enable it.
+Create the named stop file to stop and dispose only this session's resources.
+The session is local development, has no reboot/restart guarantee, and sends no
+real email or Google requests. Existing `--manual-demo` controls remain available.
+
+Focused combined checks: `--team-regression --automatic-passport --chain-http`.
+After starting a review session, run `frontend/scripts/check-team-acceptance.mjs`
+with `BTU_REVIEW_READY`, `BTU_BROWSER_TOOLS` and `BTU_BROWSER_EXECUTABLE` to exercise
+actual Chrome with synthetic data and leave the website available afterward.

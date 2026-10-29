@@ -30,6 +30,7 @@ django.setup()
 import requests
 from django.conf import settings
 from django.core.mail.backends.locmem import EmailBackend
+from django.core.management import call_command
 from django.core.wsgi import get_wsgi_application
 from django.db import connections
 from django.test import TransactionTestCase, override_settings
@@ -70,11 +71,16 @@ class TestMailbox(EmailBackend):
 
 def main():
     global mailbox_path
-    if not os.environ.get('BTU_BROWSER_TOOLS'):
+    manual = '--manual-demo' in sys.argv or '--demo-smoke' in sys.argv
+    if not manual and not os.environ.get('BTU_BROWSER_TOOLS'):
         raise RuntimeError('Set BTU_BROWSER_TOOLS to isolated Playwright tools.')
-    output = Path(tempfile.mkdtemp(prefix='btu-live-browser-results-'))
+    output = None if manual else Path(tempfile.mkdtemp(prefix='btu-live-browser-results-'))
     with DisposableRun() as owned:
+        if manual:
+            print('Preparing owned demo database and migrations...', flush=True)
         owned.database()
+        if manual:
+            print('Starting fresh local Anvil and preparing synthetic records...', flush=True)
         Fixture.setUpClass()
         owned.callback(Fixture.doClassCleanups)
         fixture = Fixture()
@@ -87,6 +93,7 @@ def main():
             ROOT_URLCONF='config.urls', ALLOWED_HOSTS=['127.0.0.1'],
             PASSPORT_BLOCKCHAIN_CONFIRMATIONS=3,
             EMAIL_BACKEND='__main__.TestMailbox',
+            **({'PASSWORD_HASHERS': ['django.contrib.auth.hashers.PBKDF2PasswordHasher']} if manual else {}),
         ))
         fixture.student.email = 'browser.student@btu.edu.ge'
         fixture.student.save(update_fields=['email'])
@@ -97,8 +104,14 @@ def main():
         admin = User.objects.create_admin_user(
             email='browser.admin@btu.edu.ge', password=password,
             permission_codenames={'view_student_records', 'manage_credentials', 'revoke_credentials',
-                                  'manage_student_accounts', 'import_completions', 'sync_classroom'},
+                                  'manage_student_accounts', 'import_completions', 'sync_classroom',
+                                  'manage_passport_lifecycle'} |
+                                 ({'manage_legal_identity'} if manual else set()),
         )
+        if manual:
+            # Consume the fixture credential's real durable refresh before
+            # publishing so startup has no hidden pending version update.
+            call_command('process_passport_refreshes', batch_size=20)
         version, _ = publish_passport_version(student_id=fixture.student.pk, event_key='SYNTHETIC-BROWSER-V2')
         process_publications(20)
         for _ in range(8):
@@ -111,11 +124,19 @@ def main():
         assert not PassportAnchor.objects.exclude(state='CONFIRMED').exists()
         document = PassportDocument.objects.get(passport_version=version, status='ISSUED')
         assert document_proof(document.public_reference)['blockchain_verified'] is True
+        if manual:
+            print('Synthetic PDF proofs confirmed; starting Django/Vite...', flush=True)
         mailbox_path.write_text(json.dumps({
             'studentEmail': fixture.student.email, 'adminEmail': admin.email,
             'adminPassword': password, 'otp': None,
         }), encoding='utf-8')
         mailbox_path.chmod(0o600)
+        review_stop = None
+        synthetic_source = None
+        if '--review-stop-file' in sys.argv:
+            review_stop = Path(sys.argv[sys.argv.index('--review-stop-file') + 1]).resolve()
+            from review_session import prepare_synthetic_source
+            synthetic_source = prepare_synthetic_source(owned, fixture, artifact_dir)
         (artifact_dir / 'preview-runtime.json').write_text(json.dumps({
             'synthetic': True, 'studentId': str(fixture.student.pk),
             'credentialId': str(fixture.credential.pk),
@@ -173,6 +194,19 @@ def main():
             time.sleep(.25)
         else:
             raise RuntimeError('Owned Vite/Django proxy did not become ready.')
+        if manual:
+            from manual_demo import recording_session
+            if review_stop:
+                ready = {'synthetic': True, 'mode': 'LIVE', 'frontend': base,
+                         'backend': f'http://127.0.0.1:{server.server_port}',
+                         'anvil': fixture.local.rpc_url, 'postgres_port': settings.DATABASES['default']['PORT'],
+                         'private_fixture': str(mailbox_path), 'stop_file': str(review_stop),
+                         'pid': os.getpid(), **synthetic_source}
+                (review_stop.parent / 'review-ready.json').write_text(json.dumps(ready, indent=2), encoding='utf-8')
+            recording_session(owned, fixture, base, mailbox_path, smoke='--demo-smoke' in sys.argv,
+                              stop_file=review_stop)
+            connections.close_all()
+            return
         try:
             result = owned.command(['node', 'scripts/check-passport-browser.mjs'], cwd=ROOT / 'frontend', env=env)
             if result.returncode:

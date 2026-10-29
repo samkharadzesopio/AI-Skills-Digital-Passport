@@ -86,6 +86,49 @@ try {
   const revokedMarkup=render(parseVerification(pdfResult('REVOKED'),'document',trusted))
   assert.match(revokedMarkup,/Recognized issued record or document/);assert.match(revokedMarkup,/Latest issued version/);assert.match(revokedMarkup,/Credential support has been revoked/)
   assert.doesNotMatch(revokedMarkup,/PRIVATE/)
+  const passportRevoked = parseVerification(pdfResult('REVOKED', {
+    is_latest: false, credential_status: 'VALID', credential_counts: { VALID: 1, REVOKED: 0, EXPIRED: 0, INVALID: 0 },
+    blockchain: { status: 'UNAVAILABLE', passport_status: 'REVOKED', private_email: 'PRIVATE' },
+  }), 'document', trusted)
+  assert.equal(passportRevoked.status, 'revoked');assert.equal(passportRevoked.blockchain, 'unavailable')
+  assert.equal(passportRevoked.publicInfo.passportStatus, 'revoked')
+  const passportRevokedMarkup = render(passportRevoked)
+  assert.match(passportRevokedMarkup, /<h1>Passport revoked<\/h1>/)
+  assert.match(passportRevokedMarkup, /supporting credentials have separate validity statuses/)
+  assert.match(passportRevokedMarkup, /Historical version/)
+  assert.doesNotMatch(passportRevokedMarkup, /Credential support has been revoked|PRIVATE/)
+  const unassessedSupport = parseVerification(pdfResult('REVOKED', {
+    is_latest: false, credential_status: 'UNVERIFIABLE', credential_counts: {},
+    blockchain: { status: 'CONFIRMED', passport_status: 'REVOKED' },
+  }), 'document', trusted)
+  assert.match(render(unassessedSupport), /<h1>Passport revoked<\/h1>/)
+  assert.match(render(unassessedSupport), /Could not be established/)
+  assert.doesNotMatch(render(unassessedSupport), /Credential support has been revoked/)
+  for (const method of ['passport', 'passport-version', 'document']) {
+    const input = (method === 'document' ? pdfResult : snapshot)('REVOKED', {
+      blockchain: { status: 'CONFIRMED', passport_status: 'ACTIVE' },
+    })
+    const support = parseVerification(input, method, trusted)
+    assert.equal(support.publicInfo.passportStatus, 'active')
+    assert.match(render(support), /<h1>Credential support has been revoked<\/h1>/)
+    const both = parseVerification({ ...input, blockchain: { passport_status: 'REVOKED' } }, method, trusted)
+    assert.match(render(both), /<h1>Passport revoked<\/h1>/)
+  }
+  for (const passport_status of [undefined, 'PRIVATE', { private: 'PRIVATE' }]) {
+    const unknown = parseVerification(pdfResult('REVOKED', { credential_status: 'VALID',
+      credential_counts: { VALID: 1, REVOKED: 0, EXPIRED: 0, INVALID: 0 },
+      blockchain: { status: 'UNAVAILABLE', passport_status },
+    }), 'document', trusted)
+    assert.equal(unknown.publicInfo.passportStatus, undefined)
+    assert.match(render(unknown), /<h1>Revocation reported<\/h1>/)
+    assert.doesNotMatch(render(unknown), /PRIVATE|Credential support has been revoked|<h1>Passport revoked/)
+  }
+  const {LocaleProvider}=await server.ssrLoadModule('/src/i18n.tsx')
+  localStorage.setItem('btu-locale', 'ka')
+  const kaMarkup = renderToString(React.createElement(LocaleProvider, null,
+    React.createElement(MemoryRouter, null, React.createElement(VerificationResultView, {outcome:passportRevoked}))))
+  assert.match(kaMarkup, /პასპორტი გაუქმებულია/)
+  localStorage.removeItem('btu-locale')
   assert.match(render(uncertain),/current credential validity could not be established/)
   assert.doesNotMatch(render(uncertain),/The university service could not establish authenticity/)
   async function mount(path){if(root)await act(async()=>root.unmount());client?.clear();client=new QueryClient();root=createRoot(document.getElementById('root'));await act(async()=>root.render(React.createElement(QueryClientProvider,{client},React.createElement(MemoryRouter,{initialEntries:[path]},React.createElement(AppRoutes)))))}
