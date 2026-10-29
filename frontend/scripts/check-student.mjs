@@ -32,7 +32,7 @@ try {
   assert.throws(()=>contracts.parseDashboard({...dashboard,credentials:{total:'1'}}))
   assert.throws(()=>contracts.parseVersion({...version,skills:[{}]}))
   assert.throws(()=>contracts.parsePage({count:1,results:{},next:null,previous:null},contracts.parseCredential))
-  let failure=0, hold=false, empty=false, pdfState={...pdf}, downloads=0
+  let failure=0, hold=false, empty=false, noVersion=false, pdfState={...pdf}, downloads=0
   const calls=[]
   api.defaults.adapter=async config=>{
     calls.push(config)
@@ -52,7 +52,7 @@ try {
     }
     if(config.url.endsWith('download/'))return response(200,new Blob(['%PDF-test'],{type:'application/pdf'}),{'content-type':'application/pdf','content-disposition':`attachment; filename="btu-passport-${version.public_reference}.pdf"`})
     if(config.url.endsWith('pdf/status/'))return response(200,pdfState)
-    if(config.url==='student/dashboard/')return response(200,dashboard)
+    if(config.url==='student/dashboard/')return response(200,empty?{...dashboard,passport:null,recognized_skills:0,verified_achievements:0,credentials:{total:0,valid:0,expired:0,revoked:0,invalid:0},recent_achievements:[],recent_credentials:[],skills_by_category:[],skills_by_subcategory:[]}:noVersion?{...dashboard,passport:{...passport,latest_version:null}}:dashboard)
     if(config.url==='student/passport/')return response(200,empty?{passport:null}:passport)
     const resources={'skills':[{...skill,achievements:[achievement],achievements_limit:100}],'achievements':[achievement],'credentials':[credential],'passport/versions':[version]}
     for(const [resource,rows] of Object.entries(resources))if(config.url.startsWith(`student/${resource}/?page=`)){
@@ -94,7 +94,23 @@ try {
   failure=500;await mount(pages.LiveCredentials);await until(()=>document.body.textContent.includes('Records unavailable'))
   assert.doesNotMatch(document.body.textContent,/Synthetic university|Nino|Demo/)
   failure=0;await click('Retry records');await until(()=>document.body.textContent.includes('Current validity: VALID'))
-  empty=true;await mount(pages.LivePassport);await until(()=>document.body.textContent.includes('No issued Passport yet'));empty=false
+  const beforeBlank=calls.length
+  empty=true;await mount(pages.LivePassport);await until(()=>document.body.textContent.includes('No academic records linked yet'))
+  assert.equal(document.querySelectorAll('.passport-slide').length,4)
+  assert.equal(document.querySelectorAll('.passport-green-seal').length,0,'A blank preview must not display an issuer seal')
+  assert.ok([...document.querySelectorAll('button')].filter(b=>['Download PDF','Share Passport'].includes(b.textContent)).every(b=>b.disabled))
+  assert.ok(calls.slice(beforeBlank).every(c=>c.method==='get'&&!c.url.includes('/pdf/')),'An unissued preview never requests or generates an official PDF')
+  assert.doesNotMatch(document.querySelector('.blank-passport').textContent,/Persisted reasoning|Blockchain verified|00000000-/)
+  empty=false
+  noVersion=true;await mount(pages.LiveDashboard);await until(()=>document.body.textContent.includes('Your passport has not been issued yet'))
+  assert.doesNotMatch(document.body.textContent,/No academic records linked yet/,'Existing approved records must not be described as missing')
+  noVersion=false
+  await mount(pages.LiveVersions);await until(()=>document.body.textContent.includes('Current version'))
+  assert.equal(document.querySelector('.is-current a').textContent,'Version 1')
+  await click('Next');await until(()=>document.body.textContent.includes('Page 2'))
+  assert.ok(calls.some(c=>c.url==='student/passport/versions/?page=2'))
+  empty=true;await mount(pages.LiveVersions);await until(()=>document.body.textContent.includes('No passport history yet'))
+  assert.equal(document.querySelectorAll('.passport-version').length,0);empty=false
   pdfState={...pdf,status:'GENERATING'};await mount(PdfActions)
   await until(()=>document.body.textContent.includes('Generation in progress'))
   assert.ok([...document.querySelectorAll('button')].some(b=>b.textContent==='Generate Passport PDF'&&b.disabled))

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowDownToLine, Award, Check } from 'lucide-react'
+import { ArrowDownToLine, Award, Check, Target } from 'lucide-react'
 import { getDemoStudent } from './data/mock'
 import { demoPassport } from './data/passport'
 import { PassportCard } from './components/PassportCard'
@@ -12,4 +12,4 @@ function useStudent() { return useQuery({ queryKey: ['demo-student'], queryFn: g
 function Credentials() { const { data } = useStudent(); return <div className="credential-list">{data?.credentials.length ? data.credentials.map(c => <div className="credential" key={c.id}><div className="credential-icon"><Award size={23}/></div><div><h3>{c.title}</h3><p>{c.issuer} <span>·</span> {c.date}</p></div><span className="badge"><Check size={12}/>Demo credential</span></div>) : <EmptyState title="No credentials yet">Your issued credentials will appear here.</EmptyState>}</div> }
 export function Dashboard() { return <section className="dashboard-passport" aria-label="Your Digital Passport"><PassportCard data={structuredPassportCard(demoPassport)} compact/><div className="dashboard-passport-actions"><button className="button" disabled>Download PDF</button><button className="button" disabled>Share Passport</button><button className="button" disabled>View History</button></div><p className="muted">Demo Mode: no issued PDF, public reference, or passport history is available.</p></section> }
 export function Detail({ page }: { page: string }) { return <><h1>{page}</h1><p className="muted">Explore your learning journey · Demonstration data</p><Card>{page === 'AI skills & competencies' ? <Skills/> : page === 'Verified credentials' ? <><p className="notice">Sample credentials only. These are not university-issued records.</p><Credentials/></> : <><Passport showTemplate/><p className="notice">Preview only. Export and sharing will be enabled when university issuance is connected.</p><button className="button" disabled><ArrowDownToLine size={16}/> Export PDF · Coming soon</button></>}</Card></> }
-export function Gap() { return <Card><h1>Skills Gap Analyzer</h1><EmptyState title="Coming Soon">University-approved competency mappings are not available yet.</EmptyState></Card> }
+export function Gap() { return <Card className="student-gap-card"><h1>Skills Gap Analyzer</h1><div className="student-gap-empty"><span className="student-empty-icon"><Target size={32} aria-hidden="true"/></span><h2>Coming Soon</h2><p>University-approved competency mappings are not available yet.</p></div></Card> }

@@ -134,6 +134,17 @@ try {
  sessionNetwork=false
  current={...student}
  await mount('/student/dashboard');await until(()=>document.body.textContent.includes('Authenticated Student'))
+ current={...student,student_association:'unlinked'}
+ await act(async()=>root.unmount());root=null
+ await new Promise(resolve=>setTimeout(resolve,10))
+ await mount('/student/dashboard');await until(()=>document.body.textContent.includes('No academic records linked yet'))
+ const unlinkedStart=calls.length
+ assert.equal(document.querySelectorAll('.passport-slide').length,4)
+ assert.doesNotMatch(document.querySelector('main').textContent,/Authenticated Student|Persisted reasoning|Blockchain verified/)
+ const historyLink=document.querySelector('nav[aria-label="Student navigation"] a[href="/student/passport/versions"]')
+ await act(async()=>historyLink.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true})))
+ await until(()=>document.body.textContent.includes('No passport history yet'))
+ assert.ok(calls.slice(unlinkedStart).every(c=>c.path==='accounts/me/'),'Unlinked preview must preserve the private API access guard: '+JSON.stringify(calls.slice(unlinkedStart).map(c=>c.path)))
  current=null
  await mount('/student/dashboard');await until(()=>window.location.pathname==='/student/login')
  assert.doesNotMatch(document.body.textContent,/unit.student@btu.edu.ge|Nino/)
