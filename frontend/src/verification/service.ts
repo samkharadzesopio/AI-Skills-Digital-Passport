@@ -4,7 +4,8 @@ import type { ReferenceKind, VerificationConfig, VerificationFailure, Verificati
 import { isPublicApiBaseSafe, normalizeReference, retryDeadline, validatePdf } from './validation'
 import { failure, parseVerification, registrySources } from './adapters'
 export { failure, parseVerification, registrySources } from './adapters'
-const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/'
+// Production uses the same-origin proxy, including when an old Vercel variable points at Render.
+const apiBase = import.meta.env.DEV ? import.meta.env.VITE_API_BASE_URL || '/api/' : '/api/'
 const sourceConfig: string = import.meta.env.VITE_PUBLIC_VERIFICATION_SOURCES ?? [...new Set(Object.values(registrySources))].join(',')
 export const verificationConfig: VerificationConfig = {
   enabled: !demoMode && import.meta.env.VITE_PUBLIC_VERIFICATION_ENABLED !== 'false' && isPublicApiBaseSafe(apiBase, import.meta.env.DEV),

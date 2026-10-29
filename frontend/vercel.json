@@ -6,8 +6,16 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/api",
+      "destination": "https://btu-digital-passport.onrender.com/api"
+    },
+    {
+      "source": "/api/:tail*",
+      "destination": "https://btu-digital-passport.onrender.com/api/:tail*"
+    },
+    {
       "source": "/api:tail(/.*)?",
-      "destination": "https://ai-skills-digital-passport.onrender.com/api:tail"
+      "destination": "https://btu-digital-passport.onrender.com/api:tail"
     },
     {
       "source": "/((?!api(?:/|$)).*)",

@@ -34,10 +34,12 @@ async function render(server, route) {
 try {
   const config = JSON.parse(await fs.readFile(new URL('../vercel.json', import.meta.url), 'utf8'))
   assert.deepEqual(config.rewrites, [
-    { source: '/api:tail(/.*)?', destination: 'https://ai-skills-digital-passport.onrender.com/api:tail' },
+    { source: '/api', destination: 'https://btu-digital-passport.onrender.com/api' },
+    { source: '/api/:tail*', destination: 'https://btu-digital-passport.onrender.com/api/:tail*' },
+    { source: '/api:tail(/.*)?', destination: 'https://btu-digital-passport.onrender.com/api:tail' },
     { source: '/((?!api(?:/|$)).*)', destination: '/index.html' },
   ], 'API requests must reach Render before the SPA fallback handles deep links')
-  const fallback = new RegExp('^' + config.rewrites[1].source + '$')
+  const fallback = new RegExp('^' + config.rewrites.at(-1).source + '$')
   for (const route of ['/api', '/api/', '/api/accounts/csrf/', '/api/verification/passport/reference/']) {
     assert.equal(fallback.test(route), false, `${route} must never resolve to the React index`)
   }

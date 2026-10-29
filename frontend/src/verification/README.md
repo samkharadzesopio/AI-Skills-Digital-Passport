@@ -36,7 +36,12 @@ inferring that the academic credential was revoked or exposing private data.
 
 The same-origin `/api/` client and exact PostgreSQL registry contracts are enabled by default in live mode. `VITE_PUBLIC_VERIFICATION_ENABLED=false` disables requests. An explicitly empty `VITE_PUBLIC_VERIFICATION_SOURCES` also disables requests. Defaults/expected labels are POSTGRESQL_CREDENTIAL_REGISTRY, POSTGRESQL_PASSPORT_REGISTRY and POSTGRESQL_DOCUMENT_REGISTRY; method-specific labels must match. These labels are not signatures or issuer trust grants; Django enforces current issuer policy. Simulated/test/mock responses remain rejected even if listed, and Demo Mode cannot perform official verification.
 
-Optional VITE_API_BASE_URL retains safe same-origin/HTTPS (development loopback HTTP) validation. Production still needs its approved API routing and source policy. Public requests do not use Student login cookies or private CSRF bootstrap; private API/session/CSRF behavior is unchanged.
+Production always uses same-origin `/api/`, even if an old Vercel environment
+variable contains a direct backend URL. Optional `VITE_API_BASE_URL` is used only
+by development servers, retaining safe same-origin/HTTPS and loopback HTTP
+validation. Vercel must load `frontend/vercel.json` with Root Directory `frontend`
+to forward API requests to Render. Public requests do not use Student login
+cookies or private CSRF bootstrap; private API/session/CSRF behavior is unchanged.
 
 ## Tests and remaining scope
 

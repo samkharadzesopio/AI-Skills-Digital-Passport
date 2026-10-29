@@ -17,6 +17,29 @@ Django must run separately with an approved local configuration. Keep `VITE_ENAB
 
 For fresh Vercel hosting, set the project Root Directory to `frontend`. The tracked `vercel.json` uses `npm ci`, `npm run build`, and `dist`, forwards `/api/` paths (including trailing slashes) to Render, and serves frontend routes through `index.html`. See [Vercel and Render environment audit](../ops/VERCEL_RENDER_ENVIRONMENT_AUDIT.md) for exact variables, branch/environment scope, and live dashboard checks. Every static build uses Live Mode; `BTU_DEMO_BUILD` no longer enables synthetic data.
 
+Production is `https://btu-digital-passport.vercel.app`, with API requests forwarded
+to `https://btu-digital-passport.onrender.com`. Student/Admin authentication and
+public reference/PDF verification all use same-origin `/api/` requests. Production
+ignores `VITE_API_BASE_URL`; a development server can still override it for local
+acceptance. The rewrite includes Vercel's supported `/api/:tail*` mapping plus a
+slash-preserving fallback for Django URLs and an exact bare `/api` mapping.
+
+For redeployment, open this Vercel project's **Settings → Build and Deployment**
+and confirm **Root Directory = `frontend`** (not the repository root or
+`frontend/dist`), **Framework = Vite**, **Install = `npm ci`**, **Build =
+`npm run build`**, and **Output = `dist`**. This makes `frontend/vercel.json` the
+project configuration. In **Environment Variables**, set `VITE_API_BASE_URL` to
+`/api/` for Production and any Preview scopes that use this backend. Deploy the
+new `main` commit; if an automatic deployment has already run before updating the
+settings, redeploy that new commit with the build cache disabled. Redeploying an
+older commit will retain its old routing configuration.
+
+After deployment, a GET to the frontend's `/api/accounts/csrf/` must return JSON
+with HTTP 200; anonymous `/api/accounts/me/` should return JSON with HTTP 403, and
+a GET to `/api/verification/document/` should return JSON with HTTP 405 because
+PDF verification accepts POST. Frontend `/verify` and sign-in deep links must
+still load the SPA. No Render setting or database migration is needed for this fix.
+
 For the labelled preview, put `VITE_ENABLE_DEMO=true` in ignored `frontend/.env.local` and restart Vite. Open `/student/dashboard` or `/admin/dashboard`. Demo Mode is development-only, uses sample data, disables official actions and API verification, and is forced off in production builds. A demo user is never an authenticated identity.
 
 ## Routes and records

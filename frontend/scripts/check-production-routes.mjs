@@ -6,6 +6,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { pathToFileURL } from 'node:url'
 import { dashboard, pdf } from './student-fixtures.mjs'
+import { document as verificationDocument } from './verification-fixtures.mjs'
 
 const tools = process.env.BTU_BROWSER_TOOLS || path.join(os.tmpdir(), 'btu-passport-browser-tests')
 const { chromium } = await import(pathToFileURL(path.join(tools, 'node_modules/playwright/index.mjs')))
@@ -46,6 +47,7 @@ try {
         const apiCalls = []
         await page.route('**/api/**', route => {
           const url = new URL(route.request().url()), endpoint = url.pathname
+          assert.equal(url.origin, base, 'Student/Admin traffic must stay on the frontend origin')
           apiCalls.push(endpoint)
           const json = (status, body) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
           if (endpoint === '/api/accounts/me/') {
@@ -106,7 +108,28 @@ try {
       }
     }
   }
+  const publicContext = await browser.newContext()
+  const publicPage = await publicContext.newPage()
+  const publicCalls = []
+  publicPage.on('pageerror', error => pageErrors.push(error.message))
+  await publicPage.route('**/api/**', route => {
+    const request = route.request(), url = new URL(request.url()), headers = request.headers()
+    publicCalls.push({ origin: url.origin, endpoint: url.pathname, method: request.method() })
+    assert.equal(url.origin, base, 'Production verification must ignore a cross-origin VITE_API_BASE_URL')
+    assert.equal(url.pathname, '/api/verification/document/')
+    assert.equal(request.method(), 'POST')
+    for (const name of ['cookie', 'authorization', 'x-csrftoken']) assert.equal(headers[name], undefined)
+    assert.match(headers['content-type'], /^multipart\/form-data; boundary=/)
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(verificationDocument()) })
+  })
+  await publicPage.goto(base + '/verify/upload')
+  await publicPage.locator('#verification-pdf').setInputFiles({ name: 'routing.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\nSynthetic routing fixture\n%%EOF') })
+  await publicPage.locator('button.verify-submit').click()
+  await publicPage.waitForURL(base + '/verify/result')
+  assert.deepEqual(publicCalls, [{ origin: base, endpoint: '/api/verification/document/', method: 'POST' }])
+  assert.equal(await publicPage.getByRole('heading', { name: 'Verification service unavailable', exact: true }).count(), 0)
+  await publicContext.close()
   assert.deepEqual(pageErrors, [])
   assert.deepEqual(unexpected, [])
-  console.log(JSON.stringify({ artifact: 'production dist', fixtures: 'isolated Playwright API interception; no real Django or Vercel requests', cases: results.length, results, pageErrors, unexpected }, null, 2))
+  console.log(JSON.stringify({ artifact: 'production dist', fixtures: 'isolated Playwright API interception; no real Django or Vercel requests', cases: results.length, results, publicPdf: 'same-origin multipart, no private credentials', pageErrors, unexpected }, null, 2))
 } finally { await browser.close(); await new Promise(resolve => server.close(resolve)) }

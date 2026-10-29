@@ -14,7 +14,8 @@ const { version } = require('@vercel/routing-utils/package.json')
 const config = JSON.parse(await fs.readFile(new URL('../vercel.json', import.meta.url), 'utf8'))
 assert.equal(getTransformedRoutes(config).error, null, 'Vercel must accept the complete rewrite/header configuration')
 const routes = convertRewrites(config.rewrites)
-const backend = 'https://ai-skills-digital-passport.onrender.com'
+const backend = 'https://btu-digital-passport.onrender.com'
+assert.ok(config.rewrites.some(route => route.source === '/api/:tail*' && route.destination === backend + '/api/:tail*'))
 function destination(value) {
   const input = new URL(value, 'https://frontend.synthetic.invalid')
   const route = routes.find(r => new RegExp(r.src).test(input.pathname))
@@ -41,7 +42,7 @@ for (const pathname of ['/', '/api-guide', '/verify', '/verify/result', '/studen
 }
 const old = convertRewrites([{ source: '/api/:path*', destination: backend + '/api/:path*' }])[0]
 assert.equal(new RegExp(old.src).test('/api/accounts/csrf/'), false,
-  'The previous wildcard drops trailing-slash API paths into the SPA fallback')
+  'The wildcard needs the slash-preserving fallback for Django API paths')
 
 const hash = body => createHash('sha256').update(body).digest('hex')
 const servers = []
