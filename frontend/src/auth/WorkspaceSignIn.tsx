@@ -42,7 +42,9 @@ export function WorkspaceSignIn() {
       const credential = await navigator.credentials.get({
         identity: { mode: 'active', context: 'signin', providers: [{
           configURL: 'https://accounts.google.com/gsi/fedcm.json', clientId,
-          domainHint: 'btu.edu.ge', nonce: challenge.nonce, params: { nonce: challenge.nonce },
+          domainHint: 'btu.edu.ge', nonce: challenge.nonce,
+          // Google requires the ID-token parameters supplied by its GIS SDK, even with native FedCM.
+          params: { nonce: challenge.nonce, response_type: 'id_token', scope: 'email profile openid', ss_domain: window.location.origin },
         }] }, mediation: 'required',
       } as CredentialRequestOptions) as (Credential & { token?: string }) | null
       if (!credential?.token) throw new Error('Google sign-in cancelled')

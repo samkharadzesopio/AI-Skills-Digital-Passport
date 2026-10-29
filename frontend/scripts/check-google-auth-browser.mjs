@@ -20,6 +20,9 @@ await context.exposeFunction('syntheticWorkspaceCredential', options => {
   assert.equal(provider.clientId, '123456789-synthetic.apps.googleusercontent.com')
   assert.equal(provider.domainHint, 'btu.edu.ge')
   assert.equal(provider.params.nonce, provider.nonce)
+  assert.equal(provider.params.response_type, 'id_token', 'Google FedCM must request an ID token, not an authorization code')
+  assert.equal(provider.params.scope, 'email profile openid')
+  assert.equal(provider.params.ss_domain, base, 'Google must receive the actual frontend origin')
   const now = Math.floor(Date.now() / 1000)
   const claims = { iss: 'https://accounts.google.com', aud: provider.clientId, sub: 'synthetic-browser-new-subject',
     email: fixture.studentEmail, email_verified: true, hd: 'btu.edu.ge', nonce: provider.params.nonce, iat: now - 1, exp: now + 300, ...changes }
