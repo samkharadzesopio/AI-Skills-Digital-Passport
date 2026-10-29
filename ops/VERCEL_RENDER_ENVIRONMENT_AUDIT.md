@@ -5,6 +5,12 @@ Source inspection and local validation do not establish the live dashboard
 configuration, the deployed commit, database health, or successful real Google login.
 No private environment file or live provider setting is changed by this work.
 
+The owner confirmed that hosting is being configured from scratch. The current
+production frontend URL is **not yet confirmed**. The former `a3ux.vercel.app`
+address below is historical probe evidence only; do not use it as a setup value.
+No approved live test account identifiers or genuine public verification
+references have been provided.
+
 ## Vercel environment variables
 
 The only application variable needed for the current primary Student sign-in
@@ -49,7 +55,7 @@ generic Django setting names to paste into Render.
 | --- | --- | --- |
 | `DJANGO_DEBUG` | `false` | Enables production secure cookies and HTTPS redirect; `backend/config/settings.py:43,146-164`. |
 | `DJANGO_ALLOWED_HOSTS` | `ai-skills-digital-passport.onrender.com` for the normal external rewrite Host; add only exact additional hosts if the real proxy forwards those as Host | Comma-separated hostnames, without scheme/path. `USE_X_FORWARDED_HOST` is not enabled, so a browser host in `X-Forwarded-Host` does not require an allowed-host entry. No wildcard. `backend/config/settings.py:44`. |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://ai-skills-digital-passport-a3ux.vercel.app`; append exact approved Preview frontend origins, comma-separated, only after confirming their real URLs | The browser uses the Vercel origin while the external rewrite normally presents Render as Host. This proxy mismatch needs CSRF trust even though browser traffic is same-origin. Never use localhost or broad preview wildcards for production. `backend/config/settings.py:55`. |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | The exact **verified new frontend HTTPS origin**, obtained from the new Vercel deployment; append approved Preview origins comma-separated. No literal value is available yet. | The browser uses the Vercel origin while the external rewrite normally presents Render as Host. This proxy mismatch needs CSRF trust even though browser traffic is same-origin. Never use the historical URL, localhost, or broad preview wildcards for production. `backend/config/settings.py:55`. |
 | `DJANGO_TRUST_X_FORWARDED_PROTO` | `true` when Render's trusted ingress supplies/sanitizes `X-Forwarded-Proto: https` | Django must recognize terminated HTTPS or it can redirect API requests. Confirm the trusted proxy contract; clients reject redirects. `backend/config/settings.py:163`. |
 | `GOOGLE_OAUTH_CLIENT_ID` | The same approved Web Client ID as `VITE_GOOGLE_CLIENT_ID` | Server validates audience, signature, nonce, verified BTU email and `hd=btu.edu.ge`. Missing or mismatched IDs block Google login. `backend/config/settings.py:122`, `backend/apps/accounts/google_auth.py`. |
 | `DATABASE_URL` | Existing private Neon PostgreSQL connection string, supplied securely | Django requires it and uses `dj_database_url.config(ssl_require=True)`. No database URL belongs on Vercel. Live credentials/connectivity/migrations were not inspected or changed. `backend/config/settings.py:113`. |
@@ -107,6 +113,9 @@ Fresh project settings:
 
 - Root Directory: `frontend` (confirm in Vercel; not expressible by this nested file).
 - Framework: Vite.
+- Node.js Version: `24.x`, a currently supported Vercel LTS version satisfying
+  locked Vite's `^20.19.0 || >=22.12.0` engine range. A second clean local build
+  passed on official Node `24.22.2`; check the actual Vercel build log too.
 - Install Command: `npm ci`, using committed `frontend/package-lock.json`.
 - Build Command: `npm run build` (`tsc -b && vite build`).
 - Output Directory: `dist`.
@@ -141,9 +150,10 @@ a Vite API variable does not select a separate backend for private Preview
 traffic. Development: local Vite proxy/local Django, with demo enabled only if
 explicitly wanted. Google origin entries must match the exact local origin.
 
-Google's live console must contain the frontend origin
-`https://ai-skills-digital-passport-a3ux.vercel.app` (no path/trailing slash), plus
-each approved actual Preview origin. The primary screen uses Google FedCM in a
+Google's live console must contain the **verified new frontend HTTPS origin**
+(no path/trailing slash), plus each approved actual Preview origin. The current
+production origin remains unconfirmed; do not register the historical URL as a
+substitute. The primary screen uses Google FedCM in a
 supporting browser; the separate linking component uses GIS. Neither flow uses a
 Client Secret or redirect URI from a frontend environment variable. Real Google
 consent/audience/Workspace access remains an external configuration check.
@@ -167,6 +177,10 @@ blockers, independently of the source corrections.
   reinstall also removed old TypeScript/Vite caches under `node_modules`.
 - `npm run build`: passed, using explicit live settings and `NODE_ENV=production`.
   The existing large-JavaScript-chunk warning is non-fatal.
+- Follow-up clean production build on official Node `24.22.2`: passed after
+  deleting generated `dist` and forcing TypeScript recompilation. The Node
+  executable was downloaded from `nodejs.org` and verified against its published
+  SHA-256 manifest. System Node and application dependencies were unchanged.
 - `npm run lint`, `check:architecture`, `check:demo`, `check:auth`,
   `check:verification`, `check:student`, `check:admin`, `check:spreadsheet`: passed.
   Authentication, Student, Admin, verification and spreadsheet checks use local
@@ -177,6 +191,34 @@ blockers, independently of the source corrections.
   the checkout, not a new application dependency.
 - Production artifact inspection rejects known demo fixture markers and confirms
   Google, Student passport and public verification API paths remain compiled.
+- Actual `config.settings` and CSRF middleware checked in an isolated Python
+  process with synthetic environment values and `.env` loading disabled: trusted
+  forwarded HTTPS, required database SSL, secure session flags and a Secure,
+  HttpOnly, SameSite=Lax host-only CSRF cookie passed. Missing token, untrusted
+  origin, and absent proxy-origin trust were all rejected. No database/network
+  connections were made by this configuration check.
+- Follow-up `python -B ops/run_isolated_tests.py --frontend-django`: passed with
+  a fresh owned loopback PostgreSQL cluster, test-only settings, synthetic
+  records, and local mail. Django system/migration checks and **239 selected
+  Django tests** passed. The Google-read gate, ownership/cleanup and local-dev
+  guard tests passed too.
+- Actual local HTTP acceptance passed: spreadsheet **13 requests**, Student
+  **64 proxied requests**, Admin **146 proxied requests**, and public verification
+  **35 proxied requests**. Those drivers use jsdom, real local Django APIs and
+  PostgreSQL; provider/proof fixtures remain synthetic. These exercised sessions,
+  CSRF/ownership/grant denials, records, issuance/revocation, QR/reference/PDF
+  verification, Excel import/replay/history, and honest provider-unavailable
+  responses. Public cancellation checks logged two `ECONNRESET` messages while
+  the verification suite completed successfully.
+- Actual Chrome/React/Django acceptance passed: **7 journey groups / 79 API
+  responses**, synthetic PostgreSQL awards and PDFs, with no API interception.
+  This does not cover real Google, chain proof or production services. The runner
+  confirmed owned database/media/server cleanup and removal of its PG cluster.
+- The first follow-up attempt stopped because the shared Python environment
+  lacked the already-declared `web3==7.13.0` dependency; owned cleanup passed.
+  The successful retry supplied that dependency in a run-owned directory using
+  process-local `PYTHONPATH`. The shared environment, requirements and application
+  lockfile were not modified. Isolated browser tooling also stayed outside Git.
 
 No real authorized Student/admin credentials or approved genuine public
 verification reference were supplied. Live dashboards, Neon access, real login,
@@ -197,10 +239,49 @@ Still confirm in the live dashboards:
    cookies, redirects, or an HTML SPA response. Test issued proof only with an
    approved public reference. Local tests do not establish this live behavior.
 
+## Manual dashboard setup for the new production deployment
+
+1. Import `samkharadzesopio/AI-Skills-Digital-Passport` into the intended Vercel
+   project/account. Set Root Directory to `frontend`; choose Vite, `npm ci`,
+   `npm run build`, and `dist`. The tracked configuration supplies the last four.
+   In Build and Deployment, select Node.js Version `24.x`.
+2. For the requested production release from this branch, manually set Production
+   Branch / Production environment Branch Tracking to `hosting-fix`. Confirm that
+   the deployment actually targets Production. If it remains a Preview branch,
+   configure Preview values for `hosting-fix` instead; Production values do not
+   automatically apply. The live branch mapping has not been inspected or changed.
+3. In the selected deployment environment, enter the approved public Web Client ID
+   as `VITE_GOOGLE_CLIENT_ID`, matching Render's `GOOGLE_OAUTH_CLIENT_ID`. Optional
+   explicit live values are `VITE_ENABLE_DEMO=false`,
+   `VITE_PUBLIC_VERIFICATION_ENABLED=true`, and `VITE_API_BASE_URL=/api/`.
+   Prefer leaving `VITE_PUBLIC_VERIFICATION_SOURCES` unset to use the exact code
+   defaults. Remove stale `BTU_DEMO_BUILD`, `VITE_API_URL`, absolute API-base
+   overrides, hosted `BTU_DEV_API_TARGET`, and a manual development `NODE_ENV`.
+4. Start a fresh deployment of the reviewed `hosting-fix` commit with the previous
+   build cache disabled. Read the actual generated URL/custom domain from that
+   deployment and verify reachability. Record this URL as the new frontend origin;
+   it cannot be inferred from a repository name or an old deployment.
+5. Manually add that exact origin to Render's
+   `DJANGO_CSRF_TRUSTED_ORIGINS` and the OAuth client's Authorized JavaScript
+   Origins. Confirm the Render-only settings above, normal production settings,
+   private Neon TLS connectivity, migrated schema, and required workers. The
+   previously observed Render HTTP 400 requires operator diagnosis before login
+   can be accepted; inspect logs and the exact allowed hostname.
+6. After configuration, verify `/api/accounts/csrf/` through the new frontend
+   returns JSON and a secure cookie without redirects or SPA HTML. Then use
+   explicitly approved test accounts and genuine public references for the real
+   Student/admin, Passport/QR/PDF, verification, and spreadsheet journeys. Until
+   those inputs are provided and the journeys pass, live acceptance is blocked.
+
+All dashboard actions above are operator instructions. This change does not
+create a Vercel project, change branch tracking, configure either provider, deploy
+the application, or read production database records.
+
 Reference documentation:
 [Vercel rewrites](https://vercel.com/docs/routing/rewrites),
 [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json),
 [Vercel environment scopes](https://vercel.com/docs/environment-variables),
 [Vercel branch tracking](https://vercel.com/docs/git),
+[Vercel Node.js versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions),
 [Vite environment behavior](https://vite.dev/guide/env-and-mode),
 [Django CSRF origins](https://docs.djangoproject.com/en/5.2/ref/settings/#csrf-trusted-origins).
