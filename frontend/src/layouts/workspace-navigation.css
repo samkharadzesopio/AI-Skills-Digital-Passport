@@ -1,0 +1,5 @@
+.workspace-navigation { display:flex; flex-wrap:wrap; justify-content:center; gap:4px 12px; padding:8px 16px; background:#fff; border-bottom:1px solid #e8e4ed; }
+.workspace-navigation a { display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:6px 10px; border-radius:6px; color:#22127b; font-size:12px; text-align:center; }
+.workspace-navigation a:hover,.workspace-navigation a.active { background:#fff0f7; color:#b80064; }
+.workspace-navigation a:focus-visible { outline:2px solid #b80064; outline-offset:2px; }
+@media(max-width:420px) { .workspace-navigation { gap:4px; padding:6px 8px; } .workspace-navigation a { flex:1 1 90px; padding:6px 4px; font-size:11px; } }

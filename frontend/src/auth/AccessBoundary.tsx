@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Link, Navigate, Outlet } from 'react-router-dom'
 import { Card, EmptyState, Loading } from '../components/ui'
 import { demoMode } from '../demo/mode'
 import { useCountdown, useSession } from './hooks'
@@ -17,7 +17,7 @@ function AuthenticatedBoundary({ role }: { role: 'student' | 'administrator' }) 
   const failure=session.error instanceof AuthError?session.error:null
   const retryIn=useCountdown(failure?.retryAt??0)
   if (session.isPending) return <Loading/>
-  if (session.isError) return <Card><EmptyState title={t('unavailable')}>{t(failure?.code??'network')}</EmptyState><button className="button" disabled={retryIn>0} onClick={() => session.refetch()}>{t('retry')}</button>{retryIn>0&&<p role="status">{t('retryIn')} {retryIn} {t('seconds')}</p>}</Card>
+  if (session.isError) return <div className="auth-status-page"><Card><EmptyState title={t('unavailable')}>{t(failure?.code??'network')}</EmptyState><p role="status">Your session could not be checked. Protected records remain unavailable until the connection is restored.</p><button className="button" disabled={retryIn>0} onClick={() => session.refetch()}>{t('retry')}</button>{retryIn>0&&<p role="status">{t('retryIn')} {retryIn} {t('seconds')}</p>}<Link className="button" to={role==='student'?'/student/login':'/admin/login'}>Go to sign in</Link></Card></div>
   const decision=accessDecision(session.data,role)
   if(decision==='login')return <Navigate replace to={role==='student'?'/student/login':'/admin/login'}/>
   if(decision==='allow')return <Outlet/>
