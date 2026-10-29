@@ -18,8 +18,11 @@ from .views import (
 )
 
 app_name = "accounts"
+from .google_views import GoogleAuthenticateView, GoogleChallengeView
 
 urlpatterns = [
+    path('google/challenge/', GoogleChallengeView.as_view(), name='google-challenge'),
+    path('google/authenticate/', GoogleAuthenticateView.as_view(), name='google-authenticate'),
     path("csrf/", csrf_token, name="csrf"),
     path("login/", LoginView.as_view(), name="login"),
     path("otp/request/", OTPLoginRequestView.as_view(), name="otp-request"),

@@ -103,6 +103,13 @@ def main():
             command([sys.executable, 'ops/test_disposable_postgres.py'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'check', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'makemigrations', '--check', '--dry-run', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
+            if '--google-auth' in sys.argv:
+                command([sys.executable, 'ops/test_google_auth_config.py'], cwd=ROOT, env=env)
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.accounts',
+                         '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'],
+                        cwd=ROOT, env=env, timeout=900)
+            if '--google-auth-browser' in sys.argv:
+                command([sys.executable, 'ops/test_live_browser_e2e.py', '--google-auth-browser'], cwd=ROOT, env=env)
             if '--team-regression' in sys.argv:
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.accounts',
                          'apps.integrations.test_spreadsheet_automation', 'apps.integrations.test_import_views',
@@ -143,7 +150,8 @@ def main():
                 mode = '--manual-demo' if '--manual-demo' in sys.argv or review_args else '--demo-smoke'
                 # Inherit the operator terminal so URLs/input are live. Only
                 # this explicit interactive mode has no test-command deadline.
-                command([sys.executable, '-u', 'ops/test_live_browser_e2e.py', mode, *review_args],
+                command([sys.executable, '-u', 'ops/test_live_browser_e2e.py', mode, *review_args,
+                         *(['--google-auth-review'] if '--google-auth-review' in sys.argv else [])],
                         cwd=ROOT, env=env, stdout=None, stderr=None,
                         interactive=mode == '--manual-demo' and not review_args,
                         timeout=None if mode == '--manual-demo' else 900)

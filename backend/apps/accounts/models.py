@@ -92,6 +92,35 @@ class User(AbstractUser):
         return super().save(*args, **kwargs)
 
 
+class GoogleIdentity(models.Model):
+    """One immutable Google subject per existing institutional login account."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='google_identity')
+    subject = models.CharField(max_length=255, unique=True)
+    linked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=~models.Q(subject=''), name='google_subject_nonempty')]
+
+
+class GoogleLoginChallenge(models.Model):
+    """One-use nonce, bound to a browser session and one explicit intent."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nonce_digest = models.CharField(max_length=64)
+    session_digest = models.CharField(max_length=64)
+    intent = models.CharField(max_length=5, choices=[('login', 'Login'), ('link', 'Link')])
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE)
+    audience = models.CharField(max_length=255)
+    expires_at = models.DateTimeField(db_index=True)
+    consumed_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=(models.Q(intent='login', user__isnull=True) |
+            models.Q(intent='link', user__isnull=False)), name='google_challenge_intent')]
+
+
 class StudentAccountInvitation(models.Model):
     """Single active, university-provisioned email-to-student invitation."""
 

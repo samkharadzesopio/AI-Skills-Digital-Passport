@@ -21,6 +21,7 @@ import './btu-interface.css'
 import { DemoBanner } from './demo/DemoBanner'
 import { demoMode } from './demo/mode'
 import { LoginPage } from './auth/LoginPages'
+import { GoogleLinkPage } from './auth/GoogleSignIn'
 import { LiveAccountLayout, LiveStudentWorkspace } from './auth/SessionPanel'
 import { LiveDashboard, LiveProfile, LiveSkills, LiveAchievements, LiveCredentials, LiveCredential, LivePassport, LiveVersions, LiveVersion } from './student/pages'
 import { LiveAdminLayout } from './admin/live/Layout'
@@ -53,6 +54,7 @@ export function AppRoutes() {
       <Route element={demoMode ? <StudentLayout/> : <LiveAccountLayout/>}>
         <Route element={<StudentDataBoundary/>}>
           <Route path="dashboard" element={demoMode ? <Dashboard/> : <LiveDashboard/>}/>
+          <Route path="google-link" element={demoMode ? <NotFound/> : <GoogleLinkPage/>}/>
           <Route path="skills" element={demoMode ? <Detail page="AI skills & competencies"/> : <LiveSkills/>}/>
           <Route path="achievements" element={demoMode ? <Card>Achievement records are available in the live student workspace.</Card> : <LiveAchievements/>}/>
           <Route path="credentials" element={demoMode ? <Detail page="Verified credentials"/> : <LiveCredentials/>}/>

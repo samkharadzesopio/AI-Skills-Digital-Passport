@@ -37,7 +37,7 @@ export function LiveAccountLayout() {
     try { await client.invalidateQueries({ queryKey: ['session'] }); await client.invalidateQueries({ queryKey: ['student'] }) }
     finally { setRefreshing(false) }
   }
-  return <StudentShell identity={session.data?.status === 'authenticated' ? session.data.user.email : undefined} logout={<LogoutButton role="student"/>} refresh={<button className="button" disabled={refreshing} onClick={() => void refresh()}>Refresh records</button>}/>
+  return <StudentShell identity={session.data?.status === 'authenticated' ? session.data.user.email : undefined} logout={<LogoutButton role="student"/>} refresh={<><Link to="/student/google-link">Google sign-in settings</Link><button className="button" disabled={refreshing} onClick={() => void refresh()}>Refresh records</button></>}/>
 }
 export function LiveStudentWorkspace() {
   return <Outlet/>

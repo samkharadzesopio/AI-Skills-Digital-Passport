@@ -71,6 +71,8 @@ class TestMailbox(EmailBackend):
 
 def main():
     global mailbox_path
+    google_browser = '--google-auth-browser' in sys.argv
+    google_review = '--google-auth-review' in sys.argv
     manual = '--manual-demo' in sys.argv or '--demo-smoke' in sys.argv
     if not manual and not os.environ.get('BTU_BROWSER_TOOLS'):
         raise RuntimeError('Set BTU_BROWSER_TOOLS to isolated Playwright tools.')
@@ -131,12 +133,19 @@ def main():
             'adminPassword': password, 'otp': None,
         }), encoding='utf-8')
         mailbox_path.chmod(0o600)
+        google_client = None
+        if google_browser or google_review:
+            from google_auth_review import configure
+            google_client = configure(owned, artifact_dir, ROOT, synthetic=google_browser)
         review_stop = None
         synthetic_source = None
         if '--review-stop-file' in sys.argv:
             review_stop = Path(sys.argv[sys.argv.index('--review-stop-file') + 1]).resolve()
-            from review_session import prepare_synthetic_source
-            synthetic_source = prepare_synthetic_source(owned, fixture, artifact_dir)
+            if not google_review:
+                from review_session import prepare_synthetic_source
+                synthetic_source = prepare_synthetic_source(owned, fixture, artifact_dir)
+            else:
+                synthetic_source = {'google_auth_configured': bool(google_client), 'google_provider': 'LIVE_NOT_TESTED'}
         (artifact_dir / 'preview-runtime.json').write_text(json.dumps({
             'synthetic': True, 'studentId': str(fixture.student.pk),
             'credentialId': str(fixture.credential.pk),
@@ -157,13 +166,15 @@ def main():
         thread.start()
         owned.server(server, thread)
         with socket.socket() as probe:
-            probe.bind(('127.0.0.1', 0))
+            probe.bind(('127.0.0.1', int(os.environ.get('BTU_GOOGLE_AUTH_PORT', '5188')) if google_review else 0))
             port = probe.getsockname()[1]
         base = f'http://127.0.0.1:{port}'
         env = {**os.environ, 'VITE_ENABLE_DEMO': 'false',
                'BTU_DEV_API_TARGET': f'http://127.0.0.1:{server.server_port}',
                'BTU_LIVE_TEST_URL': base, 'BTU_LIVE_TEST_ARTIFACTS': str(artifact_dir),
                'BTU_TEST_VITE_CACHE': str(artifact_dir / 'vite-cache'), 'BTU_TEST_VITE_PORT': str(port)}
+        if google_client is not None:
+            env['VITE_GOOGLE_CLIENT_ID'] = google_client
         code = "import {createServer} from 'vite'; const s=await createServer({cacheDir:process.env.BTU_TEST_VITE_CACHE,server:{host:'127.0.0.1',port:Number(process.env.BTU_TEST_VITE_PORT),strictPort:true}}); await s.listen();"
         log = owned.enter_context((artifact_dir / 'vite.log').open('w'))
         flags = {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {'start_new_session': True}
@@ -208,17 +219,19 @@ def main():
             connections.close_all()
             return
         try:
-            result = owned.command(['node', 'scripts/check-passport-browser.mjs'], cwd=ROOT / 'frontend', env=env)
+            script = 'scripts/check-google-auth-browser.mjs' if google_browser else 'scripts/check-passport-browser.mjs'
+            result = owned.command(['node', script], cwd=ROOT / 'frontend', env=env)
             if result.returncode:
                 raise RuntimeError('Real Chrome integration failed; inspect sanitized test artifacts.')
         finally:
             # Strict allowlist: never retain private credentials/OTPs, PDFs,
             # database/media files or provider configuration in review artifacts.
             for path in artifact_dir.iterdir():
-                if path.suffix == '.png' or path.name in {'browser-acceptance-results.json', 'browser-acceptance-failure.json'}:
+                if path.suffix == '.png' or path.name in {'browser-acceptance-results.json', 'browser-acceptance-failure.json', 'google-auth-browser-results.json', 'google-auth-browser-failure.json'}:
                     shutil.copy2(path, output / path.name)
             print('Synthetic browser review artifacts:', output, flush=True)
-        assert json.loads((output / 'browser-acceptance-results.json').read_text())['mockedResponses'] is False
+        result_name = 'google-auth-browser-results.json' if google_browser else 'browser-acceptance-results.json'
+        assert json.loads((output / result_name).read_text())['mockedResponses'] is False
         connections.close_all()
     print('PASS cleanup: browser fixtures, private mailbox, server, Vite, signer and database removed.', flush=True)
 

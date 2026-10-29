@@ -37,6 +37,8 @@ export async function logoutAccount(): Promise<void> {
   try {
     const response = await api.post('accounts/logout/')
     if (response.status !== 204) throw new AuthError('contract')
+    // Google UI cleanup must never turn confirmed Django logout into a failure.
+    try { window.google?.accounts.id.disableAutoSelect() } catch { /* Session is already invalidated. */ }
     resetCsrfToken()
   } catch (error) { throw sanitizeAuthError(error, 'logout') }
 }

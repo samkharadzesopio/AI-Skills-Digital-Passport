@@ -13,6 +13,7 @@ import { normalizeUniversityEmail } from './contracts'
 import { loginAdministrator, requestStudentOtp, verifyStudentOtp } from './service'
 import { LogoutButton } from './SessionPanel'
 import './auth.css'
+import { GoogleSignIn } from './GoogleSignIn'
 function AuthLayout({kind,children}:{kind:'student'|'administrator';children:ReactNode}) {
   const t=useAuthText(),{locale,toggle}=useLocale()
   return <div className="auth-page"><header><Link to="/verify" className="auth-wordmark"><OfficialBtuLogo/> <small>AI SKILLS DIGITAL PASSPORT</small></Link><button className="button" onClick={toggle} aria-label="English / ქართული"><Globe2 size={16}/>{locale.toUpperCase()}</button></header><main><section className="auth-brand-panel"><ShieldCheck size={34}/><span>BTU AI SKILLS DIGITAL PASSPORT</span><h1>{t(kind==='student'?'studentTitle':'adminTitle')}</h1><p>{t(kind==='student'?'studentIntro':'adminIntro')}</p><small>{t('university')}</small></section><section className="auth-form-panel"><nav className="auth-tabs" aria-label="Sign in"><Link className={kind==='student'?'selected':''} to="/student/login">{t('student')}</Link><Link className={kind==='administrator'?'selected':''} to="/admin/login">{t('administrator')}</Link></nav>{children}<p className="auth-privacy">{t('privacy')}</p><Link className="auth-public-link" to="/verify">{t('publicVerification')}<ArrowRight size={15}/></Link></section></main></div>
@@ -74,5 +75,5 @@ function LiveLoginPage({kind}:{kind:'student'|'administrator'}) {
       {remaining>0&&<p role="status" className="auth-hint">{t('retryIn')} {remaining} {t('seconds')}</p>}
       <button className="button primary auth-submit" disabled={busy||session.isPending||remaining>0||(kind==='student'&&step==='email'&&resendRemaining>0)}>{busy?<><LoaderCircle className="spin" size={17}/>{t('loading')}</>:<>{t(kind==='administrator'?'signIn':step==='email'?'request':'verify')}<ArrowRight size={16}/></>}</button>
       {kind==='student'&&step==='code'&&<div className="auth-secondary-actions"><button type="button" className="button" disabled={busy||resendRemaining>0||remaining>0} onClick={e=>void submit(e,true)}>{t('resend')}{resendRemaining>0?` (${resendRemaining}s)`:''}</button><button type="button" className="button" disabled={busy} onClick={()=>{setStep('email');setCode('');setNotice(false);setError('')}}>{t('changeEmail')}</button></div>}
-    </form>}</AuthLayout>
+    </form>}{kind==='student'&&session.data?.status==='anonymous'&&<GoogleSignIn/>}</AuthLayout>
 }

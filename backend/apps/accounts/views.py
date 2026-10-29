@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied, ValidationError as DjangoVa
 from django.db import transaction
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_GET
@@ -95,6 +96,8 @@ class OTPLoginVerifyView(AuditedAPIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             login(request, user, backend="apps.accounts.authentication.StudentOTPBackend")
+            # Only successful OTP proves the existing identity for Google linking.
+            request.session['google_link_otp'] = {'user_id': str(user.pk), 'at': timezone.now().timestamp()}
             request.session.save()
         return Response({"detail": "Authenticated."}, status=status.HTTP_200_OK)
 
