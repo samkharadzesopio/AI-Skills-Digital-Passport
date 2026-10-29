@@ -1,4 +1,4 @@
-// Actual Chrome/React/Django/PostgreSQL; only FedCM identities and provider keys are synthetic.
+// Actual Chrome/React/Django/PostgreSQL; only the documented GIS SDK callback and provider keys are synthetic.
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -12,32 +12,54 @@ const { chromium } = await import(pathToFileURL(path.join(process.env.BTU_BROWSE
 const browser = await chromium.launch({ headless: true, executablePath: process.env.BTU_BROWSER_EXECUTABLE })
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 } })
 const calls = [], errors = [], checks = [], blocked = []
-let step = 'initialize', lastChallenge, lastToken, changes = {}
+let step = 'initialize', lastChallenge, lastToken, changes = {}, credentialMode = 'jwt', sdkLoads = 0
 await context.exposeFunction('syntheticWorkspaceCredential', options => {
-  assert.equal(options.identity.mode, 'active'); assert.equal(options.mediation, 'required')
-  const provider = options.identity.providers[0]
-  assert.equal(provider.configURL, 'https://accounts.google.com/gsi/fedcm.json')
-  assert.equal(provider.clientId, '123456789-synthetic.apps.googleusercontent.com')
-  assert.equal(provider.domainHint, 'btu.edu.ge')
-  assert.equal(provider.params.nonce, provider.nonce)
-  assert.equal(provider.params.response_type, 'id_token', 'Google FedCM must request an ID token, not an authorization code')
-  assert.equal(provider.params.scope, 'email profile openid')
-  assert.equal(provider.params.ss_domain, base, 'Google must receive the actual frontend origin')
+  assert.equal(options.client_id, '123456789-synthetic.apps.googleusercontent.com')
+  assert.equal(options.hd, 'btu.edu.ge')
+  assert.equal(options.ux_mode, 'popup')
+  assert.equal(options.auto_select, false)
+  assert.equal(options.use_fedcm_for_button, true)
+  assert.equal(options.nonce, lastChallenge.nonce, 'GIS must receive the server challenge nonce unchanged')
+  assert.equal(Object.hasOwn(options, 'response_type'), false, 'GIS handles the ID-token protocol')
   const now = Math.floor(Date.now() / 1000)
-  const claims = { iss: 'https://accounts.google.com', aud: provider.clientId, sub: 'synthetic-browser-new-subject',
-    email: fixture.studentEmail, email_verified: true, hd: 'btu.edu.ge', nonce: provider.params.nonce, iat: now - 1, exp: now + 300, ...changes }
+  const claims = { iss: 'https://accounts.google.com', aud: options.client_id, sub: 'synthetic-browser-new-subject',
+    email: fixture.studentEmail, email_verified: true, hd: 'btu.edu.ge', nonce: options.nonce, iat: now - 1, exp: now + 300, ...changes }
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', kid: 'synthetic-key', typ: 'JWT' })).toString('base64url')
   const payload = header + '.' + Buffer.from(JSON.stringify(claims)).toString('base64url')
   lastToken = payload + '.' + crypto.sign('RSA-SHA256', Buffer.from(payload), key).toString('base64url')
-  return { token: lastToken, type: 'identity' }
+  if (credentialMode === 'native') return { token: lastToken }
+  if (credentialMode === 'object') return { credential: { id_token: lastToken } }
+  if (credentialMode === 'access') return { credential: 'synthetic-opaque-access-token' }
+  if (credentialMode === 'wrapped') return { credential: JSON.stringify({ id_token: lastToken }) }
+  return { credential: lastToken, token: 'synthetic-opaque-native-token', select_by: 'btn' }
 })
 await context.addInitScript(() => {
-  window.IdentityCredential = class IdentityCredential {}
-  Object.defineProperty(navigator.credentials, 'get', { value: options => window.syntheticWorkspaceCredential(options) })
+  Object.defineProperty(navigator, 'credentials', { value: { get() { throw new Error('Hand-written native FedCM must not be called') } } })
 })
+const syntheticSdk = `(() => {
+  let configuration;
+  window.google = { accounts: { id: {
+    initialize(options) { configuration = options },
+    renderButton(element, options) {
+      if (options.type !== 'standard' || options.text !== 'signin_with') throw new Error('Use the supported GIS button');
+      const { callback, ...settings } = configuration;
+      const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Sign in with Google';
+      button.onclick = async () => {
+        const response = await window.syntheticWorkspaceCredential(settings);
+        callback(response); callback(response);
+      };
+      element.replaceChildren(button);
+    },
+    disableAutoSelect() {}
+  } } };
+})()`
 await context.route('**/*', route => {
   const url = new URL(route.request().url())
   if (url.origin === base) return route.continue()
+  if (url.href === 'https://accounts.google.com/gsi/client') {
+    sdkLoads++
+    return route.fulfill({ status: 200, contentType: 'text/javascript', body: syntheticSdk })
+  }
   blocked.push(url.origin); return route.abort()
 })
 const page = await context.newPage()
@@ -49,7 +71,7 @@ page.on('response', async r => {
 async function google(claims = {}) {
   changes = claims
   const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/accounts/google/authenticate/' && r.request().method() === 'POST')
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await page.getByRole('button', { name: 'Sign in with Google', exact: true }).click()
   return { response: await response, token: lastToken, challenge: lastChallenge }
 }
 async function logout() {
@@ -57,19 +79,32 @@ async function logout() {
   await page.waitForURL(base + '/student/login')
 }
 try {
-  step = 'one pink sign-in control and exact Workspace rejection'
+  step = 'supported GIS button and strict ID-token credential transport'
   await page.goto(base + '/student/login')
   await page.getByRole('heading', { name: 'Student sign in', exact: true }).waitFor()
   assert.equal(await page.locator('.auth-form-panel input').count(), 0)
+  const button = page.getByRole('button', { name: 'Sign in with Google', exact: true })
+  await button.waitFor()
   assert.equal(await page.locator('.auth-form-panel button').count(), 1)
   await page.getByRole('link', { name: 'Public verification', exact: true }).waitFor()
-  const button = page.getByRole('button', { name: 'Sign in', exact: true })
-  assert.match(await button.getAttribute('class'), /button primary auth-submit/)
-  assert.equal(await button.evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(229, 0, 113)')
+  for (const mode of ['native', 'object', 'access', 'wrapped']) {
+    credentialMode = mode
+    const before = calls.filter(call => call.path === '/api/accounts/google/authenticate/').length
+    const challengeId = lastChallenge.challenge_id
+    await button.click()
+    await page.getByRole('alert').getByText(/could not be completed/).waitFor()
+    await button.waitFor()
+    assert.notEqual(lastChallenge.challenge_id, challengeId, 'Invalid SDK output must get a new challenge')
+    assert.equal(calls.filter(call => call.path === '/api/accounts/google/authenticate/').length, before, 'Non-JWT SDK output must never reach Django')
+  }
+  credentialMode = 'jwt'
+  checks.push('GIS loader/button and nonce; native token, object, access token and wrapped output blocked without posting credentials')
+
+  step = 'exact Workspace rejection through GIS credential callback'
   let attempt = await google({ hd: 'other.edu.ge' })
   assert.equal(attempt.response.status(), 400)
   await page.getByRole('alert').getByText(/verified @btu.edu.ge/).waitFor()
-  checks.push('Existing layout, one pink Sign in button, no OTP inputs; invalid hosted domain rejected by real backend')
+  checks.push('One supported Google button, no OTP inputs; invalid hosted domain rejected by real backend')
 
   step = 'first login with historical email remains a separate empty portal'
   attempt = await google()
@@ -117,12 +152,14 @@ try {
   await page.screenshot({ path: path.join(dir, 'google-student-login.png'), fullPage: true })
   await page.getByRole('link', { name: 'Public verification', exact: true }).click(); await page.waitForURL(base + '/verify')
   checks.push('Administrator password login and Public verification navigation remain available')
+  assert.equal(calls.filter(call => call.path === '/api/accounts/google/authenticate/').length, 4, 'Each GIS callback is consumed once even when delivered twice')
+  assert.ok(sdkLoads >= 1)
   assert.deepEqual(errors, []); assert.deepEqual(blocked, [])
   await fs.writeFile(path.join(dir, 'google-auth-browser-results.json'), JSON.stringify({ passed: true, synthetic: true,
-    mockedResponses: false, fedcmAndKeysSynthetic: true, liveGoogleTested: false, checks, calls, errors }, null, 2))
-  console.log(`PASS Workspace portal Chrome/Django: ${checks.length} groups, ${calls.length} actual API responses; FedCM/keys synthetic, no live Google.`)
+    mockedResponses: false, gisAndKeysSynthetic: true, liveGoogleTested: false, checks, calls, errors }, null, 2))
+  console.log(`PASS Workspace portal Chrome/Django: ${checks.length} groups, ${calls.length} actual API responses; GIS/keys synthetic, no live Google.`)
 } catch (error) {
-  await fs.writeFile(path.join(dir, 'google-auth-browser-failure.json'), JSON.stringify({ step, error: error.message, checks, calls }, null, 2))
+  await fs.writeFile(path.join(dir, 'google-auth-browser-failure.json'), JSON.stringify({ step, error: error.message, checks, calls, errors, blocked }, null, 2))
   await page.screenshot({ path: path.join(dir, 'google-auth-failure.png'), fullPage: true }).catch(() => {})
   console.error(`FAIL Workspace portal browser at ${step}: ${error.message}`); process.exitCode = 1
 } finally { await context.close(); await browser.close() }
