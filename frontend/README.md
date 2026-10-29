@@ -15,6 +15,8 @@ npm.cmd run dev
 
 Django must run separately with an approved local configuration. Keep `VITE_ENABLE_DEMO=false` for live Student login. Vite proxies `/api/` to `http://127.0.0.1:8000`, preserving Host/Origin for cookies and CSRF. The process environment `BTU_DEV_API_TARGET` may select another trusted local backend. Production requires an HTTPS same-origin reverse proxy and SPA route fallback; the Vite proxy is not bundled into static hosting.
 
+For fresh Vercel hosting, set the project Root Directory to `frontend`. The tracked `vercel.json` uses `npm ci`, `npm run build`, and `dist`, forwards `/api/` paths (including trailing slashes) to Render, and serves frontend routes through `index.html`. See [Vercel and Render environment audit](../ops/VERCEL_RENDER_ENVIRONMENT_AUDIT.md) for exact variables, branch/environment scope, and live dashboard checks. Every static build uses Live Mode; `BTU_DEMO_BUILD` no longer enables synthetic data.
+
 For the labelled preview, put `VITE_ENABLE_DEMO=true` in ignored `frontend/.env.local` and restart Vite. Open `/student/dashboard` or `/admin/dashboard`. Demo Mode is development-only, uses sample data, disables official actions and API verification, and is forced off in production builds. A demo user is never an authenticated identity.
 
 ## Routes and records
