@@ -35,7 +35,10 @@ class User(AbstractUser):
     # use email-only sign-in without generating a second login identifier.
     username = models.CharField(max_length=150, blank=True, null=True, unique=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(max_length=254, unique=True)
+    email = models.EmailField(max_length=254)
+    # Google principals are keyed by subject, never resolved by email. Keep the
+    # legacy email namespace unique and separate so historical logins are safe.
+    portal_only = models.BooleanField(default=False)
     role = models.CharField(max_length=12, choices=Role.choices, default=Role.STUDENT)
     is_email_verified = models.BooleanField(default=False)
     student = models.OneToOneField(
@@ -53,7 +56,9 @@ class User(AbstractUser):
     class Meta:
         db_table = "accounts_user"
         constraints = [
-            models.UniqueConstraint(Lower("email"), name="accounts_email_ci_unique"),
+            models.UniqueConstraint(Lower("email"), condition=models.Q(portal_only=False), name="accounts_email_ci_unique"),
+            models.CheckConstraint(condition=(models.Q(portal_only=False) | models.Q(
+                role='STUDENT', student__isnull=True, is_staff=False, is_superuser=False)), name='portal_principal_separate'),
             models.CheckConstraint(
                 condition=(
                     models.Q(student__isnull=True)
@@ -93,7 +98,7 @@ class User(AbstractUser):
 
 
 class GoogleIdentity(models.Model):
-    """One immutable Google subject per existing institutional login account."""
+    """One immutable Google subject per portal or previously linked account."""
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='google_identity')
     subject = models.CharField(max_length=255, unique=True)
@@ -119,6 +124,18 @@ class GoogleLoginChallenge(models.Model):
     class Meta:
         constraints = [models.CheckConstraint(condition=(models.Q(intent='login', user__isnull=True) |
             models.Q(intent='link', user__isnull=False)), name='google_challenge_intent')]
+
+
+class PortalStudentMapping(models.Model):
+    """Explicit institutional ownership mapping, never inferred from an email."""
+    google_identity = models.OneToOneField(GoogleIdentity, on_delete=models.PROTECT, related_name='student_mapping')
+    external_student_id = models.CharField(max_length=120, unique=True)
+    approval_reference = models.CharField(max_length=255)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='approved_portal_mappings')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=~models.Q(external_student_id=''), name='portal_mapping_id_nonempty')]
 
 
 class StudentAccountInvitation(models.Model):

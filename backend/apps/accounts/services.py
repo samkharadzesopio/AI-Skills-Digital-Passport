@@ -52,7 +52,7 @@ def create_student_account_invitation(*, student_id, actor):
     if student is None:
         raise Student.DoesNotExist
     email = _require_btu_email(student.email)
-    if User.objects.filter(student_id=student.pk).exists() or User.objects.filter(email=email).exists():
+    if User.objects.filter(student_id=student.pk).exists() or User.objects.filter(portal_only=False, email=email).exists():
         raise InvalidInvitation
 
     now = timezone.now()
@@ -146,7 +146,7 @@ def redeem_student_account_invitation(*, token, password):
                 security_digest("accounts.email", email),
             ):
                 raise InvalidInvitation
-            if User.objects.filter(student_id=student.pk).exists() or User.objects.filter(email=email).exists():
+            if User.objects.filter(student_id=student.pk).exists() or User.objects.filter(portal_only=False, email=email).exists():
                 raise InvalidInvitation
             user = User.objects.create_user(
                 email=email,
@@ -204,14 +204,14 @@ def send_verification_email(email, ip_address="unknown"):
     """Backward-compatible internal entry point; never creates public accounts."""
 
     email = _require_btu_email(email)
-    user = User.objects.filter(email=email, is_active=True, is_email_verified=False).first()
+    user = User.objects.filter(portal_only=False, email=email, is_active=True, is_email_verified=False).first()
     if user is not None:
         send_email_verification_code(user=user, ip_address=ip_address)
 
 
 def verify_verification_code(email, code):
     email = _require_btu_email(email)
-    user = User.objects.filter(email=email, is_active=True).first()
+    user = User.objects.filter(portal_only=False, email=email, is_active=True).first()
     if user is None or user.is_email_verified:
         return False
     return verify_email_code(user=user, code=code)
@@ -250,7 +250,7 @@ def _send_password_reset_now(*, email, ip_address):
         purpose=OTPChallenge.Purpose.PASSWORD_RESET,
         ip_address=ip_address,
     )
-    user = User.objects.filter(email=email, is_active=True, is_email_verified=True).only(
+    user = User.objects.filter(portal_only=False, email=email, is_active=True, is_email_verified=True).only(
         "id", "email"
     ).first()
     if user is None:

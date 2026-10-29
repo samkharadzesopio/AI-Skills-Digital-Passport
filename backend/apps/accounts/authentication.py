@@ -44,7 +44,10 @@ class AccountSessionAuthentication(SessionAuthentication):
         result = super().authenticate(request)
         if result:
             user, _ = result
-            if not user.is_staff:
+            if getattr(user, '_workspace_authoritative', False):
+                from .portal import workspace_user
+                workspace_user(user)
+            elif not user.is_staff:
                 authorized_student_id(user)
             elif (
                 user.role != User.Role.ADMIN
@@ -53,3 +56,21 @@ class AccountSessionAuthentication(SessionAuthentication):
             ):
                 raise PermissionDenied('Invalid administrator identity.')
         return result
+
+
+class GoogleWorkspaceBackend(ModelBackend):
+    """Load a Google-authenticated portal principal independently of awards."""
+    def authenticate(self, request, **credentials):
+        return None
+
+    def get_user(self, user_id):
+        from .portal import workspace_user
+        user = User.objects.filter(pk=user_id).first()
+        if user is None:
+            return None
+        try:
+            workspace_user(user)
+            user._workspace_authoritative = True
+            return user
+        except PermissionDenied:
+            return None

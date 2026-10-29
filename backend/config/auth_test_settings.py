@@ -26,6 +26,7 @@ DATABASES = {
 }
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = [
+    "apps.accounts.authentication.GoogleWorkspaceBackend",
     "apps.accounts.authentication.StudentOTPBackend",
     "apps.accounts.authentication.AdminPasswordBackend",
 ]

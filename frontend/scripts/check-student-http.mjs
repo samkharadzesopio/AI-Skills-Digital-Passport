@@ -62,17 +62,17 @@ try {
     root=createRoot(document.getElementById('root'))
     await act(async()=>root.render(React.createElement(QueryClientProvider,{client},React.createElement(LocaleProvider,null,React.createElement(BrowserRouter,null,React.createElement(AppRoutes))))))
   }
-  async function fill(id,value){await act(async()=>{const input=document.getElementById(id);assert.ok(input,id);Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new window.Event('input',{bubbles:true}))})}
-  async function submit(){await act(async()=>document.querySelector('form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true})))}
   async function click(text){await until(()=>[...document.querySelectorAll('button')].some(b=>b.textContent===text&&!b.disabled),text);await act(async()=>[...document.querySelectorAll('button')].find(b=>b.textContent===text).click())}
   async function login(email){
-    await until(()=>!!document.getElementById('auth-email-student'),'login form')
-    await fill('auth-email-student',email);await submit();await until(()=>!!document.getElementById('student-otp'),'OTP form')
+    // Fixture authentication through the retained OTP API; Google UI has its
+    // own synthetic FedCM/real-browser acceptance.
+    const {requestStudentOtp,verifyStudentOtp}=await server.ssrLoadModule('/src/auth/service.ts')
+    await requestStudentOtp(email)
     let code
 
     for(let n=0;n<80;n++){try{code=await readFile(join(process.env.BTU_E2E_MAILBOX,email.replace('@','_')+'.otp'),'utf8');break}catch{await new Promise(r=>setTimeout(r,25))}}
     assert.match(code??'',/^[0-9]{6}$/)
-    await fill('student-otp',code);await submit();await until(()=>!!document.querySelector('.dashboard-passport')||body().includes('No issued Passport yet'),'authenticated dashboard')
+    await verifyStudentOtp(email,code);await mount('/student/dashboard',true);await until(()=>!!document.querySelector('.dashboard-passport')||body().includes('No issued Passport yet'),'authenticated dashboard')
   }
   await mount('/student/dashboard',true)
   await until(()=>window.location.pathname==='/student/login','anonymous redirect')

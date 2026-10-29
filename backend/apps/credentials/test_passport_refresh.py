@@ -373,6 +373,10 @@ class TrustedIssuerProvisioningTests(TestCase):
             password="Synthetic-test-password-123!",
             permission_codenames={"manage_credentials"},
         )
+        # A separate Workspace principal with this email cannot shadow the
+        # administrator's legacy password/provisioning namespace.
+        get_user_model().objects.create(email=user.email, portal_only=True,
+            role='STUDENT', is_email_verified=True, password='!')
 
         call_command("provision_btu_issuer", actor_email=user.email)
         call_command("provision_btu_issuer", actor_email=user.email)

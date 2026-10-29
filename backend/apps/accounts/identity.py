@@ -19,6 +19,13 @@ def active_student_statuses():
 
 def authorized_student_id(user):
     """Return canonical Student UUID or raise PermissionDenied. DB is authoritative."""
+    if user and getattr(user, '_workspace_authoritative', False):
+        from .portal import workspace_user, owned_student_id
+        workspace_user(user)
+        student_id = owned_student_id(user)
+        if student_id is None:
+            raise PermissionDenied('No institutional Passport ownership mapping is available.')
+        return student_id
     if not user or not user.is_authenticated or not getattr(user, 'pk', None):
         raise PermissionDenied('Student access required.')
     if (
@@ -63,7 +70,7 @@ def provision_student_account(email):
     ).first()
     if not student:
         raise PermissionDenied('Student access required.')
-    existing = User.objects.select_for_update().filter(email__iexact=email).first()
+    existing = User.objects.select_for_update().filter(email__iexact=email, portal_only=False).first()
     if existing:
         if (
             not existing.is_active

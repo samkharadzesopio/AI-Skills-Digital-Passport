@@ -1,4 +1,4 @@
-"""Student-only GIS authentication. No access/refresh token or email-only linking."""
+"""Verified Workspace authentication; academic ownership is never inferred from email."""
 import hmac
 import json
 import re
@@ -182,15 +182,21 @@ def finish(request, challenge_id, credential):
                     raise GoogleProblem('GOOGLE_SIGN_OUT_REQUIRED', 403)
                 identity = GoogleIdentity.objects.filter(subject=subject).first()
                 if identity is None:
-                    # No email-based lookup, registration or academic writes.
-                    raise GoogleProblem('GOOGLE_LINK_REQUIRED', 403)
+                    # A new subject gets an independent principal even if the
+                    # email matches a historical Student or administrator.
+                    user = User(email=email, portal_only=True, role=User.Role.STUDENT, is_email_verified=True)
+                    user.set_unusable_password()
+                    user.save()
+                    identity = GoogleIdentity.objects.create(user=user, subject=subject)
                 user = User.objects.select_for_update(of=('self',)).select_related('student').get(pk=identity.user_id)
-            if user.role != User.Role.STUDENT or user.email != email:
+            if user.role != User.Role.STUDENT or (challenge.intent == 'link' and user.email != email):
                 raise GoogleProblem('GOOGLE_STUDENT_REQUIRED', 403)
             try:
-                authorized_student_id(user)
+                from .portal import workspace_user
+                workspace_user(user)
             except PermissionDenied:
                 raise GoogleProblem('GOOGLE_STUDENT_REQUIRED', 403) from None
+            user._workspace_authoritative = True
             return user, challenge.intent
     except IntegrityError:
         raise GoogleProblem('GOOGLE_IDENTITY_CONFLICT', 409) from None

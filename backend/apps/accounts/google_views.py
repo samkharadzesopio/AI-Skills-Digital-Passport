@@ -27,7 +27,7 @@ class GoogleView(AuditedAPIView):
                 raise GoogleProblem('GOOGLE_INVALID_REQUEST')
             user, intent = finish(request, data['challenge_id'], data['credential'])
             if intent == 'login':
-                login(request, user, backend='apps.accounts.authentication.StudentOTPBackend')
+                login(request, user, backend='apps.accounts.authentication.GoogleWorkspaceBackend')
                 request.session.pop('google_link_otp', None)
                 request.session.save()
             return Response({'account': _user_summary(user), 'linked': intent == 'link'})
@@ -43,3 +43,12 @@ class GoogleChallengeView(GoogleView):
 
 class GoogleAuthenticateView(GoogleView):
     challenge = False
+
+
+class PortalSummaryView(AuditedAPIView):
+    def get(self, request):
+        from .portal import workspace_user, owned_student_id
+        user = workspace_user(request.user)
+        student_id = owned_student_id(user)
+        return Response({'email': user.email, 'records_linked': student_id is not None,
+            'mapping_pending': student_id is None})

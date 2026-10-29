@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from django.contrib.sessions.models import Session
 from django.core import mail
+from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.db import DatabaseError, IntegrityError, transaction
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -18,7 +19,7 @@ from rest_framework.test import APIClient
 
 from apps.students.models import Student
 from .google_auth import GoogleCertificates, GoogleProblem
-from .models import GoogleIdentity, GoogleLoginChallenge, SecurityAudit, User
+from .models import GoogleIdentity, GoogleLoginChallenge, PortalStudentMapping, SecurityAudit, User
 
 CLIENT_ID = '123456789-synthetic.apps.googleusercontent.com'
 
@@ -105,19 +106,98 @@ class GoogleAuthTests(TestCase):
         self.assertEqual(self.post('logout', {}).status_code, 204)
         self.assertEqual(self.client.get('/api/accounts/me/').status_code, 403)
 
-    def test_unlinked_valid_token_never_looks_up_by_email_or_creates_account(self):
+    def test_unlinked_valid_token_creates_independent_empty_portal_not_academic_records(self):
+        before = list(Student.objects.values())
         response = self.authenticate(self.challenge())
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()['code'], 'GOOGLE_LINK_REQUIRED')
-        self.assertFalse(User.objects.exists())
-        self.assertEqual(Student.objects.count(), 1)
+        self.assertEqual(response.status_code, 200, response.content)
+        user = User.objects.get()
+        self.assertTrue(user.portal_only)
+        self.assertIsNone(user.student_id)
+        self.assertFalse(user.has_usable_password() or user.is_staff or user.is_superuser)
+        self.assertEqual(list(Student.objects.values()), before)
+        self.assertEqual(response.json()['account']['student_association'], 'unlinked')
+        self.assertTrue(response.json()['account']['portal_access'])
+        self.assertEqual(self.client.get('/api/accounts/portal/').json(),
+            {'email': self.student.email, 'records_linked': False, 'mapping_pending': True})
+        for path in ('dashboard', 'skills', 'achievements', 'credentials', 'passport', 'passport/versions'):
+            self.assertEqual(self.client.get('/api/student/' + path + '/').status_code, 403, path)
+        self.assertEqual(self.client.get('/api/admin/students/').status_code, 403)
 
-    def test_unprovisioned_google_email_has_no_access(self):
+    def test_unprovisioned_workspace_email_has_empty_portal_access(self):
         challenge = self.challenge()
         response = self.authenticate(challenge, self.token(challenge['nonce'], email='unknown@btu.edu.ge'))
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(User.objects.exists())
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(User.objects.get().portal_only)
         self.assertEqual(Student.objects.count(), 1)
+
+    def test_repeat_subject_restores_same_portal(self):
+        self.assertEqual(self.authenticate(self.challenge()).status_code, 200)
+        user = GoogleIdentity.objects.get().user
+        self.post('logout', {})
+        self.assertEqual(self.authenticate(self.challenge()).status_code, 200)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(str(user.pk), self.client.session['_auth_user_id'])
+
+    def test_recycled_email_is_separate_from_legacy_and_other_subjects(self):
+        legacy = self.otp(); self.post('logout', {})
+        self.assertEqual(self.authenticate(self.challenge()).status_code, 200)
+        first = GoogleIdentity.objects.get().user
+        self.assertNotEqual(first.pk, legacy.pk)
+        self.assertIsNone(first.student_id)
+        self.post('logout', {})
+        challenge = self.challenge()
+        self.assertEqual(self.authenticate(challenge, self.token(challenge['nonce'], sub='new-owner-sub')).status_code, 200)
+        second = GoogleIdentity.objects.get(subject='new-owner-sub').user
+        self.assertNotEqual(first.pk, second.pk)
+        self.assertIsNone(second.student_id)
+        self.assertEqual(User.objects.get_by_natural_key(self.student.email).pk, legacy.pk)
+        self.assertEqual(self.client.get('/api/student/passport/').status_code, 403)
+
+    def test_workspace_member_with_admin_email_gets_no_administrator_privileges(self):
+        password = 'Synthetic-admin-secret-123'
+        admin = User.objects.create_admin_user(email='admin.portal@btu.edu.ge', password=password,
+            permission_codenames={'view_student_records'})
+        challenge = self.challenge()
+        self.assertEqual(self.authenticate(challenge, self.token(challenge['nonce'], email=admin.email)).status_code, 200)
+        self.assertEqual(self.client.get('/api/accounts/me/').json()['role'], 'STUDENT')
+        self.assertEqual(self.client.get('/api/admin/students/').status_code, 403)
+        self.post('logout', {})
+        self.assertEqual(self.post('login', {'email': admin.email, 'password': password}).status_code, 200)
+        self.assertEqual(self.client.get('/api/accounts/me/').json()['role'], 'ADMIN')
+
+    def test_approved_mapping_uses_institutional_id_and_resolves_future_records(self):
+        from .portal import approve_mapping
+        from rest_framework.exceptions import PermissionDenied
+        self.authenticate(self.challenge())
+        identity = GoogleIdentity.objects.get()
+        with self.assertRaises((PermissionDenied, DjangoPermissionDenied)):
+            approve_mapping(actor=identity.user, subject=identity.subject, external_student_id='FUTURE-PORTAL-ID', approval_reference='Synthetic approval')
+        admin = User.objects.create_admin_user(email='mapping.admin@btu.edu.ge', password='Synthetic-admin-secret-123',
+            permission_codenames={'manage_student_accounts'})
+        mapping = approve_mapping(actor=admin, subject=identity.subject, external_student_id='FUTURE-PORTAL-ID', approval_reference='Synthetic approved identity record')
+        self.assertEqual(self.client.get('/api/accounts/me/').json()['student_association'], 'unlinked')
+        future = Student.objects.create(external_student_id='FUTURE-PORTAL-ID', first_name='Future', last_name='Alumni',
+            email='different.record@btu.edu.ge', program='AI', education_level='Bachelor', student_status='ALUMNI')
+        self.assertEqual(self.client.get('/api/accounts/me/').json()['student_association'], 'linked')
+        from .authorization import get_authenticated_student_id
+        from .authentication import GoogleWorkspaceBackend
+        self.assertEqual(get_authenticated_student_id(GoogleWorkspaceBackend().get_user(identity.user_id)), future.pk)
+        self.assertEqual(self.client.get('/api/student/dashboard/').status_code, 200)
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            PortalStudentMapping.objects.filter(pk=mapping.pk).update(external_student_id=self.student.external_student_id)
+        self.assertTrue(SecurityAudit.objects.filter(action='PortalStudentMapping:APPROVED', actor=admin).exists())
+
+    def test_mapping_conflicts_cannot_reassign_historical_google_owner(self):
+        from .portal import approve_mapping
+        owner = self.link(); self.post('logout', {})
+        challenge = self.challenge()
+        self.authenticate(challenge, self.token(challenge['nonce'], sub='another-portal'))
+        admin = User.objects.create_admin_user(email='mapping.admin@btu.edu.ge', password='Synthetic-admin-secret-123',
+            permission_codenames={'manage_student_accounts'})
+        with self.assertRaises(ValueError):
+            approve_mapping(actor=admin, subject='another-portal', external_student_id=self.student.external_student_id, approval_reference='Conflict rejected')
+        self.assertEqual(GoogleIdentity.objects.get(subject='synthetic-google-subject').user_id, owner.pk)
+        self.assertFalse(PortalStudentMapping.objects.exists())
 
     def test_signature_and_security_claims_are_cryptographically_checked(self):
         changes = [{'aud': 'other.apps.googleusercontent.com'}, {'iss': 'https://evil.invalid'},
@@ -188,11 +268,13 @@ class GoogleAuthTests(TestCase):
         self.assertEqual(self.client.get('/api/accounts/me/').json()['role'], 'ADMIN')
         self.assertEqual(self.post('logout', {}).status_code, 204)
 
-    def test_ineligible_and_disabled_linked_student_is_rejected(self):
+    def test_alumni_can_restore_trusted_records_but_disabled_account_is_rejected(self):
         user = self.link()
         self.post('logout', {})
         self.student.student_status = 'INACTIVE'; self.student.save(update_fields=['student_status'])
-        self.assertEqual(self.authenticate(self.challenge()).status_code, 403)
+        self.assertEqual(self.authenticate(self.challenge()).status_code, 200)
+        self.assertEqual(self.client.get('/api/student/dashboard/').status_code, 200)
+        self.post('logout', {})
         self.student.student_status = 'ACTIVE'; self.student.save(update_fields=['student_status'])
         User.objects.filter(pk=user.pk).update(is_active=False)
         self.assertEqual(self.authenticate(self.challenge()).status_code, 403)
@@ -200,7 +282,7 @@ class GoogleAuthTests(TestCase):
     def test_changed_email_does_not_reassign_google_subject(self):
         self.link(); self.post('logout', {})
         challenge = self.challenge()
-        self.assertEqual(self.authenticate(challenge, self.token(challenge['nonce'], email='different@btu.edu.ge')).status_code, 403)
+        self.assertEqual(self.authenticate(challenge, self.token(challenge['nonce'], email='different@btu.edu.ge')).status_code, 200)
         self.assertEqual(GoogleIdentity.objects.get().subject, 'synthetic-google-subject')
 
     def test_expired_django_session_cannot_link_and_student_route_is_denied(self):
@@ -226,7 +308,7 @@ class GoogleAuthTests(TestCase):
         audit = json.dumps(list(SecurityAudit.objects.values()), default=str)
         for value in (token, challenge['nonce'], self.student.email, 'synthetic-google-subject'):
             self.assertNotIn(value, audit)
-        self.assertTrue(SecurityAudit.objects.filter(action__startswith='Google', status_code=403).exists())
+        self.assertTrue(SecurityAudit.objects.filter(action__startswith='Google', status_code=200).exists())
 
     def test_certificate_transport_refuses_arbitrary_endpoints(self):
         with self.assertRaises(GoogleProblem):

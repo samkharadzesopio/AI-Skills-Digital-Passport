@@ -110,6 +110,12 @@ def main():
                         cwd=ROOT, env=env, timeout=900)
             if '--google-auth-browser' in sys.argv:
                 command([sys.executable, 'ops/test_live_browser_e2e.py', '--google-auth-browser'], cwd=ROOT, env=env)
+            if '--portal-regression' in sys.argv:
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.api',
+                         'apps.credentials.test_passport_refresh.TrustedIssuerProvisioningTests',
+                         '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'],
+                        cwd=ROOT, env=env, timeout=900)
+                command([sys.executable, 'ops/test_student_e2e.py'], cwd=ROOT, env=env)
             if '--team-regression' in sys.argv:
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.accounts',
                          'apps.integrations.test_spreadsheet_automation', 'apps.integrations.test_import_views',

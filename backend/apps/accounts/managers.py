@@ -17,9 +17,11 @@ class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def get_by_natural_key(self, username):
-        return self.get(email=normalize_login_email(username))
+        return self.get(email=normalize_login_email(username), portal_only=False)
 
     def create_user(self, email, password=None, **extra_fields):
+        if extra_fields.get('portal_only'):
+            raise ValueError('Portal principals are created only by verified Google authentication.')
         if not email:
             raise ValueError("Email is required.")
         # Preserve a legacy handle when a trusted internal caller supplies one;
