@@ -6,12 +6,12 @@ import { IssuedPassportPreview } from '../components/PassportPreview'
 import { adaptPassport } from './adapter'
 import type { Achievement, Credential, Page } from './contracts'
 import { PassportLanding } from './PassportLanding'
-import { passportState } from './proof'
 import { getAchievements, getCredential, getCredentials, getDashboard, getPassport, getSkills, getVersion, getVersions } from './service'
 import { useStudentQuery } from './queries'
 import { PdfActions } from './PdfActions'
 import './student.css'
 import { verificationLink } from '../verification/validation'
+import { PassportHistory } from './PassportHistory'
 
 function Result<T>({ query, children }: { query: { isPending: boolean; isError: boolean; error: Error | null; data: T | undefined; refetch: () => unknown }; children: (data: T) => ReactNode }) {
   if (query.isPending) return <Loading/>
@@ -31,8 +31,11 @@ export function LiveAchievements() { const [page, setPage] = useState(1), query 
 export function LiveCredentials() { const [page, setPage] = useState(1), query = useStudentQuery(['credentials', page], signal => getCredentials(page, signal)); return <><h1>Credentials</h1><Result query={query}>{data => <Card><Credentials rows={data.results}/><Pagination page={page} data={data} change={setPage}/></Card>}</Result></> }
 export function LiveCredential() { const { id = '' } = useParams(), query = useStudentQuery(['credential', id], signal => getCredential(id, signal)); return <><h1>Credential details</h1><Link to="/student/credentials">Back to credentials</Link><Result query={query}>{data => <Card><Credentials rows={[data]}/><h2>Supporting achievements</h2><Awards rows={data.achievements}/><p>Issuer reference: {data.issuer_reference}</p><Link className="button" to={verificationLink('credential', data.public_reference)}>Public verification</Link><p>Use public reference {data.public_reference} with the credential verification form. The public form checks this reference independently of your Student login.</p></Card>}</Result></> }
 export function LivePassport() {
-  const query = useStudentQuery(['passport'], getPassport)
-  return <><h1>Digital Passport</h1><Link className="button" to="/student/passport/versions">View Passport version history</Link><Result query={query}>{passport => passport?.latest_version ? <Card><p role="status">{passportState(passport).label}</p><IssuedPassportPreview passport={adaptPassport(passport, passport.latest_version)}/><PdfActions key={passport.latest_version.id}/></Card> : <Card><EmptyState title="No issued Passport yet">Your Passport will appear after eligible credentials are issued.</EmptyState></Card>}</Result></>
+  return <LiveDashboard/>
 }
-export function LiveVersions() { const [page, setPage] = useState(1), query = useStudentQuery(['versions', page], signal => getVersions(page, signal)); return <><h1>Passport version history</h1><Link to="/student/passport">Current Passport</Link><Result query={query}>{data => <Card>{data.results.length ? <ul className="student-records">{data.results.map(v => <li key={v.id}><Link className="student-record-link" to={`/student/passport/versions/${v.id}`}>Version {v.version_number}</Link><p>{v.status} · Issued: {v.issued_at}</p><p>Version reference: {v.public_reference}</p></li>)}</ul> : <EmptyState title="No issued versions yet">Published Passport versions will appear here.</EmptyState>}<Pagination page={page} data={data} change={setPage}/></Card>}</Result></> }
+export function LiveVersions() {
+  const [page, setPage] = useState(1), query = useStudentQuery(['versions', page], signal => getVersions(page, signal))
+  const passport = useStudentQuery(['passport'], getPassport)
+  return <Result query={query}>{data => <PassportHistory versions={data.results} currentVersionId={passport.data?.latest_version?.id} pagination={data.count > 0 || data.hasPrevious ? <Pagination page={page} data={data} change={setPage}/> : undefined}/>}</Result>
+}
 export function LiveVersion() { const { id = '' } = useParams(), version = useStudentQuery(['version', id], signal => getVersion(id, signal)), passport = useStudentQuery(['passport'], getPassport); return <><h1>Issued Passport version</h1><Link to="/student/passport/versions">Back to version history</Link><Result query={passport}>{p => <Result query={version}>{v => p ? <Card><IssuedPassportPreview passport={adaptPassport(p, v)}/><PdfActions key={v.id} versionId={v.id}/></Card> : <Card>No Passport is available.</Card>}</Result>}</Result></> }

@@ -1,15 +1,18 @@
 import { useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { LogOut } from 'lucide-react'
 import { demoMode } from '../demo/mode'
-import { Card } from '../components/ui'
+import { Card, EmptyState } from '../components/ui'
 import { useAuthText } from './i18n'
 import { useSession } from './hooks'
 import { logoutAccount } from './service'
 import type { AccessDecision } from './contracts'
 import './auth.css'
 import { StudentShell } from '../layouts/StudentShell'
+import { BlankPassport } from '../student/BlankPassport'
+import { PassportHistory } from '../student/PassportHistory'
+import { Gap } from '../pages'
 export function LogoutButton({role}:{role:'student'|'administrator'}) {
   const [pending,setPending]=useState(false),[error,setError]=useState(false),client=useQueryClient(),navigate=useNavigate(),t=useAuthText()
   async function logout(){
@@ -28,7 +31,17 @@ export function LogoutButton({role}:{role:'student'|'administrator'}) {
 export function AccessBlocked({decision,role}:{decision:Exclude<AccessDecision,'allow'|'login'>;role:'student'|'administrator'}) {
   const t=useAuthText(),session=useSession()
   const key=decision==='permissions-missing'?'permissionsMissing':decision==='wrong-role'?'wrongRole':decision
+  if (decision === 'unlinked' && role === 'student') return <UnlinkedStudentPreview/>
   return <div className="auth-status-page"><Card><h1>{t('signedIn')}</h1><p className="muted">{session.data?.status==='authenticated'?session.data.user.email:''}</p><p className="notice" role="status">{t(key)}</p><p className="muted">{t('switchAccount')}</p><LogoutButton role={role}/><Link className="button" to="/verify">{t('publicVerification')}</Link></Card></div>
+}
+/** The access guard still blocks private records. Only the account summary is read. */
+function UnlinkedStudentPreview() {
+  const session = useSession(), client = useQueryClient(), location = useLocation()
+  const email = session.data?.status === 'authenticated' ? session.data.user.email : undefined
+  const path = location.pathname
+  return <StudentShell identity={email} logout={<LogoutButton role="student"/>} refresh={<button className="button" disabled={session.isFetching} onClick={() => void client.invalidateQueries({ queryKey: ['session'] })}>Refresh records</button>}>
+    {path.startsWith('/student/passport/versions') || path === '/student/history' ? <PassportHistory versions={[]}/> : path === '/student/gap-analyzer' ? <Gap/> : path === '/student/skills' ? <Card><h1>My Skills</h1><EmptyState title="Your learning journey starts here">Approved skills will appear once your academic records are linked by BTU.</EmptyState></Card> : <BlankPassport/>}
+  </StudentShell>
 }
 export function LiveAccountLayout() {
   const session = useSession(), client = useQueryClient(), [refreshing, setRefreshing] = useState(false)
