@@ -1,0 +1,30 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "routes": 7,
+      "refresh": true,
+      "navigation": true,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "routes": 7,
+      "refresh": true,
+      "navigation": true,
+      "overflow": false
+    },
+    {
+      "width": 1440,
+      "routes": 7,
+      "refresh": true,
+      "navigation": true,
+      "overflow": false
+    }
+  ],
+  "demoApiOrExternalRequests": [],
+  "errors": [],
+  "promotionGuard": true,
+  "liveAnonymousGuard": "PASS using synthetic 403 fixture; actual backend untested",
+  "hosting": "local static server, not Vercel edge"
+}

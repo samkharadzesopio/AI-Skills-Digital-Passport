@@ -1,0 +1,52 @@
+[
+  {
+    "name": "check:architecture",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nArchitecture checks passed: access boundaries, role isolation, public independence, recursive passport data, demo verification labeling.\n"
+  },
+  {
+    "name": "check:admin",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nAdmin checks passed: stable identifiers, nested relationships, approval invalidation, mapping validation, spreadsheet previews, search/sort and unavailable official actions.\n[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nPASS Admin DOM/contracts: grant combinations, real-shaped records, no live demo provider, evidence-only issuance and stable retry key, revocation, sync controls/history/retry, import errors/configured Sheet, malformed/offline responses, CSRF rebootstrap and session expiry. Fixture transport only; use Admin HTTP harness for real Django acceptance.\n"
+  },
+  {
+    "name": "check:verification",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nVerification checks passed: actual DTO projections, independent lifecycle facts, malformed/private-field rejection, reference/QR routing, file limits, loading/cancel, rate-limit cooldown, sanitized errors, public transport without credentials and disabled/demo boundaries. Contract transport uses test fixtures; real Django acceptance is separate.\n"
+  },
+  {
+    "name": "check:demo",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nDemo checks passed: workspaces, no session queries, redirects, blocked APIs/actions/verification, and forced-off builds with the flag enabled.\n"
+  },
+  {
+    "name": "check:passport",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nPassport checks passed: exact template hashes, distinct identities, schema v2 fields, recursive hierarchy, evidence/credential references, shared template viewer and suppression of official demo references.\n"
+  },
+  {
+    "name": "check:auth",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nMocked auth integration passed: retained OTP API, administrator passwords, CSRF, one-button Student screen, empty portal, guards, restoration, logout and no persisted secrets. No real Django account was used.\n"
+  },
+  {
+    "name": "check:student",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nStudent checks passed: actual DTO adapters, flat classification, pagination origin protection, status preservation, loading/error/empty states, retry, historical PDF/CSRF, overflow and private object URL cleanup. These are unit/DOM fixtures; run the separate real HTTP acceptance test.\n"
+  },
+  {
+    "name": "check:passport-card",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\n2:34:06 PM [vite] (client) Re-optimizing dependencies because vite config has changed\nPassport card checks passed: section/page navigation, touch, Unicode-safe lossless pagination, all learning experiences, resize scaling/cleanup, accessibility, motion, stamp hashes and privacy. Use check:passport-layout for graphical viewport verification.\n"
+  },
+  {
+    "name": "check:integration",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nPASS Passport integration contracts: bound current proof, confirmations, lifecycle precedence, pending/failed/unconfigured states, unissued identity, public privacy and private metadata preservation. Synthetic contracts; real browser/Django acceptance is separate.\n"
+  },
+  {
+    "name": "check:spreadsheet",
+    "status": 0,
+    "output": "[BTU] Demo Preview ON — /student/dashboard, /admin/dashboard, /verify\nPASS spreadsheet contracts/services: immutable exact digest, explicit replay only, malformed/count/mapping rejection, private projection, old/new history errors, safe Google/conflict/backend failures. Synthetic transport fixtures; no live Google claim.\n"
+  }
+]

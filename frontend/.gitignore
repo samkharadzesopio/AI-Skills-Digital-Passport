@@ -25,3 +25,7 @@ dist-ssr
 
 # Local PDF inspection renders, never published.
 /tmp/pdfs/
+
+# Isolated deployment test builds and screenshots
+dist-demo/
+hosted-browser-artifacts/

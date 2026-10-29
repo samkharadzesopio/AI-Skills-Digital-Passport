@@ -1,0 +1,3 @@
+.public-workspaces { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; padding: 1rem; border-bottom: 1px solid #e5e7eb; }
+.public-workspaces .button { text-align: center; justify-content: center; }
+@media (max-width: 540px) { .public-workspaces { flex-direction: column; } .public-workspaces .button { width: 100%; } }
