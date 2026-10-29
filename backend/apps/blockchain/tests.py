@@ -290,8 +290,14 @@ class BlockchainTests(ChainDataMixin,TransactionTestCase):
         self.assertEqual(self.process(), 'CONFIRMED')
 
     def test_parallel_different_documents_reserve_distinct_nonces(self):
-        with patch('apps.passports.document_services.renderer_fingerprint', return_value='f'*64):
-            second = generate_passport_document(passport_version_id=self.version.pk, storage=self.storage)
+        from apps.passports.services import publish_passport_version
+        # Issued PDFs are immutable: changing the renderer correctly reuses the
+        # original document. Publish a genuinely distinct snapshot for this test.
+        self.student.program = 'Synthetic second academic program'
+        self.student.save(update_fields=['program'])
+        version, _ = publish_passport_version(student_id=self.student.pk, event_key='SYNTHETIC-NONCE-V2')
+        second = generate_passport_document(passport_version_id=version.pk, storage=self.storage)
+        self.assertNotEqual(second.pk, self.document.pk)
         ids = [self.anchor.pk, PassportAnchor.objects.get(document=second).pk]
         barrier = Barrier(2)
         def sign(anchor_id):
@@ -326,7 +332,22 @@ class BlockchainTests(ChainDataMixin,TransactionTestCase):
         self.assertEqual(self.process(), 'FAILED')
         self.anchor.refresh_from_db()
         self.assertEqual(self.anchor.error_code, 'PDF_STORAGE_MISMATCH')
+        self.assertFalse(self.anchor.retryable)
         self.assertIsNone(self.anchor.signed_transaction)
+        self.assertFalse(SignerNonce.objects.exists())
+
+    def test_missing_storage_bytes_retry_without_signing_and_recover(self):
+        path = Path(self.storage.path(self.document.storage_key))
+        original = path.read_bytes()
+        path.unlink()
+        self.assertEqual(self.process(), 'PENDING')
+        self.anchor.refresh_from_db()
+        self.assertEqual(self.anchor.error_code, 'CHAIN_OR_STORAGE_UNAVAILABLE')
+        self.assertTrue(self.anchor.retryable)
+        self.assertIsNone(self.anchor.signed_transaction)
+        self.assertFalse(SignerNonce.objects.exists())
+        path.write_bytes(original)
+        self.assertEqual(self.process(), 'CONFIRMED')
 
     def test_key_permissions_and_wrong_key_file_are_rejected(self):
         policy = load_policy()

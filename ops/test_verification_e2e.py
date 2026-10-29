@@ -67,7 +67,10 @@ with DisposableRun() as resources:
         revoke_credential(public_reference=revoked.public_reference, actor=fixture.admin, reason='Synthetic public HTTP acceptance')
     now = timezone.now()
     expired_student = fixture.make_student('public-expired')
-    expired = fixture.issue(expired_student, issued_at=now-timedelta(days=3), expires_at=now-timedelta(days=1))
+    # Build the historical award at its actual issuance time, so its earned date
+    # cannot follow issuance under the integrated authoritative-date policy.
+    with patch('apps.api.test_pdf.timezone.now', return_value=now-timedelta(days=3)):
+        expired = fixture.issue(expired_student, issued_at=now-timedelta(days=3), expires_at=now-timedelta(days=1))
     expired_version, _ = publish_passport_version(student_id=expired_student.pk, event_key='PUBLIC-HTTP-EXPIRED-SNAPSHOT', effective_at=now-timedelta(days=2))
     expired_passport = DigitalPassport.objects.get(student=expired_student)
 

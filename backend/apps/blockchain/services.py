@@ -3,7 +3,7 @@ import hashlib
 import secrets
 from datetime import timedelta
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db import connection, transaction
 from django.db.models import Q, F, Exists, OuterRef, Value, Case, When, CharField
 from django.db.models.functions import Cast, Concat
@@ -93,10 +93,18 @@ def _matches_policy(anchor,policy):
 def _assert_stored_pdf(anchor):
     # Pin the actual bytes before spending gas. The existing service owns storage paths.
     from apps.passports.document_services import open_passport_document_for_student
-    document, stream = open_passport_document_for_student(
-        document_reference=anchor.document.public_reference,
-        student_id=anchor.document.passport_version.passport.student_id,
-    )
+    try:
+        document, stream = open_passport_document_for_student(
+            document_reference=anchor.document.public_reference,
+            student_id=anchor.document.passport_version.passport.student_id,
+        )
+    except ValidationError as exc:
+        # The document service now checks immutable bytes before opening them.
+        # Do not retry an integrity rejection as a transient RPC/storage outage.
+        # It also wraps storage OSErrors; preserve recovery for those outages.
+        if isinstance(exc.__cause__, OSError):
+            raise ProofError('CHAIN_OR_STORAGE_UNAVAILABLE', retryable=True) from exc
+        raise ProofError('PDF_STORAGE_MISMATCH') from exc
     digest, size, header = hashlib.sha256(), 0, b''
     try:
         for chunk in iter(lambda: stream.read(65536), b''):

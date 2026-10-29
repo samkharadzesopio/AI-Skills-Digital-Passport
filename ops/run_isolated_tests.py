@@ -2,6 +2,7 @@
 
 Usage: python ops/run_isolated_tests.py [--full]
 Use --spreadsheet --ui-http --browser-http for focused local website acceptance.
+Use --blockchain-regression for the complete Django blockchain app suite.
 Use --manual-demo for a fresh local recording session; quit to remove owned data.
 Requires PostgreSQL binaries on PATH or PASSPORT_PG_BIN. Never adopts a cluster.
 All logs, databases and uploads are under the newly allocated temporary directory.
@@ -145,6 +146,10 @@ def main():
                 command([sys.executable, 'ops/test_google_sheets_e2e.py', *live_args], cwd=ROOT, env=env, timeout=900, **console)
             if '--full' in sys.argv or '--backend' in sys.argv:
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.api', 'apps.integrations', 'apps.skills', 'apps.credentials', 'apps.passports', 'apps.students', 'apps.accounts', 'apps.verification', 'apps.blockchain', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env, timeout=1800)
+            if '--blockchain-regression' in sys.argv:
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.blockchain',
+                         '--settings=apps.integrations.postgres_test_settings', '--verbosity=2'],
+                        cwd=ROOT, env=env, timeout=900)
             if '--chain-http' in sys.argv:
                 command([sys.executable, 'ops/test_backend_chain_e2e.py'], cwd=ROOT, env=env)
             if '--full' in sys.argv or '--ui-http' in sys.argv:
