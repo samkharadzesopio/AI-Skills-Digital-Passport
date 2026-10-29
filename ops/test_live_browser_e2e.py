@@ -131,6 +131,12 @@ def main():
             'adminPassword': password, 'otp': None,
         }), encoding='utf-8')
         mailbox_path.chmod(0o600)
+        review_stop = None
+        synthetic_source = None
+        if '--review-stop-file' in sys.argv:
+            review_stop = Path(sys.argv[sys.argv.index('--review-stop-file') + 1]).resolve()
+            from review_session import prepare_synthetic_source
+            synthetic_source = prepare_synthetic_source(owned, fixture, artifact_dir)
         (artifact_dir / 'preview-runtime.json').write_text(json.dumps({
             'synthetic': True, 'studentId': str(fixture.student.pk),
             'credentialId': str(fixture.credential.pk),
@@ -190,7 +196,15 @@ def main():
             raise RuntimeError('Owned Vite/Django proxy did not become ready.')
         if manual:
             from manual_demo import recording_session
-            recording_session(owned, fixture, base, mailbox_path, smoke='--demo-smoke' in sys.argv)
+            if review_stop:
+                ready = {'synthetic': True, 'mode': 'LIVE', 'frontend': base,
+                         'backend': f'http://127.0.0.1:{server.server_port}',
+                         'anvil': fixture.local.rpc_url, 'postgres_port': settings.DATABASES['default']['PORT'],
+                         'private_fixture': str(mailbox_path), 'stop_file': str(review_stop),
+                         'pid': os.getpid(), **synthetic_source}
+                (review_stop.parent / 'review-ready.json').write_text(json.dumps(ready, indent=2), encoding='utf-8')
+            recording_session(owned, fixture, base, mailbox_path, smoke='--demo-smoke' in sys.argv,
+                              stop_file=review_stop)
             connections.close_all()
             return
         try:

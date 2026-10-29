@@ -7,11 +7,21 @@ from pathlib import Path
 from unittest.mock import patch
 
 from disposable_tests import DisposableRun, test_database_name
-from run_isolated_tests import child_console_flags
+from run_isolated_tests import child_console_flags, review_stop_file
 from manual_demo import control_session
 
 
 class CleanupTests(unittest.TestCase):
+    def test_review_refuses_existing_stop_file_or_ambiguous_location(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'review.stop'
+            self.assertEqual(review_stop_file(str(path)), path)
+            path.write_text('stop')
+            for invalid in (str(path), 'relative.stop', str(path.with_suffix('.txt')),
+                            str(path.parent / 'missing' / 'review.stop')):
+                with self.assertRaises(ValueError):
+                    review_stop_file(invalid)
+
     def test_windows_manual_child_inherits_console(self):
         with patch('run_isolated_tests.os.name', 'nt'), patch.object(subprocess, 'CREATE_NO_WINDOW', 0x08000000, create=True):
             self.assertEqual(child_console_flags(interactive=True), {})

@@ -18,6 +18,13 @@ from disposable_tests import DisposableRun
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def review_stop_file(value):
+    path = Path(value)
+    if not path.is_absolute() or path.suffix != '.stop' or path.exists() or not path.parent.is_dir():
+        raise ValueError('Review stop file must be a new absolute .stop path in an existing directory.')
+    return path
+
+
 def child_console_flags(*, interactive=False):
     # CREATE_NO_WINDOW is suitable for owned background tools, but detaches
     # the Windows console needed by the manual child's input()/live output.
@@ -27,6 +34,16 @@ def child_console_flags(*, interactive=False):
 
 
 def main():
+    review_args = []
+    if '--review-stop-file' in sys.argv:
+        index = sys.argv.index('--review-stop-file')
+        if index + 1 >= len(sys.argv):
+            raise SystemExit('--review-stop-file requires a new absolute .stop path.')
+        try:
+            stop_file = review_stop_file(sys.argv[index + 1])
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
+        review_args = ['--review-stop-file', str(stop_file)]
     # Live Google is never selected by --full or any ordinary regression flag.
     live_args = []
     if '--google-sheet-live' in sys.argv:
@@ -86,6 +103,13 @@ def main():
             command([sys.executable, 'ops/test_disposable_postgres.py'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'check', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
             command([sys.executable, 'backend/manage.py', 'makemigrations', '--check', '--dry-run', '--settings=apps.integrations.postgres_test_settings'], cwd=ROOT, env=env)
+            if '--team-regression' in sys.argv:
+                command([sys.executable, 'backend/manage.py', 'test', 'apps.accounts',
+                         'apps.integrations.test_spreadsheet_automation', 'apps.integrations.test_import_views',
+                         'apps.passports.test_documents', 'apps.passports.test_snapshot_dates',
+                         'apps.passports.test_pdf_fonts', 'apps.verification',
+                         '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'],
+                        cwd=ROOT, env=env, timeout=1200)
             if '--automatic-passport' in sys.argv:
                 command([sys.executable, 'backend/manage.py', 'test', 'apps.passports.test_documents.PassportDocumentServiceTests.test_missing_and_corrupt_issued_artifact_never_regenerates', '--settings=apps.integrations.postgres_test_settings', '--verbosity=1'], cwd=ROOT, env=env)
                 command([sys.executable, 'ops/test_automatic_passport_e2e.py'], cwd=ROOT, env=env)
@@ -115,13 +139,13 @@ def main():
                     command([sys.executable, f'ops/test_{label}_e2e.py'], cwd=ROOT, env=env)
             if '--browser-http' in sys.argv:
                 command([sys.executable, 'ops/test_live_browser_e2e.py'], cwd=ROOT, env=env)
-            if '--manual-demo' in sys.argv or '--demo-smoke' in sys.argv:
-                mode = '--manual-demo' if '--manual-demo' in sys.argv else '--demo-smoke'
+            if '--manual-demo' in sys.argv or '--demo-smoke' in sys.argv or review_args:
+                mode = '--manual-demo' if '--manual-demo' in sys.argv or review_args else '--demo-smoke'
                 # Inherit the operator terminal so URLs/input are live. Only
                 # this explicit interactive mode has no test-command deadline.
-                command([sys.executable, '-u', 'ops/test_live_browser_e2e.py', mode],
+                command([sys.executable, '-u', 'ops/test_live_browser_e2e.py', mode, *review_args],
                         cwd=ROOT, env=env, stdout=None, stderr=None,
-                        interactive=mode == '--manual-demo',
+                        interactive=mode == '--manual-demo' and not review_args,
                         timeout=None if mode == '--manual-demo' else 900)
         run.close()
         if directory.exists():

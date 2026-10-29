@@ -1,5 +1,13 @@
 # Product decisions
 
+Current delivery scope (2026-10-29): the owner's final team-integration request
+supersedes the earlier delivery/authentication exclusions below. It authorizes
+reviewing completed team changes and normal merge/push to `integration` after
+essential acceptance passes. `main`, live Google, shared/persistent developer
+databases, real student data, public chains and cloud deployment remain excluded.
+PD-01 through PD-03a remain approved; PD-04 remains deferred. See
+`FINAL_TEAM_INTEGRATION.md` for current evidence and local review instructions.
+
 Owner approval is required before implementing ambiguous behavior. Silence is not approval. Existing institutional approval and permission rules remain authoritative.
 
 | ID | Feature / current behavior | Why unclear | Options | Recommendation / effects | Status |

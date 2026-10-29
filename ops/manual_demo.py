@@ -41,7 +41,7 @@ class DemoClient:
         return response
 
 
-def recording_session(owned, fixture, base, mailbox, *, smoke=False):
+def recording_session(owned, fixture, base, mailbox, *, smoke=False, stop_file=None):
     # Keep Django imports inside the owned server path. The separate-terminal
     # controller below uses authenticated HTTP only, never database settings.
     from django.core.management import call_command
@@ -51,6 +51,7 @@ def recording_session(owned, fixture, base, mailbox, *, smoke=False):
     from apps.blockchain.models import PassportAnchor
     from apps.blockchain.policy import load_policy
     from apps.passports.models import DigitalPassport
+    from apps.integrations.spreadsheet_automation import poll_due_sources
     # These resources were already created and guarded by DisposableRun. Never
     # load production/local .env or reuse the old database, state or issuer key.
     fixture.local.rpc('evm_setIntervalMining', [1])
@@ -71,6 +72,8 @@ def recording_session(owned, fixture, base, mailbox, *, smoke=False):
                     # Existing durable workers, unchanged retry/nonce/receipt
                     # rules. Do not fast-forward confirmations or rewrite jobs.
                     call_command('run_backend_workers', once=True, stdout=StringIO())
+                    if stop_file is not None:
+                        poll_due_sources(limit=5)
                     process_batch()
                 except Exception:
                     if not errors:
@@ -201,6 +204,12 @@ def recording_session(owned, fixture, base, mailbox, *, smoke=False):
         assert verify(reference, 'REVOKED')['blockchain']['onchain_status'] == 'REVOKED'
         assert not errors
         print('PASS manual demo smoke: real OTP, PDF, tampering, CSRF/ownership, replacement and confirmed revocation.', flush=True)
+        return
+
+    if stop_file is not None:
+        print(f'Persistent local review session. Create {stop_file} to stop and clean only owned resources.', flush=True)
+        while not stop_file.exists():
+            time.sleep(1)
         return
 
     while True:
