@@ -6,7 +6,8 @@ workers = int(os.environ.get('WEB_CONCURRENCY', '2'))
 timeout = 30
 graceful_timeout = 30
 limit_request_line = 4094
-limit_request_fields = 30
+# Browser headers plus Vercel/Render proxy metadata need Gunicorn's standard allowance.
+limit_request_fields = 100
 limit_request_field_size = 4096
 # URL paths can contain public credential references. Do not create raw access logs.
 accesslog = None
