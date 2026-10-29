@@ -1,6 +1,7 @@
 """Verified Workspace authentication; academic ownership is never inferred from email."""
 import hmac
 import json
+import logging
 import re
 import secrets
 import threading
@@ -24,6 +25,7 @@ from .otp_utils import normalize_btu_email, normalize_client_ip, security_digest
 
 CERTIFICATES_URL = 'https://www.googleapis.com/oauth2/v1/certs'
 CHALLENGE_SECONDS = 300
+logger = logging.getLogger(__name__)
 
 
 class GoogleProblem(Exception):
@@ -125,22 +127,67 @@ def begin(request, intent):
     return {'challenge_id': str(challenge.pk), 'nonce': nonce, 'expires_in': CHALLENGE_SECONDS}
 
 
+def _reject_token(reason):
+    # Only fixed categories reach the logger; never credentials, claims or exceptions.
+    logger.warning('google_id_token_rejected reason=%s', reason)
+    raise GoogleProblem('GOOGLE_INVALID_TOKEN') from None
+
+
+def _verification_failure_reason(error):
+    # The pinned verifier embeds claims/tokens in errors. Classify, never log them.
+    message = str(error)
+    for prefix, category in (
+        ('Could not verify token signature.', 'signature_invalid'),
+        ('Token has wrong audience', 'audience_mismatch'),
+        ('Wrong issuer', 'issuer_mismatch'),
+        ('Token expired', 'token_expired'),
+        ('Token used too early', 'token_used_too_early'),
+        ('Token does not contain required claim', 'required_claim_missing'),
+        ('Certificate for key id ', 'signing_key_unavailable'),
+        ('Unsupported signature algorithm ', 'signature_algorithm_invalid'),
+        ('Wrong number of segments in token', 'credential_malformed'),
+    ):
+        if message.startswith(prefix):
+            return category
+    return 'token_verification_failed'
+
+
 def verify_credential(credential, audience, nonce_digest):
     if not isinstance(credential, str) or not 1 <= len(credential) <= 16384:
-        raise GoogleProblem('GOOGLE_INVALID_TOKEN')
+        _reject_token('credential_format_invalid')
     try:
         claims = id_token.verify_oauth2_token(credential, certificate_request, audience=audience)
+    except (ValueError, TypeError, KeyError, GoogleAuthError) as error:
+        _reject_token(_verification_failure_reason(error))
+    try:
         # Exact checks supplement the maintained library's cryptographic validation.
-        if (claims.get('aud') != audience or claims.get('azp', audience) != audience or claims.get('iss') not in ('accounts.google.com', 'https://accounts.google.com')
-                or claims.get('email_verified') is not True or claims.get('hd') != 'btu.edu.ge'
-                or type(claims.get('exp')) is not int or claims['exp'] <= time.time()
-                or not isinstance(claims.get('sub'), str) or not 1 <= len(claims['sub']) <= 255
-                or not isinstance(claims.get('nonce'), str)
-                or not hmac.compare_digest(security_digest('google.nonce', claims['nonce']), nonce_digest)):
-            raise ValueError('Invalid claims')
-        return claims['sub'], normalize_btu_email(claims.get('email'))
+        if claims.get('aud') != audience:
+            _reject_token('audience_mismatch')
+        if claims.get('azp', audience) != audience:
+            _reject_token('authorized_party_mismatch')
+        if claims.get('iss') not in ('accounts.google.com', 'https://accounts.google.com'):
+            _reject_token('issuer_mismatch')
+        if claims.get('email_verified') is not True:
+            _reject_token('email_unverified')
+        if claims.get('hd') != 'btu.edu.ge':
+            _reject_token('hosted_domain_missing' if claims.get('hd') is None else 'hosted_domain_mismatch')
+        if type(claims.get('exp')) is not int:
+            _reject_token('token_expiry_invalid')
+        if claims['exp'] <= time.time():
+            _reject_token('token_expired')
+        if not isinstance(claims.get('sub'), str) or not 1 <= len(claims['sub']) <= 255:
+            _reject_token('subject_invalid')
+        if not isinstance(claims.get('nonce'), str):
+            _reject_token('nonce_missing')
+        if not hmac.compare_digest(security_digest('google.nonce', claims['nonce']), nonce_digest):
+            _reject_token('nonce_mismatch')
+        try:
+            email = normalize_btu_email(claims.get('email'))
+        except ValueError:
+            _reject_token('email_invalid')
+        return claims['sub'], email
     except (ValueError, TypeError, KeyError, GoogleAuthError):
-        raise GoogleProblem('GOOGLE_INVALID_TOKEN') from None
+        _reject_token('claims_invalid')
 
 
 def finish(request, challenge_id, credential):

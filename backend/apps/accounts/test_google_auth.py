@@ -12,16 +12,100 @@ from django.contrib.sessions.models import Session
 from django.core import mail
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.db import DatabaseError, IntegrityError, transaction
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 from google.auth import crypt, jwt
 from rest_framework.test import APIClient
 
 from apps.students.models import Student
-from .google_auth import GoogleCertificates, GoogleProblem
+from .google_auth import GoogleCertificates, GoogleProblem, verify_credential
+from .otp_utils import security_digest
 from .models import GoogleIdentity, GoogleLoginChallenge, PortalStudentMapping, SecurityAudit, User
 
 CLIENT_ID = '123456789-synthetic.apps.googleusercontent.com'
+
+
+class GoogleTokenDiagnosticTests(SimpleTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
+        cls.signer = crypt.RSASigner.from_string(private, key_id='synthetic-diagnostic-key')
+        cls.public_key = key.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
+
+    def setUp(self):
+        self.nonce = 'synthetic-diagnostic-nonce'
+        self.digest = security_digest('google.nonce', self.nonce)
+        self.claims = {'iss': 'https://accounts.google.com', 'aud': CLIENT_ID,
+            'sub': 'synthetic-diagnostic-subject', 'email': 'synthetic.diagnostic@btu.edu.ge',
+            'email_verified': True, 'hd': 'btu.edu.ge', 'nonce': self.nonce,
+            'iat': int(time.time()) - 10, 'exp': int(time.time()) + 300}
+        self.enterContext(patch('apps.accounts.google_auth.certificate_request',
+            return_value=SimpleNamespace(status=200, data=json.dumps({'synthetic-diagnostic-key': self.public_key}).encode())))
+        self.enterContext(patch('requests.sessions.Session.request', side_effect=AssertionError('No live Google')))
+
+    def assert_rejection(self, credential, reason):
+        with self.assertLogs('apps.accounts.google_auth', level='WARNING') as captured:
+            with self.assertRaises(GoogleProblem) as caught:
+                verify_credential(credential, CLIENT_ID, self.digest)
+        self.assertEqual((caught.exception.code, caught.exception.status), ('GOOGLE_INVALID_TOKEN', 400))
+        self.assertEqual(len(captured.records), 1)
+        record = captured.records[0]
+        self.assertEqual(record.getMessage(), 'google_id_token_rejected reason=' + reason)
+        self.assertIsNone(record.exc_info)
+        self.assertIsNone(record.stack_info)
+        for sensitive in (credential, self.nonce, self.digest, self.claims['email'], self.claims['sub'], CLIENT_ID):
+            if isinstance(sensitive, str) and sensitive:
+                self.assertNotIn(sensitive, '\n'.join(captured.output))
+
+    def test_signed_failures_log_only_category_and_keep_generic_response(self):
+        cases = [
+            ({'hd': None}, 'hosted_domain_missing'),
+            ({'hd': 'private-domain.invalid'}, 'hosted_domain_mismatch'),
+            ({'email_verified': False}, 'email_unverified'),
+            ({'email_verified': 'true'}, 'email_unverified'),
+            ({'nonce': None}, 'nonce_missing'),
+            ({'nonce': 'private-wrong-nonce'}, 'nonce_mismatch'),
+            ({'aud': 'private-audience.apps.googleusercontent.com'}, 'audience_mismatch'),
+            ({'azp': 'private-authorized-party'}, 'authorized_party_mismatch'),
+            ({'iss': 'https://private-issuer.invalid'}, 'issuer_mismatch'),
+            ({'exp': int(time.time()) - 300}, 'token_expired'),
+            ({'iat': int(time.time()) + 300}, 'token_used_too_early'),
+            ({'sub': ''}, 'subject_invalid'),
+            ({'email': 'private-address@example.invalid'}, 'email_invalid'),
+        ]
+        for changes, reason in cases:
+            with self.subTest(reason=reason):
+                credential = jwt.encode(self.signer, {**self.claims, **changes}).decode()
+                self.assert_rejection(credential, reason)
+
+    def test_signature_and_malformed_tokens_never_reach_logs(self):
+        credential = jwt.encode(self.signer, self.claims).decode()
+        payload, signature = credential.rsplit('.', 1)
+        self.assert_rejection(payload + '.' + ('A' if signature[0] != 'A' else 'B') + signature[1:], 'signature_invalid')
+        self.assert_rejection('private-token\nforged-log-line', 'credential_malformed')
+        self.assert_rejection(None, 'credential_format_invalid')
+        self.assert_rejection('X' * 16385, 'credential_format_invalid')
+
+    def test_verifier_errors_are_classified_without_logging_exception_text(self):
+        cases = [('Token has wrong audience private-value', 'audience_mismatch'),
+            ('Certificate for key id private-value not found.', 'signing_key_unavailable'),
+            ('Unsupported signature algorithm private-value', 'signature_algorithm_invalid'),
+            ('Token does not contain required claim private-value', 'required_claim_missing'),
+            ('private-token\nprivate-email@example.invalid', 'token_verification_failed')]
+        for message, reason in cases:
+            with self.subTest(reason=reason), patch('apps.accounts.google_auth.id_token.verify_oauth2_token', side_effect=ValueError(message)):
+                self.assert_rejection('private-credential', reason)
+
+    def test_supplemental_checks_and_success_preserve_existing_behavior(self):
+        with patch('apps.accounts.google_auth.id_token.verify_oauth2_token', return_value={**self.claims, 'exp': 'private-expiry'}):
+            self.assert_rejection('private-credential', 'token_expiry_invalid')
+        with patch('apps.accounts.google_auth.id_token.verify_oauth2_token', side_effect=TypeError('private-token')):
+            self.assert_rejection('private-credential', 'token_verification_failed')
+        credential = jwt.encode(self.signer, self.claims).decode()
+        with self.assertNoLogs('apps.accounts.google_auth', level='WARNING'):
+            self.assertEqual(verify_credential(credential, CLIENT_ID, self.digest), (self.claims['sub'], self.claims['email']))
 
 
 @override_settings(ROOT_URLCONF='config.urls', GOOGLE_OAUTH_CLIENT_ID=CLIENT_ID,
